@@ -1,0 +1,168 @@
+"""OpenAI model client implementation."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import AsyncIterator
+from typing import Any
+
+from nexus.core.errors import ModelError
+from nexus.core.models.base import ModelClient, ModelResponse
+from nexus.core.types import Message, Role, TokenUsage, ToolCall, ToolDefinition
+
+# Per-model pricing in USD per 1M tokens (input, output)
+_PRICING: dict[str, tuple[float, float]] = {
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4-turbo": (10.00, 30.00),
+    "gpt-4": (30.00, 60.00),
+    "gpt-3.5-turbo": (0.50, 1.50),
+    "o1": (15.00, 60.00),
+    "o3-mini": (1.10, 4.40),
+}
+
+
+def _cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    base = model.split("-")[0] + "-" + model.split("-")[1] if "-" in model else model
+    in_price, out_price = _PRICING.get(model, _PRICING.get(base, (2.50, 10.00)))
+    return (input_tokens * in_price + output_tokens * out_price) / 1_000_000
+
+
+def _to_openai_messages(messages: list[Message]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for msg in messages:
+        if msg.role == Role.TOOL:
+            for tr in msg.tool_results:
+                result.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tr.tool_call_id,
+                        "content": str(tr.output) if tr.output is not None else (tr.error or ""),
+                    }
+                )
+        elif msg.tool_calls:
+            oai_tool_calls = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)},
+                }
+                for tc in msg.tool_calls
+            ]
+            result.append(
+                {
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": oai_tool_calls,
+                }
+            )
+        else:
+            result.append({"role": msg.role.value, "content": msg.content or ""})
+    return result
+
+
+def _to_openai_tools(tools: list[ToolDefinition]) -> list[dict[str, Any]]:
+    return [
+        {"type": "function", "function": tool.to_function_schema()} for tool in tools
+    ]
+
+
+class OpenAIClient(ModelClient):
+    """ModelClient implementation backed by the OpenAI SDK."""
+
+    def __init__(self, api_key: str, _client: Any = None) -> None:
+        if _client is not None:
+            self._sdk = _client
+        else:
+            import openai  # lazy import
+
+            self._sdk = openai.AsyncOpenAI(api_key=api_key)
+
+    async def complete(
+        self,
+        *,
+        messages: list[Message],
+        model: str,
+        tools: list[ToolDefinition] | None = None,
+        temperature: float = 0.0,
+        max_tokens: int = 4096,
+        **kwargs: Any,
+    ) -> ModelResponse:
+        oai_messages = _to_openai_messages(messages)
+        call_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": oai_messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if tools:
+            call_kwargs["tools"] = _to_openai_tools(tools)
+
+        try:
+            response = await self._sdk.chat.completions.create(**call_kwargs)
+        except Exception as exc:
+            raise ModelError(
+                f"OpenAI API error: {exc}",
+                code="MODEL_API_ERROR",
+                details={"provider": "openai", "model": model},
+            ) from exc
+
+        choice = response.choices[0]
+        in_t = response.usage.prompt_tokens
+        out_t = response.usage.completion_tokens
+        tool_calls: list[ToolCall] = []
+
+        if choice.message.tool_calls:
+            for tc in choice.message.tool_calls:
+                tool_calls.append(
+                    ToolCall(
+                        id=tc.id,
+                        name=tc.function.name,
+                        arguments=json.loads(tc.function.arguments),
+                    )
+                )
+
+        return ModelResponse(
+            content=choice.message.content,
+            tool_calls=tool_calls,
+            token_usage=TokenUsage(
+                input_tokens=in_t,
+                output_tokens=out_t,
+                total_tokens=response.usage.total_tokens,
+                cost_usd=_cost(model, in_t, out_t),
+                model=model,
+            ),
+            model=response.model,
+            stop_reason=choice.finish_reason or "stop",
+        )
+
+    async def stream(
+        self,
+        *,
+        messages: list[Message],
+        model: str,
+        tools: list[ToolDefinition] | None = None,
+        temperature: float = 0.0,
+        max_tokens: int = 4096,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        oai_messages = _to_openai_messages(messages)
+        call_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": oai_messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+
+        try:
+            stream = await self._sdk.chat.completions.create(**call_kwargs)
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as exc:
+            raise ModelError(
+                f"OpenAI stream error: {exc}",
+                code="MODEL_API_ERROR",
+                details={"provider": "openai", "model": model},
+            ) from exc
