@@ -1,0 +1,108 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nexus"
+version = "0.1.0"
+description = "Production-grade agentic AI framework built on Dapr"
+license = { text = "MIT" }
+requires-python = ">=3.12,<3.14"
+keywords = ["ai", "agents", "dapr", "llm", "orchestration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pydantic>=2.11",
+    "pydantic-settings>=2.14",
+    "httpx>=0.28",
+    "structlog>=25.5",
+    "click>=8.1",
+    "tiktoken>=0.12",
+    "opentelemetry-api>=1.29",
+    "opentelemetry-sdk>=1.29",
+    "opentelemetry-exporter-otlp>=1.29",
+    "dapr>=1.17",
+    "dapr-ext-grpc>=1.17",
+]
+
+[project.optional-dependencies]
+llm = [
+    "anthropic>=0.97",
+    "openai>=2.0",
+]
+
+[project.scripts]
+nexus = "nexus.cli.main:cli"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "pytest-asyncio>=1.3",
+    "pytest-cov>=7.0",
+    "hypothesis>=6.112",
+    "testcontainers>=4.14",
+    "ruff>=0.15",
+    "mypy>=1.20",
+    "mkdocs-material>=9.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexus"]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter + formatter
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# Mypy — strict type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+mypy_path = "src"
+explicit_package_bases = true
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = ["-ra", "--tb=short"]
+markers = [
+    "integration: marks tests requiring external services (docker, dapr, postgres, redis)",
+]
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/nexus"]
+branch = true
+omit = ["*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 0  # Phase 0 — no logic to cover yet; raised in later phases
