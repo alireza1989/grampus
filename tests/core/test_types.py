@@ -240,7 +240,9 @@ class TestTokenUsage:
         assert tu.total_tokens == 150
 
     def test_json_round_trip(self) -> None:
-        tu = TokenUsage(input_tokens=10, output_tokens=5, total_tokens=15, cost_usd=0.0, model="gpt-4o")
+        tu = TokenUsage(
+            input_tokens=10, output_tokens=5, total_tokens=15, cost_usd=0.0, model="gpt-4o"
+        )
         assert TokenUsage.model_validate_json(tu.model_dump_json()) == tu
 
 

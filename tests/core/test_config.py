@@ -151,9 +151,7 @@ class TestNexusConfig:
         cfg = NexusConfig()
         assert cfg.memory.episodic_top_k == 99
 
-    def test_env_overrides_yaml(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_overrides_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         yaml_file = tmp_path / "nexus.yaml"
         yaml_file.write_text("dapr:\n  port: 3501\n")
         monkeypatch.setenv("NEXUS_CONFIG_FILE", str(yaml_file))
@@ -161,9 +159,7 @@ class TestNexusConfig:
         cfg = NexusConfig()
         assert cfg.dapr.port == 9999
 
-    def test_missing_yaml_file_uses_defaults(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_missing_yaml_file_uses_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NEXUS_CONFIG_FILE", "/nonexistent/nexus.yaml")
         cfg = NexusConfig()
         assert isinstance(cfg.model, ModelConfig)

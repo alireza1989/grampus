@@ -17,7 +17,9 @@ from nexus.core.types import Message, Role, TokenUsage, ToolCall, ToolDefinition
 
 class TestModelResponse:
     def test_basic(self) -> None:
-        usage = TokenUsage(input_tokens=10, output_tokens=5, total_tokens=15, cost_usd=0.0, model="m")
+        usage = TokenUsage(
+            input_tokens=10, output_tokens=5, total_tokens=15, cost_usd=0.0, model="m"
+        )
         resp = ModelResponse(
             content="Hello",
             tool_calls=[],
@@ -43,7 +45,9 @@ class TestModelResponse:
 
     def test_json_round_trip(self) -> None:
         usage = TokenUsage(input_tokens=1, output_tokens=1, total_tokens=2, cost_usd=0.0, model="m")
-        resp = ModelResponse(content="hi", tool_calls=[], token_usage=usage, model="m", stop_reason="end_turn")
+        resp = ModelResponse(
+            content="hi", tool_calls=[], token_usage=usage, model="m", stop_reason="end_turn"
+        )
         restored = ModelResponse.model_validate_json(resp.model_dump_json())
         assert restored.content == resp.content
 
@@ -103,9 +107,7 @@ class TestAnthropicClient:
     def _make_client(self) -> AnthropicClient:
         mock_sdk = MagicMock()
         mock_sdk.messages = MagicMock()
-        mock_sdk.messages.create = AsyncMock(
-            return_value=_make_anthropic_mock_response("hi there")
-        )
+        mock_sdk.messages.create = AsyncMock(return_value=_make_anthropic_mock_response("hi there"))
         return AnthropicClient(api_key="sk-test", _client=mock_sdk)
 
     def test_instantiate(self) -> None:
@@ -162,9 +164,7 @@ class TestAnthropicClient:
     async def test_converts_system_message(self) -> None:
         mock_sdk = MagicMock()
         mock_sdk.messages = MagicMock()
-        mock_sdk.messages.create = AsyncMock(
-            return_value=_make_anthropic_mock_response("ok")
-        )
+        mock_sdk.messages.create = AsyncMock(return_value=_make_anthropic_mock_response("ok"))
         client = AnthropicClient(api_key="sk-test", _client=mock_sdk)
         messages = [
             Message(role=Role.SYSTEM, content="You are helpful."),
@@ -185,11 +185,19 @@ class TestAnthropicClient:
                 pass
 
             def __aiter__(self) -> "FakeAnthropicStream":
-                self._events = iter([
-                    MagicMock(type="content_block_delta", delta=MagicMock(type="text_delta", text="chunk1")),
-                    MagicMock(type="content_block_delta", delta=MagicMock(type="text_delta", text="chunk2")),
-                    MagicMock(type="message_stop"),
-                ])
+                self._events = iter(
+                    [
+                        MagicMock(
+                            type="content_block_delta",
+                            delta=MagicMock(type="text_delta", text="chunk1"),
+                        ),
+                        MagicMock(
+                            type="content_block_delta",
+                            delta=MagicMock(type="text_delta", text="chunk2"),
+                        ),
+                        MagicMock(type="message_stop"),
+                    ]
+                )
                 return self
 
             async def __anext__(self) -> MagicMock:
@@ -318,9 +326,7 @@ class TestOpenAIClient:
         mock_sdk = MagicMock()
         mock_sdk.chat = MagicMock()
         mock_sdk.chat.completions = MagicMock()
-        mock_sdk.chat.completions.create = AsyncMock(
-            return_value=_make_openai_mock_response("ok")
-        )
+        mock_sdk.chat.completions.create = AsyncMock(return_value=_make_openai_mock_response("ok"))
         client = OpenAIClient(api_key="sk-test", _client=mock_sdk)
         messages = [
             Message(role=Role.SYSTEM, content="You are helpful."),
@@ -328,7 +334,9 @@ class TestOpenAIClient:
         ]
         await client.complete(messages=messages, model="gpt-4o-mini")
         call_kwargs = mock_sdk.chat.completions.create.call_args
-        oai_messages = call_kwargs.kwargs.get("messages") or call_kwargs.args[0] if call_kwargs.args else []
+        oai_messages = (
+            call_kwargs.kwargs.get("messages") or call_kwargs.args[0] if call_kwargs.args else []
+        )
         if not oai_messages:
             oai_messages = call_kwargs.kwargs.get("messages", [])
         system_msgs = [m for m in oai_messages if m.get("role") == "system"]
@@ -340,10 +348,14 @@ class TestOpenAIClient:
 
         async def fake_chunks() -> None:
             chunk1 = MagicMock()
-            chunk1.choices = [MagicMock(delta=MagicMock(content="hello", tool_calls=None), finish_reason=None)]
+            chunk1.choices = [
+                MagicMock(delta=MagicMock(content="hello", tool_calls=None), finish_reason=None)
+            ]
             yield chunk1
             chunk2 = MagicMock()
-            chunk2.choices = [MagicMock(delta=MagicMock(content=" world", tool_calls=None), finish_reason="stop")]
+            chunk2.choices = [
+                MagicMock(delta=MagicMock(content=" world", tool_calls=None), finish_reason="stop")
+            ]
             yield chunk2
 
         mock_sdk.chat = MagicMock()
@@ -351,7 +363,9 @@ class TestOpenAIClient:
         mock_sdk.chat.completions.create = AsyncMock(return_value=fake_chunks())
         client = OpenAIClient(api_key="sk-test", _client=mock_sdk)
         chunks = []
-        async for chunk in client.stream(messages=[Message(role=Role.USER, content="hi")], model="gpt-4o-mini"):
+        async for chunk in client.stream(
+            messages=[Message(role=Role.USER, content="hi")], model="gpt-4o-mini"
+        ):
             chunks.append(chunk)
         assert len(chunks) > 0
 

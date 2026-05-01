@@ -113,7 +113,11 @@ jobs:
           echo "All services healthy"
 
       - name: Run integration tests
-        run: uv run pytest -m integration -v
+        run: |
+          uv run pytest -m integration -v
+          exit_code=$?
+          # exit code 5 = no tests collected (expected until integration tests are written)
+          [ $exit_code -eq 0 ] || [ $exit_code -eq 5 ]
 
       - name: Tear down services
         if: always()

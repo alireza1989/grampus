@@ -39,7 +39,9 @@ def _to_anthropic_messages(messages: list[Message]) -> list[dict[str, Any]]:
                             {
                                 "type": "tool_result",
                                 "tool_use_id": tr.tool_call_id,
-                                "content": str(tr.output) if tr.output is not None else (tr.error or ""),
+                                "content": str(tr.output)
+                                if tr.output is not None
+                                else (tr.error or ""),
                             }
                         ],
                     }
@@ -98,9 +100,7 @@ class AnthropicClient(ModelClient):
         max_tokens: int = 4096,
         **kwargs: Any,
     ) -> ModelResponse:
-        system = next(
-            (m.content for m in messages if m.role == Role.SYSTEM and m.content), None
-        )
+        system = next((m.content for m in messages if m.role == Role.SYSTEM and m.content), None)
         anthropic_messages = _to_anthropic_messages(messages)
         call_kwargs: dict[str, Any] = {
             "model": model,
@@ -159,9 +159,7 @@ class AnthropicClient(ModelClient):
         max_tokens: int = 4096,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
-        system = next(
-            (m.content for m in messages if m.role == Role.SYSTEM and m.content), None
-        )
+        system = next((m.content for m in messages if m.role == Role.SYSTEM and m.content), None)
         anthropic_messages = _to_anthropic_messages(messages)
         call_kwargs: dict[str, Any] = {
             "model": model,

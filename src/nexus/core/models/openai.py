@@ -62,9 +62,7 @@ def _to_openai_messages(messages: list[Message]) -> list[dict[str, Any]]:
 
 
 def _to_openai_tools(tools: list[ToolDefinition]) -> list[dict[str, Any]]:
-    return [
-        {"type": "function", "function": tool.to_function_schema()} for tool in tools
-    ]
+    return [{"type": "function", "function": tool.to_function_schema()} for tool in tools]
 
 
 class OpenAIClient(ModelClient):
