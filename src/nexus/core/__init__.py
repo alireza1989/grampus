@@ -23,7 +23,9 @@ from nexus.core.errors import (
     SafetyError,
     StateSerializationError,
     ToolError,
+    ToolNotFoundError,
     ToolTimeoutError,
+    ToolValidationError,
 )
 from nexus.core.logging import bind_correlation_id, configure_logging, get_logger
 from nexus.core.models.anthropic import AnthropicClient
@@ -57,7 +59,9 @@ __all__ = [
     "MemoryError",
     "MemorySecurityError",
     "ToolError",
+    "ToolNotFoundError",
     "ToolTimeoutError",
+    "ToolValidationError",
     "OrchestrationError",
     "BudgetExceededError",
     "SafetyError",

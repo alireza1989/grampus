@@ -34,6 +34,14 @@ class ToolTimeoutError(ToolError):
     """Raised when a tool exceeds its execution timeout."""
 
 
+class ToolNotFoundError(ToolError):
+    """Raised when a requested tool name is not registered."""
+
+
+class ToolValidationError(ToolError):
+    """Raised when tool arguments fail schema validation."""
+
+
 class OrchestrationError(NexusError):
     """Raised for orchestration / graph execution failures."""
 
