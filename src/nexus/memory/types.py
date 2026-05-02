@@ -8,6 +8,30 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 
+class ProcedureStep(BaseModel):
+    """A single step within a learned procedure."""
+
+    action: str
+    tool_name: str | None = None
+    parameters_template: dict[str, Any] = Field(default_factory=dict)
+    expected_outcome: str | None = None
+
+
+class Procedure(BaseModel):
+    """A learned, reusable workflow extracted from completed tool-call sequences."""
+
+    id: str
+    name: str
+    description: str
+    steps: list[ProcedureStep] = Field(default_factory=list)
+    trigger_conditions: list[str] = Field(default_factory=list)
+    success_count: int = 0
+    failure_count: int = 0
+    last_used: datetime | None = None
+    agent_id: str
+    embedding: list[float] | None = None
+
+
 class EpisodicRecord(BaseModel):
     """A single episodic memory record persisted across sessions."""
 
