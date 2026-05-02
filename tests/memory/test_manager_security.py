@@ -233,9 +233,7 @@ class TestValidationIntegration:
         mock_consolidation: AsyncMock,
     ) -> None:
         validator = MagicMock(spec=MemoryValidator)
-        validator.validate.return_value = ValidationResult(
-            allowed=False, reasons=["size exceeded"]
-        )
+        validator.validate.return_value = ValidationResult(allowed=False, reasons=["size exceeded"])
         manager = _make_manager(
             mock_episodic,
             mock_semantic,

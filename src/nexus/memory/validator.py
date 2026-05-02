@@ -91,8 +91,7 @@ class MemoryValidator:
 
         if len(window) > self._max_writes:
             reasons.append(
-                f"rate limit exceeded: {len(window)} attempts in last 60s"
-                f" (max {self._max_writes})"
+                f"rate limit exceeded: {len(window)} attempts in last 60s (max {self._max_writes})"
             )
 
         return ValidationResult(allowed=len(reasons) == 0, reasons=reasons)

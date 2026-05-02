@@ -30,12 +30,16 @@ class TestTrustScorer:
 
     def test_score_clamped_to_unit_interval_lower(self) -> None:
         scorer = TrustScorer()
-        score = scorer.score(_make_provenance(SourceType.EXTERNAL_DATA), access_count=0, age_days=100_000.0)
+        score = scorer.score(
+            _make_provenance(SourceType.EXTERNAL_DATA), access_count=0, age_days=100_000.0
+        )
         assert score >= 0.0
 
     def test_score_clamped_to_unit_interval_upper(self) -> None:
         scorer = TrustScorer()
-        score = scorer.score(_make_provenance(SourceType.SYSTEM), access_count=999_999, age_days=0.0)
+        score = scorer.score(
+            _make_provenance(SourceType.SYSTEM), access_count=999_999, age_days=0.0
+        )
         assert score <= 1.0
 
     def test_score_zero_age_zero_access_equals_base(self) -> None:
@@ -69,14 +73,18 @@ class TestTrustScorer:
     def test_system_higher_than_external_same_conditions(self) -> None:
         scorer = TrustScorer()
         s_sys = scorer.score(_make_provenance(SourceType.SYSTEM), access_count=0, age_days=1.0)
-        s_ext = scorer.score(_make_provenance(SourceType.EXTERNAL_DATA), access_count=0, age_days=1.0)
+        s_ext = scorer.score(
+            _make_provenance(SourceType.EXTERNAL_DATA), access_count=0, age_days=1.0
+        )
         assert s_sys > s_ext
 
     def test_custom_decay_rate(self) -> None:
         fast = TrustScorer(decay_rate=0.5)
         slow = TrustScorer(decay_rate=0.001)
         p = _make_provenance(SourceType.USER_INPUT)
-        assert fast.score(p, access_count=0, age_days=10.0) < slow.score(p, access_count=0, age_days=10.0)
+        assert fast.score(p, access_count=0, age_days=10.0) < slow.score(
+            p, access_count=0, age_days=10.0
+        )
 
     def test_custom_access_boost(self) -> None:
         big_boost = TrustScorer(access_boost=0.1, max_boost=1.0)
