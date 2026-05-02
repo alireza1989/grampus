@@ -3,6 +3,7 @@
 from nexus.memory.consolidation import ConsolidationPipeline, ConsolidationResult
 from nexus.memory.embeddings import EmbeddingService, cosine_similarity
 from nexus.memory.episodic import EpisodicMemory
+from nexus.memory.manager import MemoryManager, MemoryRecallResult
 from nexus.memory.procedural import ProceduralMemory
 from nexus.memory.procedure_extractor import ProcedureExtractor
 from nexus.memory.procedure_matcher import ProcedureMatcher
@@ -27,6 +28,8 @@ __all__ = [
     "EpisodicMemory",
     "EpisodicRecord",
     "EpisodicRetriever",
+    "MemoryManager",
+    "MemoryRecallResult",
     "Procedure",
     "ProcedureExtractor",
     "ProcedureMatcher",
