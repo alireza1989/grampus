@@ -10,13 +10,18 @@ from nexus.core.config import (
 )
 from nexus.core.errors import (
     BudgetExceededError,
+    ConcurrencyError,
     ConfigError,
+    DaprConnectionError,
+    DaprError,
+    LockAcquisitionError,
     MemoryError,
     MemorySecurityError,
     ModelError,
     NexusError,
     OrchestrationError,
     SafetyError,
+    StateSerializationError,
     ToolError,
     ToolTimeoutError,
 )
@@ -57,6 +62,11 @@ __all__ = [
     "BudgetExceededError",
     "SafetyError",
     "ModelError",
+    "DaprError",
+    "DaprConnectionError",
+    "ConcurrencyError",
+    "LockAcquisitionError",
+    "StateSerializationError",
     # logging
     "get_logger",
     "configure_logging",

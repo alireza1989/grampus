@@ -48,3 +48,23 @@ class SafetyError(NexusError):
 
 class ModelError(NexusError):
     """Raised when an LLM provider call fails."""
+
+
+class DaprError(NexusError):
+    """Base for all Dapr integration errors."""
+
+
+class DaprConnectionError(DaprError):
+    """Raised when the Dapr sidecar is unreachable or times out."""
+
+
+class ConcurrencyError(DaprError):
+    """Raised when an ETag mismatch is detected (optimistic concurrency failure)."""
+
+
+class LockAcquisitionError(DaprError):
+    """Raised when a distributed lock cannot be acquired."""
+
+
+class StateSerializationError(DaprError):
+    """Raised when state store bytes cannot be deserialized into the expected model."""
