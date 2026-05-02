@@ -114,7 +114,7 @@ jobs:
 
       - name: Run integration tests
         # exit code 5 = no tests collected; acceptable until Phase 2 integration tests are written
-        run: uv run pytest -m integration -v; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
+        run: uv run pytest -m integration -v || [ $? -eq 5 ]
 
       - name: Tear down services
         if: always()
