@@ -23,7 +23,7 @@ async def is_sidecar_healthy(host: str, port: int) -> bool:
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, timeout=2.0)
-            return resp.status_code == 200
+            return 200 <= resp.status_code < 300
     except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPError):
         return False
 

@@ -24,6 +24,19 @@ class TestIsSidecarHealthy:
             result = await is_sidecar_healthy("localhost", 3500)
         assert result is True
 
+    async def test_returns_true_on_204(self) -> None:
+        # Dapr's /v1.0/healthz returns 204 No Content when healthy
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client.get = AsyncMock(return_value=mock_resp)
+            mock_client_cls.return_value = mock_client
+            result = await is_sidecar_healthy("localhost", 3500)
+        assert result is True
+
     async def test_returns_false_on_503(self) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 503
