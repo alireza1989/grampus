@@ -32,7 +32,16 @@ class DaprGateway:
     ) -> None:
         self._host = host
         self._port = port
-        self._client: Any = _client if _client is not None else DaprSDKClient()
+        self._injected_client: Any | None = _client
+        self._lazy_sdk_client: Any | None = None
+
+    @property
+    def _client(self) -> Any:
+        if self._injected_client is not None:
+            return self._injected_client
+        if self._lazy_sdk_client is None:
+            self._lazy_sdk_client = DaprSDKClient()
+        return self._lazy_sdk_client
 
     # ------------------------------------------------------------------
     # State

@@ -27,9 +27,8 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture()
 async def gateway() -> DaprGateway:
-    gw = DaprGateway(host="localhost", port=3500)
     await wait_for_sidecar("localhost", 3500, timeout_seconds=30.0)
-    return gw
+    return DaprGateway(host="localhost", port=3500)
 
 
 @pytest.fixture()

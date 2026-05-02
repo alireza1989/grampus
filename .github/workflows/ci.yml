@@ -112,8 +112,30 @@ jobs:
           timeout 30 bash -c 'until docker compose exec -T redis redis-cli ping | grep -q PONG; do sleep 2; done'
           echo "All services healthy"
 
+      - name: Install Dapr CLI
+        run: |
+          wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
+          dapr --version
+
+      - name: Initialize Dapr runtime (slim — no extra Docker containers)
+        run: dapr init --slim --runtime-version 1.17.5
+
+      - name: Start Dapr sidecar
+        run: |
+          nohup ~/.dapr/bin/daprd \
+            --app-id nexus-test \
+            --resources-path ./dapr/components \
+            --config ./dapr/config.yaml \
+            --dapr-http-port 3500 \
+            --dapr-grpc-port 50001 \
+            --placement-host-address localhost:50005 \
+            --log-level warn \
+            > /tmp/daprd.log 2>&1 &
+          echo "Waiting for Dapr sidecar to be ready..."
+          timeout 60 bash -c 'until curl -sf http://localhost:3500/v1.0/healthz/outbound > /dev/null; do sleep 2; done'
+          echo "Dapr sidecar is ready"
+
       - name: Run integration tests
-        # exit code 5 = no tests collected; acceptable until Phase 2 integration tests are written
         run: uv run pytest -m integration -v || [ $? -eq 5 ]
 
       - name: Tear down services
