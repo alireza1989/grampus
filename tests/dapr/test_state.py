@@ -20,8 +20,7 @@ class Item(BaseModel):
 def make_state_response(data: bytes = b"", etag: str = "1") -> MagicMock:
     resp = MagicMock()
     resp.data = data
-    resp.etag = MagicMock()
-    resp.etag.value = etag
+    resp.etag = etag  # Dapr SDK returns etag as a plain str
     return resp
 
 
@@ -32,8 +31,7 @@ def make_bulk_response(items: dict[str, tuple[bytes, str]]) -> MagicMock:
         item = MagicMock()
         item.key = key
         item.data = data
-        item.etag = MagicMock()
-        item.etag.value = etag
+        item.etag = etag  # plain str
         bulk_items.append(item)
     resp.items = bulk_items
     return resp
@@ -124,6 +122,21 @@ class TestDaprStateStoreSave:
                 return StatusCode.FAILED_PRECONDITION
 
         mock_gw.save_state.side_effect = FakeRpcError("ETag mismatch")
+        item = Item(name="x", count=0)
+        with pytest.raises(ConcurrencyError):
+            await store.save("agent", "id1", item, etag="stale-etag")
+
+    async def test_save_raises_concurrency_error_on_aborted(
+        self, store: DaprStateStore, mock_gw: AsyncMock
+    ) -> None:
+        # PostgreSQL state store returns ABORTED for ETag conflicts;
+        # the Dapr SDK wraps this in DaprGrpcError with .grpc_statuscode.
+        from grpc import StatusCode
+
+        class FakeDaprGrpcError(Exception):
+            grpc_statuscode = StatusCode.ABORTED
+
+        mock_gw.save_state.side_effect = FakeDaprGrpcError("etag mismatch")
         item = Item(name="x", count=0)
         with pytest.raises(ConcurrencyError):
             await store.save("agent", "id1", item, etag="stale-etag")

@@ -94,7 +94,7 @@ class DaprStateStore:
         _log.debug("state_got", store=self._store, key=key)
         if empty_response(resp):
             return None, ""
-        return from_dapr_bytes(resp.data, cls), resp.etag.value
+        return from_dapr_bytes(resp.data, cls), resp.etag
 
     async def delete(
         self,
@@ -177,12 +177,29 @@ class DaprStateStore:
 
 
 def _raise_if_concurrency_error(exc: Exception) -> None:
-    """Re-raise as ConcurrencyError when the underlying cause is an ETag mismatch."""
+    """Re-raise as ConcurrencyError when the underlying cause is an ETag mismatch.
+
+    The Dapr SDK wraps gRPC errors in DaprGrpcError. PostgreSQL state store
+    returns ABORTED; some other stores use FAILED_PRECONDITION. Both indicate
+    an optimistic concurrency conflict.
+    """
     try:
         from grpc import StatusCode
 
-        code = getattr(exc, "code", None)
-        if callable(code) and code() == StatusCode.FAILED_PRECONDITION:
+        _CONCURRENCY_CODES = {StatusCode.ABORTED, StatusCode.FAILED_PRECONDITION}
+
+        # DaprGrpcError (from dapr.clients.exceptions) exposes .grpc_statuscode
+        grpc_code = getattr(exc, "grpc_statuscode", None)
+        if grpc_code in _CONCURRENCY_CODES:
+            raise ConcurrencyError(
+                "ETag mismatch — concurrent modification detected",
+                code="CONCURRENCY_ERROR",
+                details={},
+            ) from exc
+
+        # Raw grpc.RpcError fallback (e.g. injected in unit tests)
+        code_fn = getattr(exc, "code", None)
+        if callable(code_fn) and code_fn() in _CONCURRENCY_CODES:
             raise ConcurrencyError(
                 "ETag mismatch — concurrent modification detected",
                 code="CONCURRENCY_ERROR",
