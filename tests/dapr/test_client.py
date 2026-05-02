@@ -73,7 +73,7 @@ class TestDaprGatewayInit:
         with patch("nexus.dapr.client.DaprSDKClient") as mock_cls:
             mock_cls.return_value = MagicMock()
             gw = DaprGateway()
-            assert gw is not None
+            _ = gw._client  # trigger lazy instantiation
             mock_cls.assert_called_once()
 
 
