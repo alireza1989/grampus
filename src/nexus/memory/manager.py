@@ -7,15 +7,18 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from nexus.core.errors import MemorySecurityError
 from nexus.core.logging import get_logger
 from nexus.core.types import Message
 from nexus.memory.consolidation import ConsolidationPipeline, ConsolidationResult
 from nexus.memory.episodic import EpisodicMemory
 from nexus.memory.procedural import ProceduralMemory
+from nexus.memory.provenance import Provenance, ProvenanceTracker, SourceType
 from nexus.memory.retriever import EpisodicRetriever
 from nexus.memory.semantic import SemanticMemory
 from nexus.memory.semantic_retriever import SemanticRetriever
 from nexus.memory.types import RetrievedRecord, SemanticFact
+from nexus.memory.validator import MemoryValidator
 from nexus.memory.working import WorkingMemory
 
 _log = get_logger(__name__)
@@ -44,6 +47,11 @@ class MemoryManager:
         semantic_retriever: Similarity-based retriever for semantic facts.
         consolidation_pipeline: LLM-based fact extractor from episodic records.
         agent_id: Scopes operations to this agent.
+        provenance_tracker: Optional tracker that annotates every write with provenance.
+            When ``None``, provenance metadata is not attached.
+        memory_validator: Optional validator that gates writes through injection
+            detection, size limits, and rate limiting.
+            When ``None``, validation is skipped.
     """
 
     def __init__(
@@ -57,6 +65,8 @@ class MemoryManager:
         consolidation_pipeline: ConsolidationPipeline,
         *,
         agent_id: str,
+        provenance_tracker: ProvenanceTracker | None = None,
+        memory_validator: MemoryValidator | None = None,
     ) -> None:
         self._working = working_memory
         self._episodic = episodic_memory
@@ -66,6 +76,8 @@ class MemoryManager:
         self._sem_retriever = semantic_retriever
         self._consolidation = consolidation_pipeline
         self._agent_id = agent_id
+        self._tracker = provenance_tracker
+        self._validator = memory_validator
 
     async def remember(
         self,
@@ -73,22 +85,52 @@ class MemoryManager:
         *,
         session_id: str,
         memory_types: list[str] | None = None,
+        source_type: SourceType = SourceType.LLM_GENERATED,
+        source_id: str = "unknown",
         **kwargs: Any,
     ) -> None:
         """Persist *content* into the requested memory types.
+
+        The write path is:
+        1. Create :class:`Provenance` (if tracker is configured).
+        2. Validate via :class:`MemoryValidator` (if configured) — raises
+           :class:`MemorySecurityError` on rejection.
+        3. Store into each requested memory type with provenance JSON attached.
 
         Args:
             content: Text content to store.
             session_id: Current session identifier (used for episodic records).
             memory_types: Which stores to write to (``"episodic"``, ``"semantic"``).
                 Unknown values are silently ignored. Defaults to ``["episodic"]``.
+            source_type: Provenance category of the write origin.
+            source_id: Identifier of the specific source.
             **kwargs: Forwarded to the underlying store methods.
+
+        Raises:
+            MemorySecurityError: When the validator blocks the write.
         """
         types = memory_types if memory_types is not None else ["episodic"]
 
+        provenance: Provenance | None = None
+        if self._tracker is not None:
+            provenance = self._tracker.create(content, source_type, source_id=source_id)
+
+        if self._validator is not None:
+            result = self._validator.validate(content, source_id=source_id)
+            if not result.allowed:
+                raise MemorySecurityError(
+                    f"Memory write blocked: {'; '.join(result.reasons)}",
+                    code="MEMORY_WRITE_BLOCKED",
+                    details={"reasons": result.reasons, "source_id": source_id},
+                )
+
+        provenance_json: str | None = provenance.model_dump_json() if provenance else None
+
         for memory_type in types:
             if memory_type == "episodic":
-                await self._episodic.store(content, session_id=session_id, **kwargs)
+                await self._episodic.store(
+                    content, session_id=session_id, provenance=provenance_json, **kwargs
+                )
                 _log.debug("memory_remembered_episodic", agent=self._agent_id)
             elif memory_type == "semantic":
                 fact = SemanticFact(
