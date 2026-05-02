@@ -96,6 +96,16 @@ class EpisodicMemory:
             await self._save_index()
         _log.debug("episodic_deleted", agent=self._agent_id, record_id=record_id)
 
+    async def update_metadata(self, record_id: str, metadata: dict[str, Any]) -> None:
+        """Merge *metadata* into an existing record's metadata dict."""
+        record, etag = await self._store.get(_ENTITY, record_id, EpisodicRecord)
+        if record is None:
+            return
+        merged = {**record.metadata, **metadata}
+        updated = record.model_copy(update={"metadata": merged})
+        await self._save_record(updated, etag=etag if etag else None)
+        _log.debug("episodic_metadata_updated", record_id=record_id)
+
     async def update_access(self, record_id: str) -> None:
         """Increment access_count and set last_accessed on an existing record."""
         record, etag = await self._store.get(_ENTITY, record_id, EpisodicRecord)

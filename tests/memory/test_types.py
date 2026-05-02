@@ -1,11 +1,11 @@
-"""Tests for nexus.memory.types — EpisodicRecord and RetrievedRecord."""
+"""Tests for nexus.memory.types — EpisodicRecord, RetrievedRecord, SemanticFact."""
 
 from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
 
-from nexus.memory.types import EpisodicRecord, RetrievedRecord
+from nexus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
 
 
 def make_record(**kwargs: object) -> EpisodicRecord:
@@ -150,3 +150,79 @@ class TestRetrievedRecord:
         data = retrieved.model_dump_json()
         restored = RetrievedRecord.model_validate_json(data)
         assert restored == retrieved
+
+
+def make_fact(**kwargs: object) -> SemanticFact:
+    defaults: dict[str, object] = {
+        "id": "fact-001",
+        "subject": "user",
+        "predicate": "prefers",
+        "object_value": "dark mode",
+    }
+    defaults.update(kwargs)
+    return SemanticFact(**defaults)  # type: ignore[arg-type]
+
+
+class TestSemanticFact:
+    def test_minimal_construction(self) -> None:
+        f = make_fact()
+        assert f.id == "fact-001"
+        assert f.subject == "user"
+        assert f.predicate == "prefers"
+        assert f.object_value == "dark mode"
+
+    def test_confidence_defaults_to_one(self) -> None:
+        f = make_fact()
+        assert f.confidence == 1.0
+
+    def test_confidence_rejects_above_one(self) -> None:
+        with pytest.raises(ValidationError):
+            make_fact(confidence=1.1)
+
+    def test_confidence_rejects_below_zero(self) -> None:
+        with pytest.raises(ValidationError):
+            make_fact(confidence=-0.1)
+
+    def test_confidence_boundary_zero(self) -> None:
+        f = make_fact(confidence=0.0)
+        assert f.confidence == 0.0
+
+    def test_confidence_boundary_one(self) -> None:
+        f = make_fact(confidence=1.0)
+        assert f.confidence == 1.0
+
+    def test_source_episode_ids_defaults_empty(self) -> None:
+        f = make_fact()
+        assert f.source_episode_ids == []
+
+    def test_access_count_defaults_zero(self) -> None:
+        f = make_fact()
+        assert f.access_count == 0
+
+    def test_embedding_defaults_none(self) -> None:
+        f = make_fact()
+        assert f.embedding is None
+
+    def test_timestamps_auto_set(self) -> None:
+        f = make_fact()
+        assert f.created_at is not None
+        assert f.updated_at is not None
+        assert f.created_at.tzinfo is not None
+
+    def test_source_episode_ids_stored(self) -> None:
+        f = make_fact(source_episode_ids=["ep-1", "ep-2"])
+        assert f.source_episode_ids == ["ep-1", "ep-2"]
+
+    def test_embedding_stored(self) -> None:
+        f = make_fact(embedding=[0.1, 0.2, 0.3])
+        assert f.embedding == [0.1, 0.2, 0.3]
+
+    def test_round_trip_json(self) -> None:
+        f = make_fact(
+            confidence=0.8,
+            source_episode_ids=["ep-1"],
+            embedding=[0.1, 0.2],
+        )
+        data = f.model_dump_json()
+        restored = SemanticFact.model_validate_json(data)
+        assert restored == f

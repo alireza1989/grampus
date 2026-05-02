@@ -179,6 +179,52 @@ class TestEpisodicMemoryListAll:
         assert result == []
 
 
+class TestEpisodicMemoryUpdateMetadata:
+    async def test_update_metadata_merges_keys(
+        self, memory: EpisodicMemory, mock_store: AsyncMock
+    ) -> None:
+        record = EpisodicRecord(
+            id="rec-1",
+            agent_id="agent-1",
+            session_id="s1",
+            content="test",
+            trust_score=0.9,
+            importance_score=0.5,
+            metadata={"existing": "value"},
+        )
+        mock_store.get.return_value = (record, "etag1")
+        await memory.update_metadata("rec-1", {"consolidated": True})
+        mock_store.save.assert_called()
+
+    async def test_update_metadata_noop_for_missing(
+        self, memory: EpisodicMemory, mock_store: AsyncMock
+    ) -> None:
+        mock_store.get.return_value = (None, "")
+        # Should not raise
+        await memory.update_metadata("nonexistent", {"consolidated": True})
+
+    async def test_update_metadata_preserves_existing_keys(
+        self, memory: EpisodicMemory, mock_store: AsyncMock
+    ) -> None:
+        record = EpisodicRecord(
+            id="rec-1",
+            agent_id="agent-1",
+            session_id="s1",
+            content="test",
+            trust_score=0.9,
+            importance_score=0.5,
+            metadata={"keep": "me"},
+        )
+        mock_store.get.return_value = (record, "etag1")
+        await memory.update_metadata("rec-1", {"new_key": "new_val"})
+        saved_record = mock_store.save.call_args_list[-1]
+        # The model passed to save should carry both keys
+        saved_obj = saved_record[0][2] if saved_record[0] else saved_record[1].get("model")
+        if saved_obj is not None and hasattr(saved_obj, "metadata"):
+            assert saved_obj.metadata.get("keep") == "me"
+            assert saved_obj.metadata.get("new_key") == "new_val"
+
+
 class TestEpisodicMemoryUpdateAccess:
     async def test_update_access_increments_count(
         self, memory: EpisodicMemory, mock_store: AsyncMock

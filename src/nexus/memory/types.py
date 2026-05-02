@@ -33,6 +33,25 @@ class EpisodicRecord(BaseModel):
         return v
 
 
+class SemanticFact(BaseModel):
+    """A discrete, structured fact extracted from episodic memory.
+
+    Stored as a subject-predicate-object triple with a confidence score.
+    Deduplication is performed on (subject, predicate) when storing.
+    """
+
+    id: str
+    subject: str
+    predicate: str
+    object_value: str
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    source_episode_ids: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    access_count: int = 0
+    embedding: list[float] | None = None
+
+
 class RetrievedRecord(BaseModel):
     """An episodic record returned by the retriever, annotated with scores."""
 
