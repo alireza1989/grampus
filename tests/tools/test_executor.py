@@ -155,9 +155,7 @@ class TestRetry:
             lambda x: x,
             name="fn",
             description="fn",
-            parameters=[
-                ToolParameter(name="x", type="string", description="x", required=True)
-            ],
+            parameters=[ToolParameter(name="x", type="string", description="x", required=True)],
         )
         with pytest.raises(ToolValidationError):
             await executor.execute(_tc("fn", {}))

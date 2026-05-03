@@ -71,7 +71,9 @@ class ToolRegistry:
             parameters=parameters or [],
             version=version,
         )
-        registered = RegisteredTool(name=name, description=description, definition=definition, fn=fn)
+        registered = RegisteredTool(
+            name=name, description=description, definition=definition, fn=fn
+        )
         self._tools[name] = registered
         logger.debug("tool.registered", name=name, version=version)
         return registered
@@ -94,7 +96,9 @@ class ToolRegistry:
         """
 
         def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
-            self.register(fn, name=name, description=description, parameters=parameters, version=version)
+            self.register(
+                fn, name=name, description=description, parameters=parameters, version=version
+            )
             return fn
 
         return decorator

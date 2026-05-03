@@ -106,7 +106,9 @@ class MCPClient:
         if "error" in data:
             error_msg: str = data["error"].get("message", "MCP error")
             logger.warning("mcp.invoke.rpc_error", tool=name, error=error_msg)
-            return ToolResult(tool_call_id="", output=None, error=error_msg, duration_ms=duration_ms)
+            return ToolResult(
+                tool_call_id="", output=None, error=error_msg, duration_ms=duration_ms
+            )
 
         content: list[dict[str, Any]] = data.get("result", {}).get("content", [])
         output = "".join(item.get("text", "") for item in content if item.get("type") == "text")

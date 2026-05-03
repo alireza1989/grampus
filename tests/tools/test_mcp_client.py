@@ -127,9 +127,7 @@ class TestListTools:
 
 class TestInvoke:
     async def test_returns_tool_result_with_output(self) -> None:
-        client = _make_client(
-            _call_response([{"type": "text", "text": "42"}])
-        )
+        client = _make_client(_call_response([{"type": "text", "text": "42"}]))
         result = await client.invoke("add", {"a": 1, "b": 2})
         assert isinstance(result, ToolResult)
         assert result.output == "42"
@@ -137,9 +135,7 @@ class TestInvoke:
 
     async def test_joins_multiple_content_items(self) -> None:
         client = _make_client(
-            _call_response(
-                [{"type": "text", "text": "Hello"}, {"type": "text", "text": " World"}]
-            )
+            _call_response([{"type": "text", "text": "Hello"}, {"type": "text", "text": " World"}])
         )
         result = await client.invoke("greet", {})
         assert result.output == "Hello World"

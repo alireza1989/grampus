@@ -105,9 +105,7 @@ class TestGet:
 
 
 class TestGetOrRaise:
-    def test_get_or_raise_raises_tool_not_found_for_unknown(
-        self, registry: ToolRegistry
-    ) -> None:
+    def test_get_or_raise_raises_tool_not_found_for_unknown(self, registry: ToolRegistry) -> None:
         with pytest.raises(ToolNotFoundError):
             registry.get_or_raise("unknown")
 
@@ -138,9 +136,7 @@ class TestListAll:
 
 
 class TestToDefinitions:
-    def test_to_definitions_returns_list_of_tool_definitions(
-        self, registry: ToolRegistry
-    ) -> None:
+    def test_to_definitions_returns_list_of_tool_definitions(self, registry: ToolRegistry) -> None:
         _add_greet(registry)
         defs = registry.to_definitions()
         assert all(isinstance(d, ToolDefinition) for d in defs)
@@ -150,9 +146,7 @@ class TestToDefinitions:
         registry.register(lambda: None, name="ping", description="ping")
         assert len(registry.to_definitions()) == 2
 
-    def test_to_definitions_produces_valid_function_schema(
-        self, registry: ToolRegistry
-    ) -> None:
+    def test_to_definitions_produces_valid_function_schema(self, registry: ToolRegistry) -> None:
         _add_greet(registry)
         defs = registry.to_definitions()
         schema = defs[0].to_function_schema()
