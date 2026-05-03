@@ -1,5 +1,6 @@
 """Orchestration layer: graph engine, model router, cost tracker, agent loop, and crews."""
 
+from nexus.orchestration.cost_tracker import CostEvent, CostSummary, CostTracker
 from nexus.orchestration.graph import (
     EdgeCondition,
     Graph,
@@ -8,6 +9,7 @@ from nexus.orchestration.graph import (
     GraphNode,
     NodeHandler,
 )
+from nexus.orchestration.model_router import ModelRouter, ModelSpec, ModelTier, RoutingRule
 from nexus.orchestration.nodes import (
     conditional_node,
     human_node,
@@ -17,12 +19,19 @@ from nexus.orchestration.nodes import (
 )
 
 __all__ = [
+    "CostEvent",
+    "CostSummary",
+    "CostTracker",
     "EdgeCondition",
     "Graph",
     "GraphCheckpoint",
     "GraphEdge",
     "GraphNode",
+    "ModelRouter",
+    "ModelSpec",
+    "ModelTier",
     "NodeHandler",
+    "RoutingRule",
     "conditional_node",
     "human_node",
     "llm_node",
