@@ -30,6 +30,7 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.29",
     "dapr>=1.17",
     "dapr-ext-grpc>=1.17",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
