@@ -86,9 +86,7 @@ class SandboxManager:
                 logger.warning("sandbox.docker_unavailable", reason=str(exc))
         return _LocalSandbox(self._config)
 
-    async def execute(
-        self, code: str, *, namespace: dict[str, Any] | None = None
-    ) -> SandboxResult:
+    async def execute(self, code: str, *, namespace: dict[str, Any] | None = None) -> SandboxResult:
         """Execute *code* in the sandbox and return the result.
 
         Args:
@@ -121,9 +119,7 @@ class _LocalSandbox:
     def __init__(self, config: SandboxConfig) -> None:
         self._config = config
 
-    async def execute(
-        self, code: str, *, namespace: dict[str, Any] | None = None
-    ) -> SandboxResult:
+    async def execute(self, code: str, *, namespace: dict[str, Any] | None = None) -> SandboxResult:
         """Execute *code* as a subprocess with timeout enforcement."""
         start = time.monotonic()
         proc: asyncio.subprocess.Process | None = None
@@ -185,9 +181,7 @@ class _DockerSandbox:
         self._config = config
         self._client = _docker_module.from_env()
 
-    async def execute(
-        self, code: str, *, namespace: dict[str, Any] | None = None
-    ) -> SandboxResult:
+    async def execute(self, code: str, *, namespace: dict[str, Any] | None = None) -> SandboxResult:
         """Execute *code* in a fresh Docker container."""
         start = time.monotonic()
         try:

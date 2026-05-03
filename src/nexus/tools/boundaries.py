@@ -152,10 +152,7 @@ class ActionGuard:
             )
             return GuardResult(
                 allowed=False,
-                reason=(
-                    f"Rate limit of {self._config.max_calls_per_minute} "
-                    "calls/minute exceeded"
-                ),
+                reason=(f"Rate limit of {self._config.max_calls_per_minute} calls/minute exceeded"),
             )
         return GuardResult(allowed=True)
 

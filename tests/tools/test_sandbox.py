@@ -102,7 +102,7 @@ async def test_sandbox_timeout_raises_tool_timeout_error() -> None:
 async def test_sandbox_duration_ms_is_positive() -> None:
     mod = _import_sandbox_without_docker()
     manager = mod.SandboxManager()
-    result = await manager.execute('x = 1 + 1')
+    result = await manager.execute("x = 1 + 1")
     assert result.duration_ms > 0
     await manager.close()
 
@@ -209,6 +209,6 @@ async def test_code_executor_tools_called_empty_when_no_match() -> None:
     manager = SandboxManager()
     executor = CodeExecutor(sandbox=manager, tool_registry=registry)
 
-    result = await executor.execute('x = 1 + 1')
+    result = await executor.execute("x = 1 + 1")
     assert result.tools_called == []
     await manager.close()

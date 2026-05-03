@@ -98,9 +98,7 @@ class CodeExecutor:
 
     def _build_namespace(self, extra: dict[str, Any] | None) -> dict[str, Any]:
         """Build the namespace dict from the registry plus any extra values."""
-        namespace: dict[str, Any] = {
-            tool.name: tool.fn for tool in self._registry.list_all()
-        }
+        namespace: dict[str, Any] = {tool.name: tool.fn for tool in self._registry.list_all()}
         if extra:
             namespace.update(extra)
         return namespace
