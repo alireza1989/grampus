@@ -286,6 +286,6 @@ class TestEpisodicRetrieverRetrieve:
         records = [make_record("fact", age_days=1.0, importance=0.5, embedding=[1.0, 0.0])]
         mock_episodic.list_all.return_value = records
         mock_embeddings.embed.return_value = [1.0, 0.0]
-        results = asyncio.get_event_loop().run_until_complete(r.retrieve("q"))
+        results = asyncio.run(r.retrieve("q"))
         for res in results:
             assert -1e-9 <= res.score <= 1.0 + 1e-9
