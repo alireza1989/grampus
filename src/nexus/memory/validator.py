@@ -18,6 +18,9 @@ _INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"you are now", re.IGNORECASE),
     re.compile(r"disregard", re.IGNORECASE),
     re.compile(r"override.*instructions", re.IGNORECASE),
+    re.compile(r"act\s+as\s+(if\s+you\s+(are|were)|a\s+)", re.IGNORECASE),
+    re.compile(r"(no\s+restrictions|without\s+restrictions|unrestricted\s+ai)", re.IGNORECASE),
+    re.compile(r"pretend\s+(you\s+are|to\s+be)", re.IGNORECASE),
 ]
 
 

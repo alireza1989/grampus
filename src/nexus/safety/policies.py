@@ -93,6 +93,60 @@ class PolicyLoader:
         )
 
 
+def load_safety_policy(path: str) -> NexusSafetyPolicy:
+    """Convenience wrapper: load a YAML policy and return NexusSafetyPolicy.
+
+    Accepts both the full NexusSafetyPolicy field names AND the shorthand
+    structure used in quickstart YAML files::
+
+        injection:
+          level: strict
+        pii:
+          action: redact
+        action_guard:
+          denied_tools: [rm]
+          max_tool_calls_per_turn: 5
+
+    Args:
+        path: Filesystem path to the YAML policy file.
+
+    Returns:
+        Validated NexusSafetyPolicy.
+    """
+    from pathlib import Path
+
+    import yaml
+
+    raw: dict[str, object] = yaml.safe_load(Path(path).read_text()) or {}
+
+    # Translate shorthand structure → NexusSafetyPolicy field names
+    normalised: dict[str, object] = {}
+
+    if "injection" in raw:
+        inj = raw["injection"]
+        if isinstance(inj, dict) and "level" in inj:
+            normalised["injection_detection_level"] = inj["level"]
+
+    if "pii" in raw:
+        pii = raw["pii"]
+        if isinstance(pii, dict) and "action" in pii:
+            normalised["pii_actions"] = {t: pii["action"] for t in PIIType}
+
+    if "action_guard" in raw:
+        raw_ag = raw["action_guard"]
+        if isinstance(raw_ag, dict):
+            ag: dict[str, object] = dict(raw_ag)
+            ag.setdefault("agent_id", "default")
+            normalised["agent_policies"] = [ag]
+
+    # Allow full NexusSafetyPolicy fields to pass through as-is
+    for key in ("injection_detection_level", "pii_actions", "agent_policies", "pipeline_config"):
+        if key in raw and key not in normalised:
+            normalised[key] = raw[key]
+
+    return NexusSafetyPolicy.model_validate(normalised)
+
+
 def _build_pii_detector(pii_actions: dict[str, str]) -> PIIDetector:
     """Convert string-keyed pii_actions dict to PIIDetector."""
     actions: dict[PIIType, PIIAction] = {}

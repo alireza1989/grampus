@@ -68,8 +68,10 @@ class NexusTracer:
         service_name: str = "nexus-agent",
         otlp_endpoint: str | None = None,
         agent_id: str = "unknown",
+        session_id: str | None = None,
     ) -> None:
         self._agent_id = agent_id
+        self._session_id = session_id
         self._service_name = service_name
         self._tracer = self._build_tracer(service_name, otlp_endpoint)
 
@@ -97,6 +99,47 @@ class NexusTracer:
 
     def _base_attrs(self) -> dict[str, Any]:
         return {"agent_id": self._agent_id}
+
+    @contextlib.contextmanager
+    def agent_run_span(self, **extra_attrs: Any) -> Generator[Span, None, None]:
+        """Convenience wrapper around agent_run using the instance's session_id.
+
+        Yields:
+            The active OTEL Span.
+        """
+        sid = self._session_id or "unknown"
+        with self.agent_run(session_id=sid, **extra_attrs) as span:
+            yield span
+
+    def record_llm_call(
+        self,
+        span: Span,
+        *,
+        model: str,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        cost_usd: float = 0.0,
+        latency_ms: float = 0.0,
+        **extra_attrs: Any,
+    ) -> None:
+        """Record LLM call attributes on an existing span.
+
+        Args:
+            span: The span to annotate.
+            model: Model identifier string.
+            input_tokens: Number of prompt tokens consumed.
+            output_tokens: Number of completion tokens produced.
+            cost_usd: Estimated cost in USD.
+            latency_ms: Call latency in milliseconds.
+            **extra_attrs: Additional span attributes.
+        """
+        span.set_attribute("model", model)
+        span.set_attribute("input_tokens", input_tokens)
+        span.set_attribute("output_tokens", output_tokens)
+        span.set_attribute("cost_usd", cost_usd)
+        span.set_attribute("latency_ms", latency_ms)
+        for k, v in extra_attrs.items():
+            span.set_attribute(k, v)
 
     @contextlib.contextmanager
     def agent_run(self, *, session_id: str, **extra_attrs: Any) -> Generator[Span, None, None]:

@@ -35,11 +35,36 @@ class ActionCheckResult(BaseModel):
 class SafetyActionGuard:
     """Orchestration-level action guard enforcing policy rules.
 
+    Can be constructed either with an ``ActionPolicy`` object or with inline
+    keyword arguments (``allowed_tools``, ``denied_tools``,
+    ``max_tool_calls_per_turn``) for quick one-off usage.
+
     Args:
-        policy: The ActionPolicy for this agent.
+        policy: Full ActionPolicy for this agent.  When provided, all keyword
+            arguments are ignored.
+        allowed_tools: Optional allowlist — when set only listed tools are
+            permitted.
+        denied_tools: Explicit denylist of tool names.
+        max_tool_calls_per_turn: Hard cap on tool calls per agent turn.
     """
 
-    def __init__(self, policy: ActionPolicy) -> None:
+    def __init__(
+        self,
+        policy: ActionPolicy | None = None,
+        *,
+        allowed_tools: list[str] | None = None,
+        denied_tools: list[str] | None = None,
+        max_tool_calls_per_turn: int = 20,
+        max_consecutive_calls: int = 5,
+    ) -> None:
+        if policy is None:
+            policy = ActionPolicy(
+                agent_id="default",
+                allowed_tools=allowed_tools,
+                denied_tools=denied_tools or [],
+                max_tool_calls_per_turn=max_tool_calls_per_turn,
+                max_consecutive_tool_calls=max_consecutive_calls,
+            )
         self._policy = policy
 
     def check_tool_call(

@@ -81,7 +81,9 @@ class SandboxManager:
     def _build_backend(self) -> _DockerSandbox | _LocalSandbox:
         if _docker_available:
             try:
-                return _DockerSandbox(self._config)
+                backend = _DockerSandbox(self._config)
+                backend._client.ping()  # raises if daemon is unreachable
+                return backend
             except Exception as exc:
                 logger.warning("sandbox.docker_unavailable", reason=str(exc))
         return _LocalSandbox(self._config)

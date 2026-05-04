@@ -45,7 +45,14 @@ _INJECTION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "memory_poison",
     ),
-    (re.compile(r"remember\s+that\s+(you|your)", re.IGNORECASE), "memory_poison"),
+    (re.compile(r"remember\s+that\s+(you|your|from)", re.IGNORECASE), "memory_poison"),
+    (
+        re.compile(
+            r"from\s+now\s+on\s+.{0,60}(must|should|will|always|never|say|do|be)\b",
+            re.IGNORECASE,
+        ),
+        "memory_poison",
+    ),
 ]
 
 _ROLE_MARKER_RE = re.compile(r"\b(system|user|assistant)\s*:", re.IGNORECASE)

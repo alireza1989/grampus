@@ -157,7 +157,7 @@ class Graph:
         while current is not None:
             if steps >= self._max_steps:
                 raise OrchestrationError(
-                    f"Execution exceeded {self._max_steps} steps",
+                    f"Execution exceeded {self._max_steps} steps (MAX_STEPS_EXCEEDED)",
                     code="MAX_STEPS_EXCEEDED",
                 )
             if current not in self._nodes:

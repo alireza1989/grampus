@@ -115,6 +115,10 @@ def conditional_node(
     return handler
 
 
+HumanNode = human_node
+"""Alias for human_node factory — class-style import convenience."""
+
+
 def subgraph_node(subgraph: Any) -> NodeHandler:
     """Return a handler that executes a nested Graph as a single node.
 

@@ -37,16 +37,16 @@ class Summarizer:
     def __init__(
         self,
         model_client: ModelClient,
-        model_name: str,
-        strategy: SummarizationStrategy,
-        token_counter: TokenCounter,
+        model_name: str = "gpt-4o",
+        strategy: SummarizationStrategy = SummarizationStrategy.TRUNCATE,
+        token_counter: TokenCounter | None = None,
         *,
         keep_last_n: int = 10,
     ) -> None:
         self._client = model_client
         self._model = model_name
         self._strategy = strategy
-        self._counter = token_counter
+        self._counter = token_counter if token_counter is not None else TokenCounter(model_name)
         self._keep_last_n = keep_last_n
 
     async def summarize(self, messages: list[Message], max_tokens: int) -> list[Message]:

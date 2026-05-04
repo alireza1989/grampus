@@ -140,7 +140,7 @@ class AgentRunner:
             )
 
             if response.tool_calls:
-                results = await self._execute_tool_calls(response.tool_calls)
+                results = await self._execute_tool_calls(response.tool_calls, state)
                 tool_calls_made += len(results)
                 state.messages.append(Message(role=Role.TOOL, tool_results=results))
                 if state.status == AgentStatus.WAITING_FOR_HUMAN:
@@ -152,7 +152,7 @@ class AgentRunner:
 
         if hit_limit:
             raise OrchestrationError(
-                f"Max iterations ({self._config.max_iterations}) exceeded without final answer",
+                f"Max iterations ({self._config.max_iterations}) exceeded without final answer (MAX_ITERATIONS_EXCEEDED)",
                 code="MAX_ITERATIONS_EXCEEDED",
             )
 
@@ -243,11 +243,25 @@ class AgentRunner:
         if context:
             state.messages.append(Message(role=Role.SYSTEM, content=context))
 
-    async def _execute_tool_calls(self, tool_calls: list[ToolCall]) -> list[ToolResult]:
+    async def _execute_tool_calls(
+        self, tool_calls: list[ToolCall], state: AgentState | None = None
+    ) -> list[ToolResult]:
         results = []
         for tc in tool_calls:
-            result = await self._tool_executor.execute(tc)
-            results.append(result)
+            if tc.name == "human_input":
+                if state is not None:
+                    state.status = AgentStatus.WAITING_FOR_HUMAN
+                results.append(
+                    ToolResult(
+                        tool_call_id=tc.id,
+                        output="Paused: waiting for human input.",
+                        error=None,
+                        duration_ms=0,
+                    )
+                )
+            else:
+                result = await self._tool_executor.execute(tc)
+                results.append(result)
         return results
 
     async def _store_memory(
@@ -327,7 +341,9 @@ def _extract_final_output(messages: list[Message]) -> str | None:
 def _format_recall(result: MemoryRecallResult) -> str:
     parts: list[str] = []
     for rec in result.episodic:
-        text = getattr(rec, "content", None)
+        # RetrievedRecord wraps EpisodicRecord under .record
+        inner = getattr(rec, "record", rec)
+        text = getattr(inner, "content", None)
         if text:
             parts.append(str(text))
     for fact in result.semantic:

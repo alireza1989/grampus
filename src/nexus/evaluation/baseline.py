@@ -69,39 +69,85 @@ class QualityBaseline:
     """Records eval runs and detects regressions against a pinned baseline.
 
     Args:
+        suite_name: Name of the eval suite this baseline tracks.
         regression_threshold: Pass-rate drop that triggers a regression flag.
             e.g. 0.05 = flag if pass_rate drops by more than 5 percentage points.
     """
 
-    def __init__(self, *, regression_threshold: float = 0.05) -> None:
+    def __init__(
+        self,
+        *,
+        suite_name: str = "default",
+        regression_threshold: float = 0.05,
+    ) -> None:
+        self._suite_name = suite_name
         self._threshold = regression_threshold
         self._runs: list[BaselineRun] = []
         self._pinned_id: str | None = None
 
     def record(
-        self, suite_result: SuiteResult, *, prompt_version: str | None = None
+        self,
+        suite_result: SuiteResult | None = None,
+        *,
+        pass_rate: float | None = None,
+        avg_cost: float = 0.0,
+        avg_duration: float = 0.0,
+        prompt_version: str | None = None,
     ) -> BaselineRun:
         """Record a suite run.
 
+        Accepts either a full ``SuiteResult`` object or scalar keyword args
+        (``pass_rate``, ``avg_cost``, ``avg_duration``) for lightweight usage.
+
         Args:
-            suite_result: The completed SuiteResult to record.
+            suite_result: The completed SuiteResult to record (full API).
+            pass_rate: Fraction of cases that passed (simplified API).
+            avg_cost: Average cost per case in USD (simplified API).
+            avg_duration: Average case duration in seconds (simplified API).
             prompt_version: Optional prompt version label.
 
         Returns:
             The stored BaselineRun.
         """
-        case_pass_rates = {cr.case_id: cr.passed for cr in suite_result.case_results}
-        run = BaselineRun(
-            suite_name=suite_result.suite_name,
-            pass_rate=suite_result.pass_rate,
-            avg_duration_seconds=suite_result.avg_duration_seconds,
-            total_cost_usd=suite_result.total_cost_usd,
-            case_pass_rates=case_pass_rates,
-            prompt_version=prompt_version,
-        )
+        if suite_result is not None:
+            case_pass_rates = {cr.case_id: cr.passed for cr in suite_result.case_results}
+            run = BaselineRun(
+                suite_name=suite_result.suite_name,
+                pass_rate=suite_result.pass_rate,
+                avg_duration_seconds=suite_result.avg_duration_seconds,
+                total_cost_usd=suite_result.total_cost_usd,
+                case_pass_rates=case_pass_rates,
+                prompt_version=prompt_version,
+            )
+        else:
+            run = BaselineRun(
+                suite_name=self._suite_name,
+                pass_rate=pass_rate if pass_rate is not None else 0.0,
+                avg_duration_seconds=avg_duration,
+                total_cost_usd=avg_cost,
+                case_pass_rates={},
+                prompt_version=prompt_version,
+            )
         self._runs.append(run)
         logger.info("baseline_run_recorded", run_id=run.id, pass_rate=run.pass_rate)
         return run
+
+    def check_regression(self, pass_rate: float, threshold: float | None = None) -> bool:
+        """Return True if *pass_rate* is below the pinned (or latest) baseline.
+
+        Args:
+            pass_rate: The pass rate of the current run to compare.
+            threshold: Override the instance-level threshold for this call.
+
+        Returns:
+            True when the pass rate has dropped by more than *threshold*.
+        """
+        if not self._runs:
+            return False
+        baseline = self.pinned() or self._runs[-1]
+        delta = pass_rate - baseline.pass_rate
+        effective = threshold if threshold is not None else self._threshold
+        return delta < -effective
 
     def pin(self, run_id: str) -> None:
         """Pin a specific run as the baseline for future comparisons.

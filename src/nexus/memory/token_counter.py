@@ -30,7 +30,7 @@ class TokenCounter:
             Unrecognised models fall back to ``ceil(chars / 4)`` estimation.
     """
 
-    def __init__(self, model: str) -> None:
+    def __init__(self, model: str = "gpt-4o") -> None:
         self._model = model
         encoding_name = _resolve_encoding(model)
         self.encoding_name = encoding_name
