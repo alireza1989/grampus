@@ -1,0 +1,95 @@
+site_name: Nexus — Agentic AI Framework
+site_description: Production-grade agentic AI framework built on Dapr
+site_url: https://nexus-ai.dev
+repo_url: https://github.com/your-org/nexus-agentic-platform
+repo_name: nexus-agentic-platform
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quickstart: getting-started/quickstart.md
+    - Concepts: getting-started/concepts.md
+  - Guides:
+    - Single Agent: guides/single-agent.md
+    - Multi-Agent Crew: guides/multi-agent-crew.md
+    - Memory: guides/memory.md
+    - Tools: guides/tools.md
+    - Safety: guides/safety.md
+    - Evaluation: guides/evaluation.md
+    - Observability: guides/observability.md
+    - Deployment: guides/deployment.md
+  - Reference:
+    - Configuration: reference/config.md
+    - CLI: reference/cli.md
+    - Memory API: reference/memory-api.md
+    - Orchestration API: reference/orchestration-api.md
+    - Tools API: reference/tools-api.md
+    - Safety API: reference/safety-api.md
+    - Evaluation API: reference/evaluation-api.md
+    - Observability API: reference/observability-api.md
+    - Errors: reference/errors.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Decisions (ADRs): architecture/decisions.md
+    - Security Model: architecture/security.md

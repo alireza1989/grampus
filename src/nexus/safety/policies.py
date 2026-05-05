@@ -26,11 +26,7 @@ class NexusSafetyPolicy(BaseModel):
 
 
 class PolicyLoader:
-    """Loads NexusSafetyPolicy from a YAML file or dict.
-
-    Args:
-        path: Path to YAML file. If None, returns default policy.
-    """
+    """Loads NexusSafetyPolicy from a YAML file or dict."""
 
     @staticmethod
     def load(path: str | None = None) -> NexusSafetyPolicy:

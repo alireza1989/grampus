@@ -1,0 +1,158 @@
+# Concepts
+
+This page explains the mental models behind Nexus. Understanding these concepts will help you design agents that are reliable, safe, and observable.
+
+---
+
+## The 4 memory types
+
+Agents need to remember things at different timescales. Nexus provides four purpose-built memory stores:
+
+```mermaid
+graph LR
+    WM["Working Memory\n(current conversation\ntokens, auto-summarized)"]
+    EM["Episodic Memory\n(cross-session events\nwhat happened, when)"]
+    SM["Semantic Memory\n(SPO facts\nwhat is true)"]
+    PM["Procedural Memory\n(learned workflows\nhow to do things)"]
+
+    WM -->|"consolidation pipeline"| EM
+    EM -->|"fact extraction"| SM
+    SM -->|"pattern recognition"| PM
+```
+
+| Memory type | Timescale | Stores | Example |
+|------------|-----------|--------|---------|
+| **Working** | Current session | Recent messages, token-limited | Last 20 turns of conversation |
+| **Episodic** | Cross-session | Events with timestamps, embeddings | "On 2025-01-15, user asked about pricing" |
+| **Semantic** | Persistent | Subject-Predicate-Object facts | `user → prefers → dark mode` |
+| **Procedural** | Persistent | Learned workflows with trigger conditions | Steps to file a support ticket |
+
+The `MemoryManager` provides a unified interface to all four types. You rarely interact with individual stores directly.
+
+---
+
+## The ReAct loop
+
+Every agent run is a loop of **Observe → Think → Act** until the agent produces a final answer or reaches the iteration limit:
+
+```mermaid
+flowchart TD
+    Input["User input"] --> Recall["Recall relevant memories"]
+    Recall --> LLM["LLM: think + decide"]
+    LLM -->|"tool call"| Tool["Execute tool"]
+    Tool --> Check["Safety check result"]
+    Check --> Store["Store to memory"]
+    Store --> LLM
+    LLM -->|"final answer"| Output["Return ExecutionResult"]
+    LLM -->|"max iterations"| Err["OrchestrationError"]
+```
+
+Each iteration:
+
+1. Build context from working memory and recalled episodic/semantic memories
+2. Call the LLM with the full message history
+3. If the LLM requests a tool call: validate, safety-check, execute, safety-check result
+4. Append tool result to message history and loop
+5. If the LLM returns a final text response: store to memory, return `ExecutionResult`
+
+`AgentRunner` implements this loop. The `max_iterations` guard in `RunnerConfig` prevents infinite loops.
+
+---
+
+## The graph engine
+
+For complex workflows, use the `Graph` engine instead of (or alongside) `AgentRunner`. Nodes are async callables; edges define transitions:
+
+```mermaid
+graph LR
+    A["LLMNode\n(classify intent)"] -->|"search"| B["ToolNode\n(web_search)"]
+    A -->|"answer"| C["LLMNode\n(draft reply)"]
+    B --> C
+    C --> D["HumanNode\n(review gate)"]
+    D -->|"approved"| E["End"]
+    D -->|"revise"| C
+```
+
+Key properties:
+
+- **Checkpointing**: state is saved to Dapr after each node, so a crashed agent can resume
+- **Parallel branches**: independent branches run concurrently
+- **Conditional edges**: functions that inspect state determine the next node
+
+---
+
+## The safety layer
+
+Every piece of text that flows through an agent — user input, tool results, LLM outputs, memory writes — passes through the `SafetyPipeline`:
+
+```mermaid
+flowchart LR
+    Input --> InjectionCheck["Injection\ndetection"]
+    InjectionCheck -->|"clean"| PIICheck["PII\ndetection"]
+    PIICheck -->|"redacted"| ActionGuard["Action\nguard"]
+    ActionGuard -->|"allowed"| Agent["Agent"]
+    InjectionCheck -->|"injection!"| Block1["SafetyError\n(blocked)"]
+    ActionGuard -->|"denied"| Block2["SafetyError\n(blocked)"]
+```
+
+The pipeline is configured via YAML policies — no code changes needed to tighten or relax safety rules.
+
+!!! warning "Safety is not optional"
+    The injection detector runs on **tool results** specifically, because tool output is the most common vector for prompt injection attacks. See [Security Model](../architecture/security.md) for the threat model.
+
+---
+
+## Dapr as infrastructure
+
+Nexus never writes to databases or message brokers directly. All persistence and messaging goes through the Dapr sidecar:
+
+```mermaid
+graph LR
+    Agent["Nexus Agent"] -->|"HTTP :3500"| Dapr["Dapr Sidecar"]
+    Dapr -->|"statestore-postgres"| PG["PostgreSQL + pgvector"]
+    Dapr -->|"cache"| Redis["Redis"]
+    Dapr -->|"pubsub-redis"| Events["Event bus"]
+    Dapr -->|"OTEL"| Jaeger["Jaeger / Collector"]
+```
+
+This means:
+
+- **Swap any component** without changing agent code — switch Redis to Kafka for pub/sub by editing a YAML file
+- **mTLS between services** is handled by Dapr automatically
+- **Distributed workflows** with checkpointing work out of the box
+
+---
+
+## Provenance
+
+Every memory write carries a `Provenance` record:
+
+```python
+Provenance(
+    source_type=SourceType.TOOL_RESULT,   # where did this come from?
+    source_id="web_search:call_abc123",    # which specific invocation?
+    trust_level=0.6,                       # how trusted is this source?
+    timestamp=datetime.now(UTC),
+    content_hash_sha256="sha256:...",      # tamper detection
+)
+```
+
+Trust levels by source:
+
+| Source type | Default trust |
+|------------|--------------|
+| `SYSTEM` | 1.0 |
+| `USER_INPUT` | 0.9 |
+| `LLM_GENERATED` | 0.7 |
+| `TOOL_RESULT` | 0.6 |
+| `EXTERNAL_DATA` | 0.3 |
+
+The memory auditor periodically verifies content hashes. Tampered entries are flagged. This is the primary defense against memory poisoning attacks (MINJA, MemoryGraft).
+
+---
+
+## Next steps
+
+- **[Single-agent guide →](../guides/single-agent.md)** — Put all these concepts together
+- **[Memory guide →](../guides/memory.md)** — Deep dive into all four memory types
+- **[Architecture overview →](../architecture/overview.md)** — Full 9-layer diagram and narrative

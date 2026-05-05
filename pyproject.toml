@@ -52,6 +52,9 @@ dev = [
     "ruff>=0.15",
     "mypy>=1.20",
     "mkdocs-material>=9.7",
+    "mkdocstrings[python]>=0.26",
+    "anthropic>=0.97",
+    "openai>=2.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -93,6 +96,10 @@ testpaths = ["tests"]
 addopts = ["-ra", "--tb=short"]
 markers = [
     "integration: marks tests requiring external services (docker, dapr, postgres, redis)",
+    "dapr: marks tests requiring a live Dapr sidecar (set DAPR_HTTP_PORT)",
+    "e2e: marks full end-to-end scenario tests",
+    "benchmark: marks performance overhead tests",
+    "slow: marks tests that take > 5 seconds",
 ]
 
 # ---------------------------------------------------------------------------
