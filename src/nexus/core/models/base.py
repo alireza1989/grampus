@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from nexus.core.types import Message, TokenUsage, ToolCall, ToolDefinition
+from nexus.core.types import Message, StreamChunk, TokenUsage, ToolCall, ToolDefinition
 
 
 class ModelResponse(BaseModel):
@@ -47,5 +47,9 @@ class ModelClient(ABC):
         temperature: float = 0.0,
         max_tokens: int = 4096,
         **kwargs: Any,
-    ) -> AsyncIterator[str]:
-        """Stream a completion, yielding text chunks."""
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream a completion, yielding StreamChunk as tokens arrive.
+
+        The final chunk has is_final=True and token_usage populated.
+        Raises ModelError on API errors.
+        """

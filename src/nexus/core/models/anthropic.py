@@ -7,7 +7,7 @@ from typing import Any
 
 from nexus.core.errors import ModelError
 from nexus.core.models.base import ModelClient, ModelResponse
-from nexus.core.types import Message, Role, TokenUsage, ToolCall, ToolDefinition
+from nexus.core.types import Message, Role, StreamChunk, TokenUsage, ToolCall, ToolDefinition
 
 # Per-model pricing in USD per 1M tokens (input, output)
 _PRICING: dict[str, tuple[float, float]] = {
@@ -158,7 +158,12 @@ class AnthropicClient(ModelClient):
         temperature: float = 0.0,
         max_tokens: int = 4096,
         **kwargs: Any,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream tokens from the Anthropic Messages API.
+
+        Uses messages.stream() context manager. Final chunk has is_final=True
+        and token_usage populated. Tool calls appear as finish_reason="tool_use".
+        """
         system = next((m.content for m in messages if m.role == Role.SYSTEM and m.content), None)
         anthropic_messages = _to_anthropic_messages(messages)
         call_kwargs: dict[str, Any] = {
@@ -169,18 +174,29 @@ class AnthropicClient(ModelClient):
         }
         if system:
             call_kwargs["system"] = system
+        if tools:
+            call_kwargs["tools"] = _to_anthropic_tools(tools)
 
         try:
-            async with self._sdk.messages.stream(**call_kwargs) as stream:
-                async for event in stream:
-                    if (
-                        hasattr(event, "type")
-                        and event.type == "content_block_delta"
-                        and hasattr(event, "delta")
-                        and hasattr(event.delta, "type")
-                        and event.delta.type == "text_delta"
-                    ):
-                        yield event.delta.text
+            async with self._sdk.messages.stream(**call_kwargs) as stream_ctx:
+                async for text in stream_ctx.text_stream:
+                    yield StreamChunk(delta=text, model=model)
+                final = await stream_ctx.get_final_message()
+                in_t = final.usage.input_tokens
+                out_t = final.usage.output_tokens
+                yield StreamChunk(
+                    delta="",
+                    finish_reason=final.stop_reason,
+                    token_usage=TokenUsage(
+                        input_tokens=in_t,
+                        output_tokens=out_t,
+                        total_tokens=in_t + out_t,
+                        cost_usd=_cost(model, in_t, out_t),
+                        model=model,
+                    ),
+                    model=model,
+                    is_final=True,
+                )
         except Exception as exc:
             raise ModelError(
                 f"Anthropic stream error: {exc}",

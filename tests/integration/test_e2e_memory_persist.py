@@ -25,9 +25,7 @@ class TestMemoryPersistenceE2E:
         agent_id = "persist-agent"
 
         em_session_a = EpisodicMemory(fake_state_store, emb, agent_id=agent_id)
-        record = await em_session_a.store(
-            "User prefers dark mode.", session_id="session-a"
-        )
+        record = await em_session_a.store("User prefers dark mode.", session_id="session-a")
 
         em_session_b = EpisodicMemory(fake_state_store, emb, agent_id=agent_id)
         fetched = await em_session_b.get(record.id)
@@ -53,7 +51,14 @@ class TestMemoryPersistenceE2E:
         mock_llm._responses = [
             __import__("nexus.core.models.base", fromlist=["ModelResponse"]).ModelResponse(
                 content=json.dumps(
-                    [{"subject": "Alice", "predicate": "likes", "object_value": "Python", "confidence": 0.9}]
+                    [
+                        {
+                            "subject": "Alice",
+                            "predicate": "likes",
+                            "object_value": "Python",
+                            "confidence": 0.9,
+                        }
+                    ]
                 ),
                 tool_calls=[],
                 token_usage=__import__("nexus.core.types", fromlist=["TokenUsage"]).TokenUsage(

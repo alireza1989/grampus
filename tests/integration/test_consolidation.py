@@ -42,7 +42,14 @@ class TestConsolidationIntegration:
         await episodic.store("Alice likes Python.", session_id="s1")
 
         llm = _llm_returning_facts(
-            [{"subject": "Alice", "predicate": "likes", "object_value": "Python", "confidence": 0.9}]
+            [
+                {
+                    "subject": "Alice",
+                    "predicate": "likes",
+                    "object_value": "Python",
+                    "confidence": 0.9,
+                }
+            ]
         )
         pipeline = ConsolidationPipeline(episodic, semantic, llm, agent_id="con-agent")
         result = await pipeline.run()
@@ -112,8 +119,18 @@ class TestConsolidationIntegration:
 
         llm = _llm_returning_facts(
             [
-                {"subject": "Carol", "predicate": "uses", "object_value": "TypeScript", "confidence": 0.85},
-                {"subject": "Carol", "predicate": "language", "object_value": "TypeScript", "confidence": 0.7},
+                {
+                    "subject": "Carol",
+                    "predicate": "uses",
+                    "object_value": "TypeScript",
+                    "confidence": 0.85,
+                },
+                {
+                    "subject": "Carol",
+                    "predicate": "language",
+                    "object_value": "TypeScript",
+                    "confidence": 0.7,
+                },
             ]
         )
         pipeline = ConsolidationPipeline(episodic, semantic, llm, agent_id="store-agent")

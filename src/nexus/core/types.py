@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Role(StrEnum):
@@ -155,3 +155,45 @@ class ExecutionResult(BaseModel):
     duration_seconds: float
     steps_taken: int
     status: AgentStatus
+
+
+class StreamChunk(BaseModel):
+    """A single chunk of a streaming LLM response.
+
+    The final chunk always has is_final=True and token_usage populated.
+    Intermediate chunks carry delta text with other fields as defaults.
+    """
+
+    delta: str = ""
+    finish_reason: str | None = None
+    token_usage: TokenUsage | None = None
+    model: str = ""
+    is_final: bool = False
+
+
+class StreamEventType(StrEnum):
+    """Type discriminator for StreamEvent."""
+
+    TOKEN = "token"
+    TOOL_CALL_START = "tool_call_start"
+    TOOL_CALL_END = "tool_call_end"
+    AGENT_START = "agent_start"
+    AGENT_END = "agent_end"
+    ITERATION_START = "iteration_start"
+    ERROR = "error"
+
+
+class StreamEvent(BaseModel):
+    """Structured event yielded by AgentRunner.stream().
+
+    Consumers filter on event_type to handle tokens, tool calls, and
+    lifecycle events separately.
+    """
+
+    event_type: StreamEventType
+    chunk: StreamChunk | None = None
+    tool_call: ToolCall | None = None
+    tool_result: ToolResult | None = None
+    message: str = ""
+    iteration: int = 0
+    model_config = ConfigDict(use_enum_values=True)

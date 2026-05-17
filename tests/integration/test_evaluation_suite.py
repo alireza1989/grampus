@@ -49,10 +49,12 @@ class TestEvalSuiteIntegration:
     async def test_suite_runs_all_cases_against_mock_runner(self) -> None:
         runner = _make_runner("I know Python.")
         suite = EvalSuite("test-suite", agent_runner=runner, agent_def=_agent_def())
-        suite.add_cases([
-            EvalCase(name="case1", input="Do you know Python?"),
-            EvalCase(name="case2", input="What about Go?"),
-        ])
+        suite.add_cases(
+            [
+                EvalCase(name="case1", input="Do you know Python?"),
+                EvalCase(name="case2", input="What about Go?"),
+            ]
+        )
         result = await suite.run()
         assert result.total_cases == 2
 

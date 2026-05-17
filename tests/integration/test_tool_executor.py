@@ -90,7 +90,9 @@ class TestToolExecutorIntegration:
                 raise RuntimeError("transient error")
             return "success"
 
-        executor = ToolExecutor(registry, timeout_seconds=5.0, max_retries=2, retry_delay_seconds=0.0)
+        executor = ToolExecutor(
+            registry, timeout_seconds=5.0, max_retries=2, retry_delay_seconds=0.0
+        )
         tc = ToolCall(id="tc-flaky", name="flaky", arguments={})
         result = await executor.execute(tc)
         assert result.output == "success"

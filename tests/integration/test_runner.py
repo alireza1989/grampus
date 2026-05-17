@@ -32,9 +32,7 @@ def _agent_def(
 
 @pytest.mark.integration
 class TestAgentRunnerIntegration:
-    async def test_single_shot_run_returns_execution_result(
-        self, agent_runner: object
-    ) -> None:
+    async def test_single_shot_run_returns_execution_result(self, agent_runner: object) -> None:
         from nexus.orchestration.runner import AgentRunner
 
         runner: AgentRunner = agent_runner  # type: ignore[assignment]
@@ -45,9 +43,7 @@ class TestAgentRunnerIntegration:
         assert result.status == AgentStatus.COMPLETED
         assert result.steps_taken >= 1
 
-    async def test_react_loop_with_tool_calls(
-        self, mock_tool_registry: object
-    ) -> None:
+    async def test_react_loop_with_tool_calls(self, mock_tool_registry: object) -> None:
         from nexus.orchestration.runner import AgentRunner, RunnerConfig
         from nexus.tools.executor import ToolExecutor
 
@@ -100,9 +96,7 @@ class TestAgentRunnerIntegration:
         assert summary is not None
         assert summary.total_cost_usd == pytest.approx(0.005)
 
-    async def test_budget_exceeded_stops_execution(
-        self, mock_tool_registry: object
-    ) -> None:
+    async def test_budget_exceeded_stops_execution(self, mock_tool_registry: object) -> None:
         from nexus.orchestration.cost_tracker import CostTracker
         from nexus.orchestration.runner import AgentRunner, RunnerConfig
         from nexus.tools.executor import ToolExecutor
@@ -217,12 +211,16 @@ class TestAgentRunnerIntegration:
         )
         ep_retriever = EpisodicRetriever(episodic, emb)
         sem_retriever = SemanticRetriever(semantic, emb)
-        consolidation = ConsolidationPipeline(
-            episodic, semantic, client, agent_id="mem-runner"
-        )
+        consolidation = ConsolidationPipeline(episodic, semantic, client, agent_id="mem-runner")
         mm = MemoryManager(
-            working, episodic, semantic, procedural, ep_retriever, sem_retriever,
-            consolidation, agent_id="mem-runner"
+            working,
+            episodic,
+            semantic,
+            procedural,
+            ep_retriever,
+            sem_retriever,
+            consolidation,
+            agent_id="mem-runner",
         )
 
         await episodic.store("User prefers dark mode.", session_id="ms1")
@@ -242,7 +240,5 @@ class TestAgentRunnerIntegration:
         )
 
         first_call_messages = client.calls[0]
-        all_content = " ".join(
-            m.content for m in first_call_messages if m.content
-        )
+        all_content = " ".join(m.content for m in first_call_messages if m.content)
         assert "dark mode" in all_content

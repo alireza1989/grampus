@@ -37,9 +37,7 @@ class TestCheckpointRestoreE2E:
 
         async def node_c(state: AgentState) -> AgentState:
             node_c_calls[0] += 1
-            return state.model_copy(
-                update={"metadata": {**state.metadata, "c_done": True}}
-            )
+            return state.model_copy(update={"metadata": {**state.metadata, "c_done": True}})
 
         graph_id = "ckpt-graph"
 
@@ -75,9 +73,7 @@ class TestCheckpointRestoreE2E:
         result = await g.restore_and_execute("fresh-graph")
         assert result is None
 
-    async def test_human_node_pause_and_resume(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_human_node_pause_and_resume(self, fake_state_store: FakeStateStore) -> None:
         from nexus.core.types import AgentDefinition, ToolCall
         from nexus.orchestration.runner import AgentRunner, RunnerConfig
         from nexus.tools.executor import ToolExecutor
@@ -114,7 +110,6 @@ class TestCheckpointRestoreE2E:
             memory_enabled=False,
             cost_budget_usd=None,
         )
-
 
         first_result = await runner.run(
             agent_def, "Do something requiring human input.", session_id=session_id

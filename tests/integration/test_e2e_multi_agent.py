@@ -41,9 +41,7 @@ def _make_crew_member(name: str, response: str) -> CrewMember:
 @pytest.mark.integration
 class TestMultiAgentCrewE2E:
     async def test_sequential_crew_chains_outputs(self) -> None:
-        researcher = _make_crew_member(
-            "researcher", "Summary: Python is great for async work."
-        )
+        researcher = _make_crew_member("researcher", "Summary: Python is great for async work.")
         critic = _make_crew_member("critic", "Gap: missing mention of GIL.")
         writer = _make_crew_member("writer", "Final: Python async works around the GIL.")
 
@@ -60,10 +58,7 @@ class TestMultiAgentCrewE2E:
         assert result.pattern == CrewPattern.SEQUENTIAL
 
     async def test_parallel_crew_all_agents_run(self) -> None:
-        members = [
-            _make_crew_member(f"worker{i}", f"Worker {i} output.")
-            for i in range(3)
-        ]
+        members = [_make_crew_member(f"worker{i}", f"Worker {i} output.") for i in range(3)]
         crew = Crew(
             members,
             pattern=CrewPattern.PARALLEL,

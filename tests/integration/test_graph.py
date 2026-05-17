@@ -39,9 +39,7 @@ class TestGraphIntegration:
         assert final.metadata.get("a") is True
         assert final.metadata.get("b") is True
 
-    async def test_checkpoint_saved_after_each_node(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_checkpoint_saved_after_each_node(self, fake_state_store: FakeStateStore) -> None:
         from nexus.orchestration.graph import Graph, GraphCheckpoint
 
         async def node_a(state: AgentState) -> AgentState:
@@ -129,9 +127,7 @@ class TestGraphIntegration:
         await g.execute(_initial_state())
         assert reached == ["path_b"]
 
-    async def test_parallel_nodes_both_execute(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_parallel_nodes_both_execute(self, fake_state_store: FakeStateStore) -> None:
         from nexus.orchestration.graph import Graph
 
         executed: set[str] = set()
@@ -158,9 +154,7 @@ class TestGraphIntegration:
         assert "X" in executed
         assert "Y" in executed
 
-    async def test_max_steps_exceeded_raises_error(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_max_steps_exceeded_raises_error(self, fake_state_store: FakeStateStore) -> None:
         from nexus.orchestration.graph import Graph
 
         async def loop_node(state: AgentState) -> AgentState:

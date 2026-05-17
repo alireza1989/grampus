@@ -1,5 +1,6 @@
 """Tests for nexus.core.models — base ABC and provider clients."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -184,27 +185,21 @@ class TestAnthropicClient:
             async def __aexit__(self, *args: object) -> None:
                 pass
 
-            def __aiter__(self) -> "FakeAnthropicStream":
-                self._events = iter(
-                    [
-                        MagicMock(
-                            type="content_block_delta",
-                            delta=MagicMock(type="text_delta", text="chunk1"),
-                        ),
-                        MagicMock(
-                            type="content_block_delta",
-                            delta=MagicMock(type="text_delta", text="chunk2"),
-                        ),
-                        MagicMock(type="message_stop"),
-                    ]
-                )
-                return self
+            @property
+            def text_stream(self) -> Any:
+                async def _gen() -> Any:
+                    yield "chunk1"
+                    yield "chunk2"
 
-            async def __anext__(self) -> MagicMock:
-                try:
-                    return next(self._events)
-                except StopIteration as exc:
-                    raise StopAsyncIteration from exc
+                return _gen()
+
+            async def get_final_message(self) -> MagicMock:
+                msg = MagicMock()
+                msg.stop_reason = "end_turn"
+                msg.usage = MagicMock()
+                msg.usage.input_tokens = 10
+                msg.usage.output_tokens = 5
+                return msg
 
         mock_sdk.messages = MagicMock()
         mock_sdk.messages.stream = MagicMock(return_value=FakeAnthropicStream())
@@ -346,21 +341,46 @@ class TestOpenAIClient:
     async def test_stream_yields_chunks(self) -> None:
         mock_sdk = MagicMock()
 
-        async def fake_chunks() -> None:
-            chunk1 = MagicMock()
-            chunk1.choices = [
-                MagicMock(delta=MagicMock(content="hello", tool_calls=None), finish_reason=None)
-            ]
-            yield chunk1
-            chunk2 = MagicMock()
-            chunk2.choices = [
-                MagicMock(delta=MagicMock(content=" world", tool_calls=None), finish_reason="stop")
-            ]
-            yield chunk2
+        class FakeOpenAIStream:
+            def __init__(self) -> None:
+                self._iter: Any = None
+
+            async def __aenter__(self) -> "FakeOpenAIStream":
+                return self
+
+            async def __aexit__(self, *args: object) -> None:
+                pass
+
+            def __aiter__(self) -> "FakeOpenAIStream":
+                async def _gen() -> Any:
+                    for text in ["hello", " world"]:
+                        chunk = MagicMock()
+                        choice = MagicMock()
+                        choice.delta = MagicMock()
+                        choice.delta.content = text
+                        chunk.choices = [choice]
+                        yield chunk
+
+                self._iter = _gen().__aiter__()
+                return self
+
+            async def __anext__(self) -> MagicMock:
+                return await self._iter.__anext__()
+
+            async def get_final_completion(self) -> MagicMock:
+                completion = MagicMock()
+                choice = MagicMock()
+                choice.finish_reason = "stop"
+                completion.choices = [choice]
+                completion.usage = MagicMock()
+                completion.usage.prompt_tokens = 10
+                completion.usage.completion_tokens = 5
+                completion.usage.total_tokens = 15
+                return completion
 
         mock_sdk.chat = MagicMock()
         mock_sdk.chat.completions = MagicMock()
-        mock_sdk.chat.completions.create = AsyncMock(return_value=fake_chunks())
+        mock_sdk.chat.completions.stream = MagicMock(return_value=FakeOpenAIStream())
         client = OpenAIClient(api_key="sk-test", _client=mock_sdk)
         chunks = []
         async for chunk in client.stream(

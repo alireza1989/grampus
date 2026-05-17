@@ -1,0 +1,40 @@
+injection_detection_level: balanced
+
+pii_actions:
+  email: redact
+  phone: redact
+  ssn: block
+  credit_card: block
+  ip_address: log
+
+pipeline_config:
+  check_user_input: true
+  check_tool_results: true
+  check_llm_output: true
+  check_memory_writes: true
+  log_violations: true
+
+agent_policies:
+  - agent_id: "deep-research-supervisor"
+    denied_tools: []
+    max_tool_calls_per_turn: 20
+    max_consecutive_tool_calls: 8
+    require_human_approval_for: []
+
+  - agent_id: "researcher"
+    denied_tools: []
+    max_tool_calls_per_turn: 15
+    max_consecutive_tool_calls: 6
+    require_human_approval_for: []
+
+  - agent_id: "fact-checker"
+    denied_tools: ["save_report"]
+    max_tool_calls_per_turn: 10
+    max_consecutive_tool_calls: 5
+    require_human_approval_for: []
+
+  - agent_id: "writer"
+    denied_tools: ["web_search", "fetch_page"]
+    max_tool_calls_per_turn: 5
+    max_consecutive_tool_calls: 4
+    require_human_approval_for: []

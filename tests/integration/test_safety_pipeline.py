@@ -12,9 +12,7 @@ from nexus.safety.pipeline import SafetyPipeline
 @pytest.mark.integration
 class TestSafetyPipelineIntegration:
     async def test_clean_input_passes_all_checks(self, safety_pipeline: SafetyPipeline) -> None:
-        text, violations = await safety_pipeline.check_input(
-            "What is the capital of France?"
-        )
+        text, violations = await safety_pipeline.check_input("What is the capital of France?")
         assert text == "What is the capital of France?"
         assert violations == []
 
@@ -80,9 +78,7 @@ class TestSafetyPipelineIntegration:
         with pytest.raises(SafetyError):
             await pipeline.check_tool_call(tc, calls_this_turn=5, consecutive_calls=5)
 
-    async def test_policy_loaded_from_yaml_configures_pipeline(
-        self, tmp_path: object
-    ) -> None:
+    async def test_policy_loaded_from_yaml_configures_pipeline(self, tmp_path: object) -> None:
         import pathlib
 
         import yaml

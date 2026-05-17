@@ -87,9 +87,7 @@ class TestSemanticMemoryIntegration:
         all_facts = await sm.list_all()
         assert all_facts[0].object_value == "existing-high"
 
-    async def test_source_episode_ids_merged_on_dedup(
-        self, semantic_memory: object
-    ) -> None:
+    async def test_source_episode_ids_merged_on_dedup(self, semantic_memory: object) -> None:
         from nexus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
@@ -106,9 +104,7 @@ class TestSemanticMemoryIntegration:
         assert ep1 in merged_ids
         assert ep2 in merged_ids
 
-    async def test_find_by_subject_returns_correct_facts(
-        self, semantic_memory: object
-    ) -> None:
+    async def test_find_by_subject_returns_correct_facts(self, semantic_memory: object) -> None:
         from nexus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
@@ -129,9 +125,7 @@ class TestSemanticMemoryIntegration:
         assert len(alice_facts) == 2
         assert all(f.subject == "Alice" for f in alice_facts)
 
-    async def test_find_by_predicate_returns_correct_facts(
-        self, semantic_memory: object
-    ) -> None:
+    async def test_find_by_predicate_returns_correct_facts(self, semantic_memory: object) -> None:
         from nexus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]

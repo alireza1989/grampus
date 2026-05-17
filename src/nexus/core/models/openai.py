@@ -8,7 +8,7 @@ from typing import Any
 
 from nexus.core.errors import ModelError
 from nexus.core.models.base import ModelClient, ModelResponse
-from nexus.core.types import Message, Role, TokenUsage, ToolCall, ToolDefinition
+from nexus.core.types import Message, Role, StreamChunk, TokenUsage, ToolCall, ToolDefinition
 
 # Per-model pricing in USD per 1M tokens (input, output)
 _PRICING: dict[str, tuple[float, float]] = {
@@ -143,21 +143,45 @@ class OpenAIClient(ModelClient):
         temperature: float = 0.0,
         max_tokens: int = 4096,
         **kwargs: Any,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream tokens from the OpenAI Chat Completions API.
+
+        Uses chat.completions.stream() context manager. Final chunk has
+        is_final=True and token_usage from get_final_completion().
+        """
         oai_messages = _to_openai_messages(messages)
         call_kwargs: dict[str, Any] = {
             "model": model,
             "messages": oai_messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "stream": True,
         }
+        if tools:
+            call_kwargs["tools"] = _to_openai_tools(tools)
 
         try:
-            stream = await self._sdk.chat.completions.create(**call_kwargs)
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+            async with self._sdk.chat.completions.stream(**call_kwargs) as stream_ctx:
+                async for chunk in stream_ctx:
+                    choice = chunk.choices[0] if chunk.choices else None
+                    if choice and choice.delta.content:
+                        yield StreamChunk(delta=choice.delta.content, model=model)
+                final = await stream_ctx.get_final_completion()
+                choice = final.choices[0]
+                in_t = final.usage.prompt_tokens
+                out_t = final.usage.completion_tokens
+                yield StreamChunk(
+                    delta="",
+                    finish_reason=choice.finish_reason,
+                    token_usage=TokenUsage(
+                        input_tokens=in_t,
+                        output_tokens=out_t,
+                        total_tokens=final.usage.total_tokens,
+                        cost_usd=_cost(model, in_t, out_t),
+                        model=model,
+                    ),
+                    model=model,
+                    is_final=True,
+                )
         except Exception as exc:
             raise ModelError(
                 f"OpenAI stream error: {exc}",

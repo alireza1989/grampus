@@ -58,7 +58,9 @@ class TestSingleAgentE2E:
             name="search",
             description="Search the web",
             parameters=[
-                ToolParameter(name="query", type="string", description="Search query", required=True)
+                ToolParameter(
+                    name="query", type="string", description="Search query", required=True
+                )
             ],
         )
         async def search(query: str) -> str:
@@ -81,8 +83,14 @@ class TestSingleAgentE2E:
         sem_retriever = SemanticRetriever(semantic, emb)
         consolidation = ConsolidationPipeline(episodic, semantic, client, agent_id=agent_id)
         mm = MemoryManager(
-            working, episodic, semantic, procedural, ep_retriever, sem_retriever,
-            consolidation, agent_id=agent_id
+            working,
+            episodic,
+            semantic,
+            procedural,
+            ep_retriever,
+            sem_retriever,
+            consolidation,
+            agent_id=agent_id,
         )
 
         EventLog(agent_id=agent_id, session_id=session_id, state_store=store)
@@ -110,9 +118,7 @@ class TestSingleAgentE2E:
         ep_records = await episodic.list_all()
         assert len(ep_records) >= 1
 
-    async def test_agent_respects_cost_budget(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_agent_respects_cost_budget(self, fake_state_store: FakeStateStore) -> None:
         from nexus.orchestration.cost_tracker import CostTracker
         from nexus.orchestration.runner import AgentRunner, RunnerConfig
         from nexus.tools.executor import ToolExecutor
@@ -136,9 +142,7 @@ class TestSingleAgentE2E:
         async def echo(text: str) -> str:
             return text
 
-        cost_tracker = CostTracker(
-            agent_id="budget-e2e", session_id="bs1", budget_usd=0.0009
-        )
+        cost_tracker = CostTracker(agent_id="budget-e2e", session_id="bs1", budget_usd=0.0009)
         executor = ToolExecutor(registry, timeout_seconds=5.0)
         runner = AgentRunner(
             client,
@@ -154,9 +158,7 @@ class TestSingleAgentE2E:
                 session_id="bs1",
             )
 
-    async def test_agent_memory_context_prepended(
-        self, fake_state_store: FakeStateStore
-    ) -> None:
+    async def test_agent_memory_context_prepended(self, fake_state_store: FakeStateStore) -> None:
         from nexus.memory.consolidation import ConsolidationPipeline
         from nexus.memory.episodic import EpisodicMemory
         from nexus.memory.manager import MemoryManager
@@ -188,8 +190,14 @@ class TestSingleAgentE2E:
         sem_retriever = SemanticRetriever(semantic, emb)
         consolidation = ConsolidationPipeline(episodic, semantic, client, agent_id=agent_id)
         mm = MemoryManager(
-            working, episodic, semantic, procedural, ep_retriever, sem_retriever,
-            consolidation, agent_id=agent_id
+            working,
+            episodic,
+            semantic,
+            procedural,
+            ep_retriever,
+            sem_retriever,
+            consolidation,
+            agent_id=agent_id,
         )
 
         await episodic.store("User prefers Python.", session_id=session_id)
@@ -208,9 +216,7 @@ class TestSingleAgentE2E:
             session_id=session_id,
         )
 
-        all_content = " ".join(
-            m.content for m in client.calls[0] if m.content
-        )
+        all_content = " ".join(m.content for m in client.calls[0] if m.content)
         assert "Python" in all_content
 
     async def test_agent_safety_blocks_injection_in_tool_result(

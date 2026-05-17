@@ -36,9 +36,7 @@ class TestBudgetEnforcementE2E:
                 cost_usd=0.0005,
             )
 
-        cost_tracker = CostTracker(
-            agent_id="budget-stop", session_id="bstop", budget_usd=0.001
-        )
+        cost_tracker = CostTracker(agent_id="budget-stop", session_id="bstop", budget_usd=0.001)
         executor = ToolExecutor(registry, timeout_seconds=5.0)
         runner = AgentRunner(
             client,
@@ -66,9 +64,7 @@ class TestBudgetEnforcementE2E:
 
     async def test_preflight_budget_check_before_llm_call(self) -> None:
 
-        cost_tracker = CostTracker(
-            agent_id="preflight-agent", session_id="pf1", budget_usd=0.50
-        )
+        cost_tracker = CostTracker(agent_id="preflight-agent", session_id="pf1", budget_usd=0.50)
         spec = ModelSpec(
             model_id="mock",
             tier=ModelTier.BALANCED,
@@ -86,9 +82,7 @@ class TestBudgetEnforcementE2E:
             cost_tracker.check_budget(estimated_cost_usd=0.20)
 
     async def test_budget_not_exceeded_within_limit(self) -> None:
-        cost_tracker = CostTracker(
-            agent_id="within-budget", session_id="wb1", budget_usd=1.0
-        )
+        cost_tracker = CostTracker(agent_id="within-budget", session_id="wb1", budget_usd=1.0)
         spec = ModelSpec(
             model_id="mock",
             tier=ModelTier.BALANCED,

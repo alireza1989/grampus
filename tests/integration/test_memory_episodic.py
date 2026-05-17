@@ -39,9 +39,7 @@ class TestEpisodicMemoryIntegration:
         assert fetched is not None
         assert fetched.content == "User prefers dark mode."
 
-    async def test_update_metadata_marks_consolidated(
-        self, episodic_memory: object
-    ) -> None:
+    async def test_update_metadata_marks_consolidated(self, episodic_memory: object) -> None:
         from nexus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
@@ -72,9 +70,7 @@ class TestEpisodicMemoryIntegration:
         remaining = await em.list_all()
         assert all(r.id != record.id for r in remaining)
 
-    async def test_importance_score_reflects_word_count(
-        self, episodic_memory: object
-    ) -> None:
+    async def test_importance_score_reflects_word_count(self, episodic_memory: object) -> None:
         from nexus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
@@ -94,9 +90,7 @@ class TestEpisodicMemoryIntegration:
         assert record.embedding is not None
         assert len(record.embedding) > 0
 
-    async def test_access_count_increments_on_update_access(
-        self, episodic_memory: object
-    ) -> None:
+    async def test_access_count_increments_on_update_access(self, episodic_memory: object) -> None:
         from nexus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]

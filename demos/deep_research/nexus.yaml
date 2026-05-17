@@ -1,0 +1,19 @@
+agent:
+  name: "deep-research-supervisor"
+  model: "claude-sonnet-4-6"
+  system_prompt: "You are a research orchestration supervisor."
+  max_iterations: 15
+  memory_enabled: true
+  cost_budget_usd: 2.0
+
+dapr:
+  app_id: "deep-research"
+  app_port: 8001
+
+memory:
+  working_window_tokens: 6000
+  episodic_enabled: true
+  semantic_enabled: true
+
+safety:
+  policy_file: "config/safety_policy.yaml"
