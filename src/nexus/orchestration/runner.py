@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -17,6 +18,9 @@ from nexus.core.types import (
     ExecutionResult,
     Message,
     Role,
+    StreamChunk,
+    StreamEvent,
+    StreamEventType,
     TokenUsage,
     ToolCall,
     ToolResult,
@@ -184,6 +188,143 @@ class AgentRunner:
             duration_seconds=duration,
             steps_taken=steps,
             status=state.status,
+        )
+
+    async def stream(
+        self,
+        agent_def: AgentDefinition,
+        user_input: str,
+        *,
+        session_id: str,
+        context: dict[str, Any] | None = None,
+    ) -> AsyncIterator[StreamEvent]:
+        """Stream agent execution as discrete structured events.
+
+        Yields AGENT_START, then per iteration: ITERATION_START, TOKEN*,
+        TOOL_CALL_START/END pairs, then AGENT_END with accumulated token usage.
+        When the iteration limit is reached the loop stops and AGENT_END is
+        still emitted so callers always receive a terminal event.
+
+        Args:
+            agent_def: Blueprint describing model, tools, and behaviour config.
+            user_input: The user's message or task.
+            session_id: Unique identifier for this session.
+            context: Reserved for future use.
+
+        Yields:
+            StreamEvent — lifecycle, token, and tool-call events.
+        """
+        start = time.monotonic()
+        state = self._build_state(agent_def, session_id)
+        state.status = AgentStatus.RUNNING
+
+        if self._config.enable_memory and self._memory_manager:
+            await self._recall_context(user_input, state)
+
+        state.messages.append(Message(role=Role.USER, content=user_input))
+
+        accumulated = _zero_usage(agent_def.model)
+        tool_calls_made = 0
+        steps = 0
+        hit_limit = True
+
+        yield StreamEvent(event_type=StreamEventType.AGENT_START, message=agent_def.name)
+
+        for i in range(self._config.max_iterations):
+            steps = i + 1
+            yield StreamEvent(event_type=StreamEventType.ITERATION_START, iteration=steps)
+
+            full_text = ""
+            finish_reason: str | None = None
+            chunk_usage: TokenUsage | None = None
+
+            async for chunk in self._model_client.stream(
+                messages=state.messages,
+                model=agent_def.model,
+                temperature=agent_def.temperature,
+            ):
+                if chunk.delta:
+                    yield StreamEvent(event_type=StreamEventType.TOKEN, chunk=chunk)
+                    full_text += chunk.delta
+                if chunk.is_final:
+                    finish_reason = chunk.finish_reason
+                    chunk_usage = chunk.token_usage
+
+            tool_calls: list[ToolCall] = []
+            if finish_reason == "tool_use":
+                response = await self._model_client.complete(
+                    messages=state.messages,
+                    model=agent_def.model,
+                    temperature=agent_def.temperature,
+                )
+                tool_calls = response.tool_calls
+                if chunk_usage is None:
+                    chunk_usage = response.token_usage
+
+            if chunk_usage:
+                accumulated = _add_usage(accumulated, chunk_usage)
+
+            if self._cost_tracker and chunk_usage:
+                await self._cost_tracker.record(
+                    chunk_usage,
+                    step_name=f"step_{steps}",
+                    model_spec=_minimal_spec(chunk_usage.model),
+                )
+
+            state.messages.append(
+                Message(
+                    role=Role.ASSISTANT,
+                    content=full_text or None,
+                    tool_calls=tool_calls,
+                )
+            )
+
+            if tool_calls:
+                for tc in tool_calls:
+                    yield StreamEvent(event_type=StreamEventType.TOOL_CALL_START, tool_call=tc)
+
+                results = await self._execute_tool_calls(tool_calls, state)
+                tool_calls_made += len(results)
+                state.messages.append(Message(role=Role.TOOL, tool_results=results))
+
+                for tc, result in zip(tool_calls, results, strict=False):
+                    yield StreamEvent(
+                        event_type=StreamEventType.TOOL_CALL_END,
+                        tool_call=tc,
+                        tool_result=result,
+                    )
+
+                if state.status == AgentStatus.WAITING_FOR_HUMAN:
+                    hit_limit = False
+                    break
+            else:
+                hit_limit = False
+                break
+
+        final_output = _extract_final_output(state.messages)
+
+        if self._config.enable_memory and self._memory_manager:
+            await self._store_memory(user_input, final_output, session_id)
+
+        if state.status == AgentStatus.RUNNING:
+            state.status = AgentStatus.COMPLETED if not hit_limit else AgentStatus.FAILED
+        state.updated_at = datetime.now(UTC)
+        state.metadata["agent_def"] = agent_def.model_dump()
+
+        await self._persist_state(agent_def, session_id, state)
+
+        _log.debug(
+            "agent_stream_complete",
+            agent=agent_def.name,
+            steps=steps,
+            tool_calls=tool_calls_made,
+            duration=time.monotonic() - start,
+            hit_limit=hit_limit,
+        )
+
+        yield StreamEvent(
+            event_type=StreamEventType.AGENT_END,
+            chunk=StreamChunk(is_final=True, token_usage=accumulated),
         )
 
     async def resume(

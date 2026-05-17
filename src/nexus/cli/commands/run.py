@@ -12,7 +12,7 @@ import click
 from nexus.cli.commands._utils import load_config, load_module, require_function
 from nexus.core.errors import ConfigError
 from nexus.core.logging import get_logger
-from nexus.core.types import AgentDefinition, ExecutionResult
+from nexus.core.types import AgentDefinition, ExecutionResult, StreamEventType
 
 _log = get_logger(__name__)
 
@@ -33,11 +33,18 @@ _log = get_logger(__name__)
     default=None,
     help="Input text for a single-shot run. Omit to enter interactive REPL.",
 )
+@click.option(
+    "--stream/--no-stream",
+    default=False,
+    show_default=True,
+    help="Stream output token-by-token instead of waiting for full response.",
+)
 def run(
     agent_file: str,
     config_path: str,
     session_id: str | None,
     input_text: str | None,
+    stream: bool,
 ) -> None:
     """Run a Nexus agent defined in AGENT_FILE."""
     try:
@@ -57,7 +64,10 @@ def run(
     sid = session_id or f"nexus-{uuid.uuid4().hex[:8]}"
 
     if input_text is not None:
-        _run_once(runner, agent_def, input_text, sid)
+        if stream:
+            _run_once_streaming(runner, agent_def, input_text, sid)
+        else:
+            _run_once(runner, agent_def, input_text, sid)
     else:
         _run_repl(runner, agent_def, sid)
 
@@ -164,3 +174,55 @@ def _print_result(result: ExecutionResult) -> None:
         f"(in={usage.input_tokens:,} out={usage.output_tokens:,})  "
         f"cost: ${usage.cost_usd:.4f}"
     )
+
+
+def _run_once_streaming(
+    runner: Any, agent_def: AgentDefinition, input_text: str, session_id: str
+) -> None:
+    """Execute one agent turn in streaming mode, printing events as they arrive.
+
+    Args:
+        runner: AgentRunner to invoke.
+        agent_def: Agent definition.
+        input_text: User input for this turn.
+        session_id: Session identifier.
+    """
+    asyncio.run(_stream_async(runner, agent_def, input_text, session_id))
+
+
+async def _stream_async(
+    runner: Any, agent_def: AgentDefinition, input_text: str, session_id: str
+) -> None:
+    use_color = sys.stdout.isatty()
+
+    async for event in runner.stream(agent_def, input_text, session_id=session_id):
+        if event.event_type == StreamEventType.TOKEN:
+            if event.chunk and event.chunk.delta:
+                click.echo(event.chunk.delta, nl=False)
+                sys.stdout.flush()
+
+        elif event.event_type == StreamEventType.TOOL_CALL_START:
+            if event.tool_call:
+                args_summary = str(event.tool_call.arguments)[:60]
+                label = f"\n[→ {event.tool_call.name}({args_summary})]\n"
+                click.echo(click.style(label, dim=True) if use_color else label, nl=False)
+
+        elif event.event_type == StreamEventType.TOOL_CALL_END:
+            if event.tool_call and event.tool_result:
+                result_preview = str(event.tool_result.output or "")[:60]
+                label = f"[← {event.tool_call.name}: {result_preview}]\n"
+                click.echo(click.style(label, dim=True) if use_color else label, nl=False)
+
+        elif event.event_type == StreamEventType.AGENT_END:
+            click.echo()
+            if event.chunk and event.chunk.token_usage:
+                usage = event.chunk.token_usage
+                click.echo(
+                    f"\n  tokens: {usage.total_tokens:,}  "
+                    f"(in={usage.input_tokens:,} out={usage.output_tokens:,})  "
+                    f"cost: ${usage.cost_usd:.4f}"
+                )
+
+        elif event.event_type == StreamEventType.ERROR:
+            click.echo(f"\nError: {event.message}", err=True)
+            sys.exit(1)
