@@ -1,5 +1,6 @@
 """Tools layer: registry, MCP client, executor, sandbox, action guard, and library."""
 
+from nexus.tools.adapters import from_langchain, register_langchain_tools
 from nexus.tools.boundaries import ActionGuard, BoundaryConfig, GuardResult
 from nexus.tools.executor import ToolExecutionRecord, ToolExecutor
 from nexus.tools.library import LIBRARY_REGISTRY, get_library_registry, get_tool_names
@@ -28,6 +29,8 @@ __all__ = [
     "ToolExecutionRecord",
     "ToolExecutor",
     "ToolRegistry",
+    "from_langchain",
     "get_library_registry",
     "get_tool_names",
+    "register_langchain_tools",
 ]
