@@ -46,7 +46,16 @@ Changelog = "https://github.com/nexus-ai/nexus-agentic-platform/blob/main/CHANGE
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.97"]
 openai = ["openai>=2.0"]
-all = ["anthropic>=0.97", "openai>=2.0"]
+phoenix = ["arize-phoenix-otel>=0.6"]
+sql = ["sqlalchemy>=2.0", "aiosqlite>=0.19", "greenlet>=3.0"]
+all = [
+    "anthropic>=0.97",
+    "openai>=2.0",
+    "arize-phoenix-otel>=0.6",
+    "sqlalchemy>=2.0",
+    "aiosqlite>=0.19",
+    "greenlet>=3.0",
+]
 llm = ["anthropic>=0.97", "openai>=2.0"]
 
 [project.scripts]

@@ -69,19 +69,34 @@ class NexusTracer:
         otlp_endpoint: str | None = None,
         agent_id: str = "unknown",
         session_id: str | None = None,
+        extra_resource_attrs: dict[str, str] | None = None,
     ) -> None:
         self._agent_id = agent_id
         self._session_id = session_id
         self._service_name = service_name
-        self._tracer = self._build_tracer(service_name, otlp_endpoint)
+        self._extra_resource_attrs = extra_resource_attrs
+        self._tracer = self._build_tracer(service_name, otlp_endpoint, extra_resource_attrs)
 
-    def _build_tracer(self, service_name: str, otlp_endpoint: str | None) -> trace.Tracer:
+    def _build_tracer(
+        self,
+        service_name: str,
+        otlp_endpoint: str | None,
+        extra_resource_attrs: dict[str, str] | None = None,
+    ) -> trace.Tracer:
         if otlp_endpoint is None:
             trace.set_tracer_provider(trace.NoOpTracerProvider())
             return trace.get_tracer(service_name)
-        return self._build_otlp_tracer(service_name, otlp_endpoint)
+        return self._build_otlp_tracer(
+            service_name, otlp_endpoint, extra_resource_attrs=extra_resource_attrs
+        )
 
-    def _build_otlp_tracer(self, service_name: str, endpoint: str) -> trace.Tracer:
+    def _build_otlp_tracer(
+        self,
+        service_name: str,
+        endpoint: str,
+        *,
+        extra_resource_attrs: dict[str, str] | None = None,
+    ) -> trace.Tracer:
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -90,7 +105,10 @@ class NexusTracer:
             logger.warning("otlp_exporter_unavailable", endpoint=endpoint)
             return trace.get_tracer(service_name)
 
-        resource = Resource.create({"service.name": service_name})
+        resource_attrs: dict[str, str] = {"service.name": service_name}
+        if extra_resource_attrs:
+            resource_attrs.update(extra_resource_attrs)
+        resource = Resource.create(resource_attrs)
         provider = TracerProvider(resource=resource)
         exporter = OTLPSpanExporter(endpoint=endpoint)
         provider.add_span_processor(BatchSpanProcessor(exporter))
