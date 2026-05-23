@@ -49,6 +49,7 @@ openai = ["openai>=2.0"]
 phoenix = ["arize-phoenix-otel>=0.6"]
 sql = ["sqlalchemy>=2.0", "aiosqlite>=0.19", "greenlet>=3.0"]
 langchain = ["langchain-core>=0.2"]
+server = ["fastapi>=0.115", "uvicorn[standard]>=0.32"]
 all = [
     "anthropic>=0.97",
     "openai>=2.0",
@@ -57,6 +58,8 @@ all = [
     "aiosqlite>=0.19",
     "greenlet>=3.0",
     "langchain-core>=0.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
 ]
 llm = ["anthropic>=0.97", "openai>=2.0"]
 
@@ -76,6 +79,8 @@ dev = [
     "mkdocstrings[python]>=0.26",
     "anthropic>=0.97",
     "openai>=2.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
 ]
 
 [tool.hatch.build.targets.wheel]
