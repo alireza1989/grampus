@@ -9,6 +9,16 @@ from nexus.server.models import (
     RunResponse,
     StreamChunkResponse,
 )
+from nexus.server.openai_compat import (
+    OAIChatChunk,
+    OAIChatRequest,
+    OAIChatResponse,
+    OAIMessage,
+    OAIModelList,
+    OAIModelObject,
+    OAIUsage,
+    create_openai_router,
+)
 
 __all__ = [
     "create_app",
@@ -18,4 +28,12 @@ __all__ = [
     "RunRequest",
     "RunResponse",
     "StreamChunkResponse",
+    "OAIChatChunk",
+    "OAIChatRequest",
+    "OAIChatResponse",
+    "OAIMessage",
+    "OAIModelList",
+    "OAIModelObject",
+    "OAIUsage",
+    "create_openai_router",
 ]

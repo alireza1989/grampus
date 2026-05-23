@@ -7,6 +7,7 @@ from typing import Any
 
 try:
     from fastapi import FastAPI, Request
+    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
 
     _HAS_FASTAPI = True
@@ -48,9 +49,18 @@ def create_app(
             "FastAPI is not installed. Install server deps: pip install nexus-ai[server]"
         )
 
+    from nexus.server.openai_compat import create_openai_router
     from nexus.server.routes import create_router
 
     app = FastAPI(title="Nexus Agent API", version=_pkg_version())
+
+    # CORS is intentionally open — this is a local/self-hosted server, not a public API.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.state.runner = runner
     app.state.agent_def = agent_def
@@ -71,4 +81,5 @@ def create_app(
         )
 
     app.include_router(create_router(memory_manager is not None))
+    app.include_router(create_openai_router(), prefix="/v1")
     return app
