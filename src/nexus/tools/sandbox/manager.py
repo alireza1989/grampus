@@ -145,6 +145,7 @@ class _LocalSandbox:
                     f"Sandbox execution exceeded {self._config.execution_timeout_seconds}s",
                     code="tool.timeout",
                     details={"timeout_seconds": self._config.execution_timeout_seconds},
+                    hint="Increase sandbox_timeout_seconds in SandboxConfig or split the workload into smaller operations.",
                 ) from exc
 
             duration_ms = (time.monotonic() - start) * 1000

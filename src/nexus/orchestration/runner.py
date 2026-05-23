@@ -158,6 +158,7 @@ class AgentRunner:
             raise OrchestrationError(
                 f"Max iterations ({self._config.max_iterations}) exceeded without final answer (MAX_ITERATIONS_EXCEEDED)",
                 code="MAX_ITERATIONS_EXCEEDED",
+                hint="Increase max_iterations in AgentDefinition or simplify the task to require fewer tool calls.",
             )
 
         final_output = _extract_final_output(state.messages)
@@ -352,6 +353,7 @@ class AgentRunner:
             raise OrchestrationError(
                 f"Agent '{agent_id}' is not waiting for human input (status={state.status})",
                 code="AGENT_NOT_WAITING",
+                hint="Only call resume() when the agent's status is WAITING_FOR_HUMAN.",
             )
         agent_def = self._reconstruct_agent_def(agent_id, state)
         return await self.run(agent_def, human_response, session_id=session_id, agent_state=state)
@@ -424,6 +426,7 @@ class AgentRunner:
             raise OrchestrationError(
                 f"No state store configured; cannot resume agent '{agent_id}'",
                 code="NO_STATE_FOUND",
+                hint="Pass a state_store to AgentRunner to enable session persistence and resume.",
             )
         entity_id = f"agent:{agent_id}:{session_id}"
         state: AgentState | None
@@ -432,6 +435,7 @@ class AgentRunner:
             raise OrchestrationError(
                 f"No state found for agent='{agent_id}' session='{session_id}'",
                 code="NO_STATE_FOUND",
+                hint="The session may have expired or the agent_id/session_id combination is wrong.",
             )
         return state
 

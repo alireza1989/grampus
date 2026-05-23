@@ -142,6 +142,7 @@ class Graph:
         raise OrchestrationError(
             "No entry node defined — call add_node(..., entry=True)",
             code="NO_ENTRY_NODE",
+            hint="Register the node with graph.add_node() before adding edges that reference it.",
         )
 
     async def _run(
@@ -159,11 +160,13 @@ class Graph:
                 raise OrchestrationError(
                     f"Execution exceeded {self._max_steps} steps (MAX_STEPS_EXCEEDED)",
                     code="MAX_STEPS_EXCEEDED",
+                    hint="Ensure all edge targets are valid node names already added to the graph.",
                 )
             if current not in self._nodes:
                 raise OrchestrationError(
                     f"Unknown node '{current}'",
                     code="UNKNOWN_NODE",
+                    hint="Ensure all edge targets are valid node names already added to the graph.",
                 )
 
             node = self._nodes[current]

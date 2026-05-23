@@ -177,6 +177,7 @@ class SafetyPipeline:
             raise SafetyError(
                 check_result.reason or "Tool call blocked by safety policy",
                 code="ACTION_BLOCKED",
+                hint="This action is not permitted by the agent's safety policy. Update the policy YAML or use a different tool.",
             )
 
         return tool_call, []
@@ -212,6 +213,7 @@ class SafetyPipeline:
             raise SafetyError(
                 f"Prompt injection detected in input (confidence={result.confidence:.2f})",
                 code=error_code,
+                hint="The input contains patterns associated with prompt injection. Review tool results and user input for adversarial content.",
             )
         return text
 

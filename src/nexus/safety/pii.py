@@ -153,6 +153,7 @@ class PIIDetector:
                     f"PII type '{match.pii_type}' is blocked",
                     code="PII_BLOCKED",
                     details={"pii_type": match.pii_type},
+                    hint="Remove personally identifiable information from the input or set pii_action to 'redact' in your safety policy.",
                 )
 
     def _apply_actions(self, text: str, matches: list[PIIMatch]) -> tuple[PIIAction, str]:

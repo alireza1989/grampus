@@ -46,7 +46,11 @@ class PolicyLoader:
 
         file_path = Path(path)
         if not file_path.exists():
-            raise ConfigError(f"Policy file not found: {path}", code="POLICY_NOT_FOUND")
+            raise ConfigError(
+                f"Policy file not found: {path}",
+                code="POLICY_NOT_FOUND",
+                hint="Check the path in nexus.yaml under safety.policy_file, or run 'nexus init' to generate a default policy.",
+            )
 
         try:
             import yaml  # type: ignore[import-untyped]
@@ -56,6 +60,7 @@ class PolicyLoader:
             raise ConfigError(
                 f"Failed to parse policy YAML at {path}: {exc}",
                 code="POLICY_PARSE_ERROR",
+                hint="Validate your policy YAML with a linter. See docs/architecture/decisions.md for the policy schema.",
             ) from exc
 
         try:
@@ -64,6 +69,7 @@ class PolicyLoader:
             raise ConfigError(
                 f"Policy schema validation failed: {exc}",
                 code="POLICY_SCHEMA_ERROR",
+                hint="Check the policy file against the SafetyPolicy schema. Required fields: version, rules.",
             ) from exc
 
     @staticmethod

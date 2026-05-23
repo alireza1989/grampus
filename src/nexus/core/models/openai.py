@@ -99,10 +99,17 @@ class OpenAIClient(ModelClient):
         try:
             response = await self._sdk.chat.completions.create(**call_kwargs)
         except Exception as exc:
+            msg = str(exc).lower()
+            hint = (
+                "Set OPENAI_API_KEY in your environment or in nexus.yaml under model.api_key."
+                if "auth" in msg or "unauthorized" in msg or "api_key" in msg or "401" in msg
+                else "Check the OpenAI status page or reduce max_tokens / request size."
+            )
             raise ModelError(
                 f"OpenAI API error: {exc}",
                 code="MODEL_API_ERROR",
                 details={"provider": "openai", "model": model},
+                hint=hint,
             ) from exc
 
         choice = response.choices[0]
@@ -183,8 +190,15 @@ class OpenAIClient(ModelClient):
                     is_final=True,
                 )
         except Exception as exc:
+            msg = str(exc).lower()
+            hint = (
+                "Set OPENAI_API_KEY in your environment or in nexus.yaml under model.api_key."
+                if "auth" in msg or "unauthorized" in msg or "api_key" in msg or "401" in msg
+                else "Check the OpenAI status page or reduce max_tokens / request size."
+            )
             raise ModelError(
                 f"OpenAI stream error: {exc}",
                 code="MODEL_API_ERROR",
                 details={"provider": "openai", "model": model},
+                hint=hint,
             ) from exc

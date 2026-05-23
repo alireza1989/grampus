@@ -195,6 +195,7 @@ def _raise_if_concurrency_error(exc: Exception) -> None:
                 "ETag mismatch — concurrent modification detected",
                 code="CONCURRENCY_ERROR",
                 details={},
+                hint="Reload the record before writing — another process modified it since you last read it.",
             ) from exc
 
         # Raw grpc.RpcError fallback (e.g. injected in unit tests)
@@ -204,6 +205,7 @@ def _raise_if_concurrency_error(exc: Exception) -> None:
                 "ETag mismatch — concurrent modification detected",
                 code="CONCURRENCY_ERROR",
                 details={},
+                hint="Reload the record before writing — another process modified it since you last read it.",
             ) from exc
     except ImportError:
         pass

@@ -101,6 +101,7 @@ class ModelRouter:
             raise ModelError(
                 f"No client registered for model '{model_spec.model_id}'",
                 code="NO_CLIENT_FOR_MODEL",
+                hint="Register the provider with ModelRouter or use 'anthropic' / 'openai' as the provider name.",
             )
         return client
 
@@ -145,6 +146,7 @@ class ModelRouter:
             raise ModelError(
                 f"No models registered for any tier in fallback chain for step '{step_name}'",
                 code="NO_MODEL_AVAILABLE",
+                hint="All models in the fallback chain failed. Check API keys and rate limits.",
             )
         assert last_error is not None
         raise last_error
@@ -167,6 +169,7 @@ class ModelRouter:
         if spec is None:
             raise ModelError(
                 f"No model available in tier '{tier}' (require_tools={require_tools})",
+                hint="Add a model spec for this tier in ModelRouter or choose a different ModelTier.",
                 code="NO_MODEL_AVAILABLE",
             )
         return spec

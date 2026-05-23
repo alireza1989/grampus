@@ -122,6 +122,7 @@ class MemoryManager:
                     f"Memory write blocked: {'; '.join(result.reasons)}",
                     code="MEMORY_WRITE_BLOCKED",
                     details={"reasons": result.reasons, "source_id": source_id},
+                    hint="The content was flagged as a potential memory injection. Review the source and trust level of this write.",
                 )
 
         provenance_json: str | None = provenance.model_dump_json() if provenance else None

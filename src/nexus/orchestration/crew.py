@@ -171,6 +171,7 @@ class Crew:
             raise OrchestrationError(
                 f"Crew member '{member.agent_def.name}' failed: {exc}",
                 code="CREW_MEMBER_FAILED",
+                hint="Check that agent names are unique and no agent depends on itself.",
             ) from exc
 
     def _parse_supervisor_output(self, output: str, workers: list[CrewMember]) -> dict[str, str]:

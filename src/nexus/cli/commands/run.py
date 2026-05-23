@@ -17,6 +17,13 @@ from nexus.core.types import AgentDefinition, ExecutionResult, StreamEventType
 _log = get_logger(__name__)
 
 
+def _print_nexus_error(exc: Exception) -> None:
+    click.echo(f"Error: {exc}", err=False)
+    hint = getattr(exc, "hint", "")
+    if hint:
+        click.echo(f"  Hint: {hint}", err=False)
+
+
 @click.command("run")
 @click.argument("agent_file")
 @click.option(
@@ -51,13 +58,13 @@ def run(
         cfg = load_config(config_path)
         module = load_module(agent_file)
     except ConfigError as exc:
-        click.echo(f"Error: {exc}", err=False)
+        _print_nexus_error(exc)
         sys.exit(1)
 
     try:
         runner = _build_runner(module, cfg)
     except ConfigError as exc:
-        click.echo(f"Error: {exc}", err=False)
+        _print_nexus_error(exc)
         sys.exit(1)
 
     agent_def = _resolve_agent_def(module, cfg)
@@ -224,5 +231,5 @@ async def _stream_async(
                 )
 
         elif event.event_type == StreamEventType.ERROR:
-            click.echo(f"\nError: {event.message}", err=True)
+            click.echo(f"\nError: {event.message}", err=False)
             sys.exit(1)

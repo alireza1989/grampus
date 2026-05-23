@@ -86,6 +86,7 @@ class ToolExecutor:
                 f"Tool '{tool_call.name}' missing required arguments: {missing}",
                 code="tool.missing_args",
                 details={"tool_name": tool_call.name, "missing": missing},
+                hint="Check that all required arguments are provided and match the tool's parameter schema.",
             )
 
         started = time.monotonic()
@@ -147,6 +148,7 @@ class ToolExecutor:
                 f"Tool exceeded timeout of {self._timeout}s",
                 code="tool.timeout",
                 details={"timeout_seconds": self._timeout},
+                hint="Increase the tool timeout in ToolExecutor config or optimize the tool implementation.",
             ) from exc
 
     def get_record(self, tool_call_id: str) -> ToolExecutionRecord | None:

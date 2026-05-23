@@ -7,11 +7,17 @@ class NexusError(Exception):
     """Root exception for all Nexus errors."""
 
     def __init__(
-        self, message: str, *, code: str, details: dict[str, object] | None = None
+        self,
+        message: str,
+        *,
+        code: str,
+        details: dict[str, object] | None = None,
+        hint: str = "",
     ) -> None:
         super().__init__(message)
         self.code = code
         self.details: dict[str, object] = details or {}
+        self.hint = hint
 
 
 class ConfigError(NexusError):

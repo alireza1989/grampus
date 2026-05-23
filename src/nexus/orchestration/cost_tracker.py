@@ -120,6 +120,7 @@ class CostTracker:
                     "current_usd": self._total_cost,
                     "estimated_usd": 0.0,
                 },
+                hint="Raise cost_budget_usd in AgentDefinition or break the task into smaller sub-tasks.",
             )
 
     def summary(self) -> CostSummary:
@@ -153,6 +154,7 @@ class CostTracker:
                     "current_usd": self._total_cost,
                     "estimated_usd": estimated_cost_usd,
                 },
+                hint="The estimated cost for this step exceeds the remaining budget. Reduce max_tokens or increase cost_budget_usd.",
             )
 
     def reset(self) -> None:

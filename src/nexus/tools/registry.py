@@ -63,6 +63,7 @@ class ToolRegistry:
             raise ToolError(
                 f"Tool '{name}' is already registered",
                 code="tool.duplicate_registration",
+                hint="Choose a unique name for this tool or call registry.unregister() first.",
             )
 
         definition = ToolDefinition(
@@ -119,6 +120,7 @@ class ToolRegistry:
                 f"Tool '{name}' is not registered",
                 code="tool.not_found",
                 details={"tool_name": name},
+                hint="Register the tool with @registry.tool() or check the tool name for typos.",
             )
         return tool
 

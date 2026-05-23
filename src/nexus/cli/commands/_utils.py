@@ -34,6 +34,7 @@ def load_config(path: str) -> Any:
         raise ConfigError(
             f"Config file not found: {path}",
             code="CONFIG_NOT_FOUND",
+            hint="Run 'nexus init' to create a nexus.yaml, or pass --config <path>.",
         )
     try:
         return NexusConfig(_config_file=str(p))
@@ -41,6 +42,7 @@ def load_config(path: str) -> Any:
         raise ConfigError(
             f"Failed to load config from {path}: {exc}",
             code="CONFIG_PARSE_ERROR",
+            hint="Run 'nexus init' to create a nexus.yaml, or pass --config <path>.",
         ) from exc
 
 
@@ -61,12 +63,14 @@ def load_module(path: str) -> ModuleType:
         raise ConfigError(
             f"File not found: {path}",
             code="FILE_NOT_FOUND",
+            hint="Check the file path and ensure it is a valid Python module.",
         )
     spec = importlib.util.spec_from_file_location("_nexus_user_module", p)
     if spec is None or spec.loader is None:
         raise ConfigError(
             f"Cannot load module from: {path}",
             code="MODULE_LOAD_ERROR",
+            hint="Check the file path and ensure it is a valid Python module.",
         )
     module = importlib.util.module_from_spec(spec)
     try:
@@ -75,6 +79,7 @@ def load_module(path: str) -> ModuleType:
         raise ConfigError(
             f"Error executing module {path}: {exc}",
             code="MODULE_EXEC_ERROR",
+            hint="Check the file path and ensure it is a valid Python module.",
         ) from exc
     return module
 
@@ -94,10 +99,17 @@ def require_function(module: ModuleType, name: str) -> Any:
     """
     fn = getattr(module, name, None)
     if fn is None:
+        if name == "create_runner":
+            hint = "Define 'def create_runner() -> AgentRunner:' in your agent file."
+        elif name == "create_agent_def":
+            hint = "Define 'def create_agent_def() -> AgentDefinition:' in your agent file or configure [agent] in nexus.yaml."
+        else:
+            hint = f"Add a `def {name}():` to your file."
         raise ConfigError(
             f"Function '{name}' not found in '{module.__file__}'. "
             f"Add a `def {name}():` to your file.",
             code="FUNCTION_NOT_FOUND",
+            hint=hint,
         )
     return fn
 

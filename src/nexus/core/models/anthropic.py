@@ -116,10 +116,17 @@ class AnthropicClient(ModelClient):
         try:
             response = await self._sdk.messages.create(**call_kwargs)
         except Exception as exc:
+            msg = str(exc).lower()
+            hint = (
+                "Set ANTHROPIC_API_KEY in your environment or in nexus.yaml under model.api_key."
+                if "auth" in msg or "unauthorized" in msg or "api_key" in msg or "401" in msg
+                else "Check the Anthropic status page or reduce max_tokens / request size."
+            )
             raise ModelError(
                 f"Anthropic API error: {exc}",
                 code="MODEL_API_ERROR",
                 details={"provider": "anthropic", "model": model},
+                hint=hint,
             ) from exc
 
         in_t = response.usage.input_tokens
@@ -198,8 +205,15 @@ class AnthropicClient(ModelClient):
                     is_final=True,
                 )
         except Exception as exc:
+            msg = str(exc).lower()
+            hint = (
+                "Set ANTHROPIC_API_KEY in your environment or in nexus.yaml under model.api_key."
+                if "auth" in msg or "unauthorized" in msg or "api_key" in msg or "401" in msg
+                else "Check the Anthropic status page or reduce max_tokens / request size."
+            )
             raise ModelError(
                 f"Anthropic stream error: {exc}",
                 code="MODEL_API_ERROR",
                 details={"provider": "anthropic", "model": model},
+                hint=hint,
             ) from exc
