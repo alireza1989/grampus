@@ -91,7 +91,8 @@ class EventLog:
             sequence_number=self._next_seq,
         )
         self._next_seq += 1
-        self._events.append(event)
+        if self._state_store is None:
+            self._events.append(event)
         await self._persist(event)
         logger.debug("event_appended", event_type=event_type, seq=event.sequence_number)
         return event
@@ -129,7 +130,7 @@ class EventLog:
         assert store is not None
         events: list[AgentEvent] = []
         seq = start
-        while seq < self._next_seq:
+        while True:
             entity_id = f"{self._session_id}:{seq}"
             record, _ = await store.get("events", entity_id, AgentEvent)
             if record is None:
@@ -137,6 +138,47 @@ class EventLog:
             events.append(record)
             seq += 1
         return events
+
+    async def _count_from_store(self) -> int:
+        """Return how many events exist in the store without loading them."""
+        store = self._state_store
+        assert store is not None
+        seq = 0
+        while True:
+            entity_id = f"{self._session_id}:{seq}"
+            record, _ = await store.get("events", entity_id, AgentEvent)
+            if record is None:
+                break
+            seq += 1
+        return seq
+
+    @classmethod
+    async def open(
+        cls,
+        *,
+        agent_id: str,
+        session_id: str,
+        state_store: Any | None = None,
+    ) -> EventLog:
+        """Load or create an EventLog, initializing sequence counter from the store.
+
+        Use this instead of __init__ when the session may already have events
+        (e.g., resume flow or CLI replay).
+
+        Args:
+            agent_id: Agent identifier.
+            session_id: Session to open.
+            state_store: Optional Dapr state store.
+
+        Returns:
+            EventLog with _next_seq set to the next available sequence number.
+        """
+        log = cls(agent_id=agent_id, session_id=session_id, state_store=state_store)
+        if state_store is not None:
+            # Count existing events without loading them into memory — they are
+            # already durable in the store and fetched on demand via replay().
+            log._next_seq = await log._count_from_store()
+        return log
 
     def event_count(self) -> int:
         """Return the number of events appended in this instance's lifetime."""

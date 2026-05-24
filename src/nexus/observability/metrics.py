@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import deque
+
 from pydantic import BaseModel, Field
 
 from nexus.core.logging import get_logger
@@ -25,21 +27,32 @@ class MetricsSnapshot(BaseModel):
 
 
 class _Histogram:
-    """Latency histogram with fixed bucket boundaries."""
+    """Latency histogram with fixed bucket boundaries.
+
+    Keeps only the most recent ``_WINDOW`` samples to bound memory. A separate
+    ``_total_count`` accumulates all-time call counts so the Prometheus
+    ``_count`` metric remains accurate even after the window rolls over.
+    """
+
+    _WINDOW = 10_000
 
     def __init__(self) -> None:
-        self._samples: list[float] = []
+        self._samples: deque[float] = deque(maxlen=self._WINDOW)
+        self._total_count: int = 0
+        self._total_sum: float = 0.0
 
     def observe(self, value: float) -> None:
         self._samples.append(value)
+        self._total_count += 1
+        self._total_sum += value
 
     @property
     def count(self) -> int:
-        return len(self._samples)
+        return self._total_count
 
     @property
     def total(self) -> float:
-        return sum(self._samples)
+        return self._total_sum
 
     def bucket_counts(self) -> list[tuple[float, int]]:
         """Return (upper_bound, cumulative_count) pairs for each bucket."""
@@ -47,11 +60,13 @@ class _Histogram:
         for bound in _HISTOGRAM_BUCKETS:
             cnt = sum(1 for s in self._samples if s <= bound)
             result.append((bound, cnt))
-        result.append((float("inf"), self.count))
+        result.append((float("inf"), self._total_count))
         return result
 
     def reset(self) -> None:
-        self._samples = []
+        self._samples.clear()
+        self._total_count = 0
+        self._total_sum = 0.0
 
 
 def _prom_label(agent_id: str) -> str:

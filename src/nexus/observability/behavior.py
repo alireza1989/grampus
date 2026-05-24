@@ -68,6 +68,8 @@ class BehaviorMonitor:
         tool_shift_threshold: Fraction of new tools triggering TOOL_USAGE_SHIFT.
     """
 
+    _MAX_ANOMALIES = 1_000
+
     def __init__(
         self,
         *,
@@ -81,7 +83,7 @@ class BehaviorMonitor:
         self._error_threshold = error_spike_threshold
         self._tool_threshold = tool_shift_threshold
         self._window_size = 20
-        self._anomalies: list[Anomaly] = []
+        self._anomalies: deque[Anomaly] = deque(maxlen=self._MAX_ANOMALIES)
         self._window: deque[_TurnRecord] = deque(maxlen=self._window_size)
         self._turn_count: int = 0
 
@@ -204,11 +206,11 @@ class BehaviorMonitor:
         )
 
     def anomalies(self) -> list[Anomaly]:
-        """Return all anomalies detected so far."""
+        """Return the most recent anomalies (up to 1 000) detected so far."""
         return list(self._anomalies)
 
     def reset(self) -> None:
         """Reset all state. Useful for testing."""
-        self._anomalies = []
+        self._anomalies.clear()
         self._window.clear()
         self._turn_count = 0
