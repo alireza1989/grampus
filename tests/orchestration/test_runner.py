@@ -326,7 +326,10 @@ class TestAgentRunnerPersistence:
     ) -> None:
         r = AgentRunner(model_client, tool_executor, state_store=state_store)
         await r.run(_agent_def(), "Hello", session_id="s1")
-        state_store.save.assert_called_once()
+        # save() is now called for both event-log entries and runner state;
+        # verify that at least one call was the runner state (entity_type="runner").
+        runner_calls = [c for c in state_store.save.call_args_list if c.args[0] == "runner"]
+        assert len(runner_calls) == 1
 
     async def test_resume_loads_state_and_continues(
         self,
@@ -340,7 +343,13 @@ class TestAgentRunnerPersistence:
             status=AgentStatus.WAITING_FOR_HUMAN,
             messages=[Message(role=Role.USER, content="original")],
         )
-        state_store.get.return_value = (paused_state, "etag1")
+
+        async def _get(entity_type: str, entity_id: str, cls: type) -> tuple:
+            if entity_type == "runner":
+                return (paused_state, "etag1")
+            return (None, "")  # stop event-log probe immediately
+
+        state_store.get.side_effect = _get
         r = AgentRunner(model_client, tool_executor, state_store=state_store)
         result = await r.resume("test-agent", "s1", "human reply")
         assert isinstance(result, ExecutionResult)
@@ -368,7 +377,13 @@ class TestAgentRunnerPersistence:
             session_id="s1",
             status=AgentStatus.COMPLETED,
         )
-        state_store.get.return_value = (completed_state, "etag1")
+
+        async def _get(entity_type: str, entity_id: str, cls: type) -> tuple:
+            if entity_type == "runner":
+                return (completed_state, "etag1")
+            return (None, "")  # stop event-log probe immediately
+
+        state_store.get.side_effect = _get
         r = AgentRunner(model_client, tool_executor, state_store=state_store)
         with pytest.raises(OrchestrationError) as exc_info:
             await r.resume("test-agent", "s1", "reply")

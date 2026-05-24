@@ -179,7 +179,9 @@ class TestReplayNoEvents:
 
 
 class TestReplayRendersAgentStarted:
-    def test_renders_agent_started(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_renders_agent_started(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         events = [
             _make_event(
                 EventType.AGENT_STARTED,
@@ -202,10 +204,18 @@ class TestReplayRendersAgentStarted:
 
 
 class TestReplayRendersToolCall:
-    def test_renders_tool_call_success(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_renders_tool_call_success(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         events = [
-            _make_event(EventType.TOOL_CALLED, 0, {"tool": "web_search", "args": '{"query": "AI"}'}),
-            _make_event(EventType.TOOL_RESULT, 1, {"tool": "web_search", "ok": True, "output": "Top results..."}),
+            _make_event(
+                EventType.TOOL_CALLED, 0, {"tool": "web_search", "args": '{"query": "AI"}'}
+            ),
+            _make_event(
+                EventType.TOOL_RESULT,
+                1,
+                {"tool": "web_search", "ok": True, "output": "Top results..."},
+            ),
         ]
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
@@ -219,9 +229,13 @@ class TestReplayRendersToolCall:
         assert "web_search" in result.output
         assert "✓" in result.output
 
-    def test_renders_tool_call_failure(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_renders_tool_call_failure(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         events = [
-            _make_event(EventType.TOOL_RESULT, 0, {"tool": "bad_tool", "ok": False, "output": "error msg"}),
+            _make_event(
+                EventType.TOOL_RESULT, 0, {"tool": "bad_tool", "ok": False, "output": "error msg"}
+            ),
         ]
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
@@ -261,7 +275,9 @@ class TestReplayJsonFlag:
     def test_json_output_is_valid(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
         events = [
             _make_event(EventType.AGENT_STARTED, 0, {"input": "hi", "model": "m"}),
-            _make_event(EventType.AGENT_COMPLETED, 1, {"output": "bye", "steps": 1, "cost_usd": 0.001}),
+            _make_event(
+                EventType.AGENT_COMPLETED, 1, {"output": "bye", "steps": 1, "cost_usd": 0.001}
+            ),
         ]
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
@@ -280,7 +296,9 @@ class TestReplayJsonFlag:
         assert "agent_id" in parsed[0]
         assert "session_id" in parsed[0]
 
-    def test_json_no_events_exits_1(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_json_no_events_exits_1(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         log = _make_log_with_events([])
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
@@ -293,13 +311,21 @@ class TestReplayJsonFlag:
 
 
 class TestReplayFromStep:
-    def test_from_step_filters_earlier_events(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_from_step_filters_earlier_events(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         all_events = [
             _make_event(EventType.AGENT_STARTED, 0, {"input": "early", "model": "m"}),
-            _make_event(EventType.LLM_CALLED, 1, {"step": 1, "input_tokens": 10, "output_tokens": 5}),
-            _make_event(EventType.LLM_CALLED, 2, {"step": 2, "input_tokens": 20, "output_tokens": 8}),
+            _make_event(
+                EventType.LLM_CALLED, 1, {"step": 1, "input_tokens": 10, "output_tokens": 5}
+            ),
+            _make_event(
+                EventType.LLM_CALLED, 2, {"step": 2, "input_tokens": 20, "output_tokens": 8}
+            ),
             _make_event(EventType.TOOL_CALLED, 3, {"tool": "search", "args": "{}"}),
-            _make_event(EventType.AGENT_COMPLETED, 4, {"output": "done", "steps": 2, "cost_usd": 0.002}),
+            _make_event(
+                EventType.AGENT_COMPLETED, 4, {"output": "done", "steps": 2, "cost_usd": 0.002}
+            ),
         ]
         log = _make_log_with_events(all_events)
         _patch_replay(monkeypatch, log)
@@ -320,8 +346,6 @@ class TestReplayFromStep:
 
 class TestReplayConfigError:
     def test_missing_config_exits_1(self, runner: CliRunner) -> None:
-        result = runner.invoke(
-            cli, ["replay", "sess-123", "--config", "/nonexistent/nexus.yaml"]
-        )
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "/nonexistent/nexus.yaml"])
         assert result.exit_code == 1
         assert "Error" in result.output

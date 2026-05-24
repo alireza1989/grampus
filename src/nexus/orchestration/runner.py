@@ -26,6 +26,7 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
+from nexus.observability.events import EventLog, EventType
 from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
@@ -110,6 +111,16 @@ class AgentRunner:
         state = agent_state or self._build_state(agent_def, session_id)
         state.status = AgentStatus.RUNNING
 
+        event_log = await EventLog.open(
+            agent_id=agent_def.name,
+            session_id=session_id,
+            state_store=self._state_store,
+        )
+        await event_log.append(
+            EventType.AGENT_STARTED,
+            {"input": user_input[:500], "model": agent_def.model, "step": state.current_step},
+        )
+
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
 
@@ -130,6 +141,21 @@ class AgentRunner:
 
             accumulated = _add_usage(accumulated, response.token_usage)
 
+            await event_log.append(
+                EventType.LLM_CALLED,
+                {
+                    "model": agent_def.model,
+                    "step": steps,
+                    "finish_reason": response.stop_reason or "",
+                    "input_tokens": response.token_usage.input_tokens
+                    if response.token_usage
+                    else 0,
+                    "output_tokens": response.token_usage.output_tokens
+                    if response.token_usage
+                    else 0,
+                },
+            )
+
             if self._cost_tracker:
                 await self._cost_tracker.record(
                     response.token_usage,
@@ -146,7 +172,9 @@ class AgentRunner:
             )
 
             if response.tool_calls:
-                results = await self._execute_tool_calls(response.tool_calls, state)
+                results = await self._execute_tool_calls(
+                    response.tool_calls, state, event_log=event_log
+                )
                 tool_calls_made += len(results)
                 state.messages.append(Message(role=Role.TOOL, tool_results=results))
                 if state.status == AgentStatus.WAITING_FOR_HUMAN:
@@ -175,7 +203,27 @@ class AgentRunner:
 
         await self._persist_state(agent_def, session_id, state)
 
-        duration = time.monotonic() - start
+        result = ExecutionResult(
+            output=final_output,
+            messages=state.messages,
+            tool_calls_made=tool_calls_made,
+            token_usage=accumulated,
+            duration_seconds=time.monotonic() - start,
+            steps_taken=steps,
+            status=state.status,
+        )
+
+        await event_log.append(
+            EventType.AGENT_COMPLETED,
+            {
+                "output": (result.output or "")[:500],
+                "steps": result.steps_taken,
+                "status": str(result.status),
+                "cost_usd": result.token_usage.cost_usd if result.token_usage else 0.0,
+            },
+        )
+
+        duration = result.duration_seconds
         _log.debug(
             "agent_run_complete",
             agent=agent_def.name,
@@ -183,15 +231,7 @@ class AgentRunner:
             tool_calls=tool_calls_made,
             duration=duration,
         )
-        return ExecutionResult(
-            output=final_output,
-            messages=state.messages,
-            tool_calls_made=tool_calls_made,
-            token_usage=accumulated,
-            duration_seconds=duration,
-            steps_taken=steps,
-            status=state.status,
-        )
+        return result
 
     async def stream(
         self,
@@ -286,7 +326,7 @@ class AgentRunner:
                 for tc in tool_calls:
                     yield StreamEvent(event_type=StreamEventType.TOOL_CALL_START, tool_call=tc)
 
-                results = await self._execute_tool_calls(tool_calls, state)
+                results = await self._execute_tool_calls(tool_calls, state, event_log=None)
                 tool_calls_made += len(results)
                 state.messages.append(Message(role=Role.TOOL, tool_results=results))
 
@@ -403,7 +443,10 @@ class AgentRunner:
             state.messages.append(Message(role=Role.SYSTEM, content=context))
 
     async def _execute_tool_calls(
-        self, tool_calls: list[ToolCall], state: AgentState | None = None
+        self,
+        tool_calls: list[ToolCall],
+        state: AgentState | None = None,
+        event_log: EventLog | None = None,
     ) -> list[ToolResult]:
         results = []
         for tc in tool_calls:
@@ -411,6 +454,11 @@ class AgentRunner:
                 if state is not None:
                     state.status = AgentStatus.WAITING_FOR_HUMAN
                     self._waiting_sessions[state.agent_id].add(state.session_id)
+                if event_log is not None:
+                    await event_log.append(
+                        EventType.HUMAN_INPUT_REQUESTED,
+                        {"question": str(tc.arguments.get("question", ""))[:300]},
+                    )
                 results.append(
                     ToolResult(
                         tool_call_id=tc.id,
@@ -420,7 +468,21 @@ class AgentRunner:
                     )
                 )
             else:
+                if event_log is not None:
+                    await event_log.append(
+                        EventType.TOOL_CALLED,
+                        {"tool": tc.name, "args": str(tc.arguments)[:200]},
+                    )
                 result = await self._tool_executor.execute(tc)
+                if event_log is not None:
+                    await event_log.append(
+                        EventType.TOOL_RESULT,
+                        {
+                            "tool": tc.name,
+                            "ok": result.error is None,
+                            "output": str(result.output)[:300],
+                        },
+                    )
                 results.append(result)
         return results
 
