@@ -82,4 +82,5 @@ def serve(
     app = create_app(runner, agent_def)
 
     click.echo(f"Nexus agent '{agent_def.name}' serving at http://{host}:{port}")
+    click.echo(f"  Human-in-the-loop UI: http://{host}:{port}/ui")
     uvicorn.run(app, host=host, port=port, reload=reload, workers=workers)

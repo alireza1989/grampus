@@ -64,3 +64,46 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     agent_name: str
+
+
+class PendingSession(BaseModel):
+    """Summary of one WAITING_FOR_HUMAN session."""
+
+    session_id: str
+    agent_id: str
+    last_message: str
+    waiting_since: str
+
+
+class PendingSessionsResponse(BaseModel):
+    """Response from GET /agents/pending."""
+
+    sessions: list[PendingSession]
+    count: int
+
+
+class AgentStateResponse(BaseModel):
+    """Response from GET /agents/{session_id}/state."""
+
+    session_id: str
+    agent_id: str
+    status: str
+    message_count: int
+    messages: list[dict[str, Any]]
+
+
+class ResumeRequest(BaseModel):
+    """Body for POST /agents/{session_id}/resume."""
+
+    input: str
+
+
+class ResumeResponse(BaseModel):
+    """Response from POST /agents/{session_id}/resume."""
+
+    session_id: str
+    output: str | None
+    status: str
+    steps_taken: int
+    token_usage: TokenUsage | None = None
+    still_waiting: bool

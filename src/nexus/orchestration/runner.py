@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -75,6 +76,7 @@ class AgentRunner:
         self._cost_tracker = cost_tracker
         self._state_store = state_store
         self._config = config or RunnerConfig()
+        self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
 
     # ------------------------------------------------------------------
     # Public API
@@ -356,7 +358,21 @@ class AgentRunner:
                 hint="Only call resume() when the agent's status is WAITING_FOR_HUMAN.",
             )
         agent_def = self._reconstruct_agent_def(agent_id, state)
-        return await self.run(agent_def, human_response, session_id=session_id, agent_state=state)
+        result = await self.run(agent_def, human_response, session_id=session_id, agent_state=state)
+        self._waiting_sessions[agent_id].discard(session_id)
+        return result
+
+    def list_pending_sessions(self, agent_id: str) -> list[str]:
+        """Return session IDs currently waiting for human input."""
+        return list(self._waiting_sessions.get(agent_id, set()))
+
+    async def get_state(self, agent_id: str, session_id: str) -> AgentState:
+        """Load and return the current AgentState for a session.
+
+        Raises:
+            OrchestrationError: code="NO_STATE_FOUND" when not found.
+        """
+        return await self._load_state(agent_id, session_id)
 
     def cost_summary(self) -> CostSummary | None:
         """Return cost accumulation summary, or None when no tracker is configured."""
@@ -394,6 +410,7 @@ class AgentRunner:
             if tc.name == "human_input":
                 if state is not None:
                     state.status = AgentStatus.WAITING_FOR_HUMAN
+                    self._waiting_sessions[state.agent_id].add(state.session_id)
                 results.append(
                     ToolResult(
                         tool_call_id=tc.id,

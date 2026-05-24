@@ -10,19 +10,25 @@ from uuid import uuid4
 
 try:
     from fastapi import APIRouter, Request
-    from fastapi.responses import StreamingResponse
+    from fastapi.responses import HTMLResponse, StreamingResponse
 except ImportError as _exc:  # pragma: no cover
     raise ImportError("Install server deps: pip install nexus-ai[server]") from _exc
 
-from nexus.core.types import AgentDefinition, StreamEvent, StreamEventType
+from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
 from nexus.server.models import (
+    AgentStateResponse,
     HealthResponse,
     MemoryRecallRequest,
     MemoryRecallResponse,
+    PendingSession,
+    PendingSessionsResponse,
+    ResumeRequest,
+    ResumeResponse,
     RunRequest,
     RunResponse,
     StreamChunkResponse,
 )
+from nexus.server.ui import UI_HTML
 
 
 def _pkg_version() -> str:
@@ -115,6 +121,96 @@ def create_router(has_memory: bool) -> APIRouter:
             except Exception as exc:
                 err = StreamChunkResponse(event_type=str(StreamEventType.ERROR), message=str(exc))
                 yield f"data: {err.model_dump_json()}\n\n"
+
+        return StreamingResponse(_generate(), media_type="text/event-stream")
+
+    @router.get("/agents/pending", response_model=PendingSessionsResponse)
+    async def list_pending(request: Request) -> PendingSessionsResponse:
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        session_ids = runner.list_pending_sessions(agent_def.name)
+        sessions: list[PendingSession] = []
+        for sid in session_ids:
+            try:
+                state = await runner.get_state(agent_def.name, sid)
+                last = next((m for m in reversed(state.messages) if m.role != Role.SYSTEM), None)
+                sessions.append(
+                    PendingSession(
+                        session_id=sid,
+                        agent_id=agent_def.name,
+                        last_message=(last.content[:200] if last and last.content else ""),
+                        waiting_since=state.updated_at.isoformat(),
+                    )
+                )
+            except Exception:
+                pass
+        return PendingSessionsResponse(sessions=sessions, count=len(sessions))
+
+    @router.get("/agents/{session_id}/state", response_model=AgentStateResponse)
+    async def get_agent_state(session_id: str, request: Request) -> AgentStateResponse:
+        from nexus.core.errors import OrchestrationError
+
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        try:
+            state = await runner.get_state(agent_def.name, session_id)
+        except OrchestrationError as exc:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        messages = [
+            {
+                "role": str(m.role),
+                "content": m.content,
+                "timestamp": m.timestamp.isoformat(),
+            }
+            for m in state.messages
+            if m.role != Role.SYSTEM
+        ]
+        return AgentStateResponse(
+            session_id=session_id,
+            agent_id=state.agent_id,
+            status=str(state.status),
+            message_count=len(messages),
+            messages=messages,
+        )
+
+    @router.post("/agents/{session_id}/resume", response_model=ResumeResponse)
+    async def resume_agent(
+        session_id: str, body: ResumeRequest, request: Request
+    ) -> ResumeResponse:
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        result = await runner.resume(agent_def.name, session_id, body.input)
+        return ResumeResponse(
+            session_id=session_id,
+            output=result.output,
+            status=str(result.status),
+            steps_taken=result.steps_taken,
+            token_usage=result.token_usage,
+            still_waiting=(str(result.status) == "waiting_for_human"),
+        )
+
+    @router.get("/ui", include_in_schema=False)
+    async def ui() -> HTMLResponse:
+        return HTMLResponse(UI_HTML)
+
+    @router.get("/ui/events", include_in_schema=False)
+    async def ui_events(request: Request) -> StreamingResponse:
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+
+        async def _generate() -> AsyncGenerator[str, None]:
+            import json as _json
+
+            while True:
+                if await request.is_disconnected():
+                    break
+                session_ids = runner.list_pending_sessions(agent_def.name)
+                sessions = [{"session_id": sid, "agent_id": agent_def.name} for sid in session_ids]
+                payload = _json.dumps({"sessions": sessions})
+                yield f"data: {payload}\n\n"
+                await asyncio.sleep(2)
 
         return StreamingResponse(_generate(), media_type="text/event-stream")
 
