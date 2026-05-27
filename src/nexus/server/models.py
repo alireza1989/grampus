@@ -107,3 +107,52 @@ class ResumeResponse(BaseModel):
     steps_taken: int
     token_usage: TokenUsage | None = None
     still_waiting: bool
+
+
+class WebhookRegisterRequest(BaseModel):
+    """Body for POST /webhooks — register a new webhook."""
+
+    name: str = ""
+    secret: str | None = None
+    input_template: str = ""
+    input_field: str = ""
+    async_mode: bool = False
+    callback_url: str = ""
+
+
+class WebhookResponse(BaseModel):
+    """Webhook config as returned by the API (secret included on creation only)."""
+
+    id: str
+    name: str
+    secret: str
+    input_template: str
+    input_field: str
+    async_mode: bool
+    callback_url: str
+
+
+class WebhookListResponse(BaseModel):
+    """Response from GET /webhooks."""
+
+    webhooks: list[WebhookResponse]
+    count: int
+
+
+class WebhookTriggerResponse(BaseModel):
+    """Response from POST /webhooks/{id}/trigger (sync mode)."""
+
+    session_id: str
+    output: str | None
+    status: str
+    steps_taken: int
+    token_usage: TokenUsage | None = None
+    duration_seconds: float
+
+
+class WebhookAcceptedResponse(BaseModel):
+    """Response from POST /webhooks/{id}/trigger (async_mode=True)."""
+
+    accepted: bool = True
+    session_id: str
+    webhook_id: str

@@ -30,6 +30,7 @@ def create_app(
     agent_def: AgentDefinition,
     *,
     memory_manager: Any | None = None,
+    webhook_registry: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -37,6 +38,7 @@ def create_app(
         runner: An AgentRunner instance.
         agent_def: The AgentDefinition this server exposes.
         memory_manager: Optional MemoryManager for the /memory endpoints.
+        webhook_registry: Optional WebhookRegistry; a new one is created if omitted.
 
     Returns:
         Configured FastAPI app with all routes mounted.
@@ -51,6 +53,7 @@ def create_app(
 
     from nexus.server.openai_compat import create_openai_router
     from nexus.server.routes import create_router
+    from nexus.server.webhook import WebhookRegistry
 
     app = FastAPI(title="Nexus Agent API", version=_pkg_version())
 
@@ -65,6 +68,9 @@ def create_app(
     app.state.runner = runner
     app.state.agent_def = agent_def
     app.state.memory_manager = memory_manager
+    app.state.webhook_registry = (
+        webhook_registry if webhook_registry is not None else WebhookRegistry()
+    )
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:

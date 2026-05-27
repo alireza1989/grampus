@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import importlib.metadata
+import json as _json
+import secrets
 from collections.abc import AsyncGenerator
 from typing import Any, cast
 from uuid import uuid4
@@ -28,9 +30,62 @@ from nexus.server.models import (
     RunRequest,
     RunResponse,
     StreamChunkResponse,
+    WebhookAcceptedResponse,
+    WebhookListResponse,
+    WebhookRegisterRequest,
+    WebhookResponse,
+    WebhookTriggerResponse,
 )
 from nexus.server.trace_ui import TRACE_HTML
 from nexus.server.ui import UI_HTML
+from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
+
+
+def _mask_secret(data: dict[str, Any]) -> dict[str, Any]:
+    """Replace secret with masked value for listing."""
+    masked = dict(data)
+    if masked.get("secret"):
+        masked["secret"] = "***"
+    return masked
+
+
+async def _run_and_callback(
+    runner: Any,
+    agent_def: AgentDefinition,
+    user_input: str,
+    session_id: str,
+    config: WebhookConfig,
+) -> None:
+    """Background task: run the agent and POST result to callback_url if set."""
+    from nexus.core.logging import get_logger
+
+    log = get_logger(__name__)
+    try:
+        result = await runner.run(agent_def, user_input, session_id=session_id)
+        if config.callback_url:
+            import httpx
+
+            payload = {
+                "session_id": session_id,
+                "output": result.output,
+                "status": str(result.status),
+                "steps_taken": result.steps_taken,
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                await client.post(config.callback_url, json=payload)
+    except Exception as exc:
+        log.error("webhook_async_run_failed", session_id=session_id, error=str(exc))
+        if config.callback_url:
+            import httpx
+
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    await client.post(
+                        config.callback_url,
+                        json={"session_id": session_id, "error": str(exc), "status": "failed"},
+                    )
+            except Exception:
+                pass
 
 
 def _pkg_version() -> str:
@@ -261,6 +316,82 @@ def create_router(has_memory: bool) -> APIRouter:
                 runner.unsubscribe_trace(session_id, queue)
 
         return StreamingResponse(_generate(), media_type="text/event-stream")
+
+    @router.post("/webhooks", response_model=WebhookResponse, status_code=201)
+    async def register_webhook(body: WebhookRegisterRequest, request: Request) -> WebhookResponse:
+        registry: WebhookRegistry = request.app.state.webhook_registry
+        config = WebhookConfig(
+            name=body.name,
+            secret=body.secret if body.secret is not None else secrets.token_hex(32),
+            input_template=body.input_template,
+            input_field=body.input_field,
+            async_mode=body.async_mode,
+            callback_url=body.callback_url,
+        )
+        registry.register(config)
+        return WebhookResponse(**config.model_dump())
+
+    @router.get("/webhooks", response_model=WebhookListResponse)
+    async def list_webhooks(request: Request) -> WebhookListResponse:
+        registry: WebhookRegistry = request.app.state.webhook_registry
+        webhooks = [WebhookResponse(**_mask_secret(c.model_dump())) for c in registry.list_all()]
+        return WebhookListResponse(webhooks=webhooks, count=len(webhooks))
+
+    @router.delete("/webhooks/{webhook_id}", status_code=204)
+    async def delete_webhook(webhook_id: str, request: Request) -> None:
+        registry: WebhookRegistry = request.app.state.webhook_registry
+        found = registry.delete(webhook_id)
+        if not found:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail=f"Webhook '{webhook_id}' not found")
+
+    @router.post("/webhooks/{webhook_id}/trigger")
+    async def trigger_webhook(
+        webhook_id: str,
+        request: Request,
+    ) -> Any:
+        registry: WebhookRegistry = request.app.state.webhook_registry
+        config = registry.get(webhook_id)
+        if config is None:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail=f"Webhook '{webhook_id}' not found")
+
+        raw_body = await request.body()
+        sig_header = request.headers.get("X-Nexus-Signature")
+
+        if not verify_signature(raw_body, config.secret, sig_header):
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+        try:
+            payload: dict[str, Any] = _json.loads(raw_body) if raw_body else {}
+        except _json.JSONDecodeError:
+            payload = {"raw": raw_body.decode(errors="replace")}
+
+        agent_input = extract_input(payload, config)
+        session_id = f"{config.session_prefix}-{secrets.token_hex(6)}"
+
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+
+        if config.async_mode:
+            asyncio.create_task(
+                _run_and_callback(runner, agent_def, agent_input, session_id, config)
+            )
+            return WebhookAcceptedResponse(session_id=session_id, webhook_id=webhook_id)
+
+        result = await runner.run(agent_def, agent_input, session_id=session_id)
+        return WebhookTriggerResponse(
+            session_id=session_id,
+            output=result.output,
+            status=str(result.status),
+            steps_taken=result.steps_taken,
+            token_usage=result.token_usage,
+            duration_seconds=result.duration_seconds,
+        )
 
     if has_memory:
 
