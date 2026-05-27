@@ -15,6 +15,7 @@ except ImportError as _exc:  # pragma: no cover
     raise ImportError("Install server deps: pip install nexus-ai[server]") from _exc
 
 from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
+from nexus.observability.events import AgentEvent, EventLog
 from nexus.server.models import (
     AgentStateResponse,
     HealthResponse,
@@ -28,6 +29,7 @@ from nexus.server.models import (
     RunResponse,
     StreamChunkResponse,
 )
+from nexus.server.trace_ui import TRACE_HTML
 from nexus.server.ui import UI_HTML
 
 
@@ -211,6 +213,52 @@ def create_router(has_memory: bool) -> APIRouter:
                 payload = _json.dumps({"sessions": sessions})
                 yield f"data: {payload}\n\n"
                 await asyncio.sleep(2)
+
+        return StreamingResponse(_generate(), media_type="text/event-stream")
+
+    @router.get("/trace", include_in_schema=False)
+    async def trace_ui() -> HTMLResponse:
+        return HTMLResponse(TRACE_HTML)
+
+    @router.get("/trace/{session_id}/history")
+    async def trace_history(session_id: str, request: Request) -> dict[str, Any]:
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        state_store = getattr(runner, "_state_store", None)
+        event_log = await EventLog.open(
+            agent_id=agent_def.name,
+            session_id=session_id,
+            state_store=state_store,
+        )
+        events = await event_log.replay()
+        return {
+            "session_id": session_id,
+            "agent_id": agent_def.name,
+            "events": [e.model_dump(mode="json") for e in events],
+            "count": len(events),
+        }
+
+    @router.get("/trace/{session_id}/stream", include_in_schema=False)
+    async def trace_stream(session_id: str, request: Request) -> StreamingResponse:
+        runner = request.app.state.runner
+        queue = runner.subscribe_trace(session_id)
+
+        async def _generate() -> AsyncGenerator[str, None]:
+            try:
+                while True:
+                    if await request.is_disconnected():
+                        break
+                    try:
+                        event: AgentEvent | None = await asyncio.wait_for(queue.get(), timeout=25.0)
+                    except TimeoutError:
+                        yield 'data: {"heartbeat": true}\n\n'
+                        continue
+                    if event is None:
+                        yield 'data: {"done": true}\n\n'
+                        break
+                    yield f"data: {event.model_dump_json()}\n\n"
+            finally:
+                runner.unsubscribe_trace(session_id, queue)
 
         return StreamingResponse(_generate(), media_type="text/event-stream")
 

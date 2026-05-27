@@ -60,7 +60,7 @@ def test_version_matches_pyproject() -> None:
 
     import nexus
 
-    declared = importlib.metadata.version("nexus")
+    declared = importlib.metadata.version("nexus-ai")
     assert nexus.__version__ == declared, (
         f"nexus.__version__ ({nexus.__version__}) != pyproject version ({declared})"
     )

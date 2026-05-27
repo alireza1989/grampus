@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
@@ -26,7 +28,7 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
-from nexus.observability.events import EventLog, EventType
+from nexus.observability.events import AgentEvent, EventLog, EventType
 from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
@@ -78,6 +80,7 @@ class AgentRunner:
         self._state_store = state_store
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
+        self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
 
     # ------------------------------------------------------------------
     # Public API
@@ -116,10 +119,11 @@ class AgentRunner:
             session_id=session_id,
             state_store=self._state_store,
         )
-        await event_log.append(
+        _evt = await event_log.append(
             EventType.AGENT_STARTED,
             {"input": user_input[:500], "model": agent_def.model, "step": state.current_step},
         )
+        self._publish_trace(session_id, _evt)
 
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
@@ -141,7 +145,7 @@ class AgentRunner:
 
             accumulated = _add_usage(accumulated, response.token_usage)
 
-            await event_log.append(
+            _evt = await event_log.append(
                 EventType.LLM_CALLED,
                 {
                     "model": agent_def.model,
@@ -155,6 +159,7 @@ class AgentRunner:
                     else 0,
                 },
             )
+            self._publish_trace(session_id, _evt)
 
             if self._cost_tracker:
                 await self._cost_tracker.record(
@@ -185,6 +190,7 @@ class AgentRunner:
                 break
 
         if hit_limit:
+            self._publish_trace(session_id, None)
             raise OrchestrationError(
                 f"Max iterations ({self._config.max_iterations}) exceeded without final answer (MAX_ITERATIONS_EXCEEDED)",
                 code="MAX_ITERATIONS_EXCEEDED",
@@ -213,7 +219,7 @@ class AgentRunner:
             status=state.status,
         )
 
-        await event_log.append(
+        _evt = await event_log.append(
             EventType.AGENT_COMPLETED,
             {
                 "output": (result.output or "")[:500],
@@ -222,6 +228,8 @@ class AgentRunner:
                 "cost_usd": result.token_usage.cost_usd if result.token_usage else 0.0,
             },
         )
+        self._publish_trace(session_id, _evt)
+        self._publish_trace(session_id, None)
 
         duration = result.duration_seconds
         _log.debug(
@@ -406,6 +414,23 @@ class AgentRunner:
         """Return session IDs currently waiting for human input."""
         return list(self._waiting_sessions.get(agent_id, set()))
 
+    def subscribe_trace(self, session_id: str) -> asyncio.Queue[AgentEvent | None]:
+        """Subscribe to live events for a session. Returns a queue; caller must unsubscribe."""
+        q: asyncio.Queue[AgentEvent | None] = asyncio.Queue(maxsize=500)
+        self._trace_queues[session_id].append(q)
+        return q
+
+    def unsubscribe_trace(self, session_id: str, queue: asyncio.Queue[AgentEvent | None]) -> None:
+        """Remove a previously subscribed queue."""
+        with contextlib.suppress(ValueError):
+            self._trace_queues[session_id].remove(queue)
+
+    def _publish_trace(self, session_id: str, event: AgentEvent | None) -> None:
+        """Put event onto all subscribed queues for this session. Non-blocking; drops on full."""
+        for q in list(self._trace_queues.get(session_id, [])):
+            with contextlib.suppress(asyncio.QueueFull):
+                q.put_nowait(event)
+
     async def get_state(self, agent_id: str, session_id: str) -> AgentState:
         """Load and return the current AgentState for a session.
 
@@ -469,13 +494,15 @@ class AgentRunner:
                 )
             else:
                 if event_log is not None:
-                    await event_log.append(
+                    _evt = await event_log.append(
                         EventType.TOOL_CALLED,
                         {"tool": tc.name, "args": str(tc.arguments)[:200]},
                     )
+                    if state is not None:
+                        self._publish_trace(state.session_id, _evt)
                 result = await self._tool_executor.execute(tc)
                 if event_log is not None:
-                    await event_log.append(
+                    _evt = await event_log.append(
                         EventType.TOOL_RESULT,
                         {
                             "tool": tc.name,
@@ -483,6 +510,8 @@ class AgentRunner:
                             "output": str(result.output)[:300],
                         },
                     )
+                    if state is not None:
+                        self._publish_trace(state.session_id, _evt)
                 results.append(result)
         return results
 

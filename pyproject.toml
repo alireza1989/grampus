@@ -80,6 +80,7 @@ dev = [
     "mypy>=1.20",
     "mkdocs-material>=9.7",
     "mkdocstrings[python]>=0.26",
+    "types-PyYAML>=6.0",
     "anthropic>=0.97",
     "openai>=2.0",
     "fastapi>=0.115",

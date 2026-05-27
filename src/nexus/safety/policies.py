@@ -53,7 +53,7 @@ class PolicyLoader:
             )
 
         try:
-            import yaml  # type: ignore[import-untyped]
+            import yaml
 
             raw = yaml.safe_load(file_path.read_text())
         except Exception as exc:

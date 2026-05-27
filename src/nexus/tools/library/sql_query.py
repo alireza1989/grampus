@@ -27,6 +27,9 @@ async def sql_query(
     Returns:
         ``{"ok": True, "rows": list[dict], "columns": list[str], "row_count": int}`` or error dict.
     """
+    if not _SELECT_RE.match(query):
+        return err("Only SELECT queries are permitted", code="NON_SELECT_QUERY")
+
     try:
         import sqlalchemy as sa
         from sqlalchemy.ext.asyncio import create_async_engine
@@ -35,9 +38,6 @@ async def sql_query(
             "sql_query requires: pip install nexus-ai[sql]",
             code="MISSING_DEPS",
         )
-
-    if not _SELECT_RE.match(query):
-        return err("Only SELECT queries are permitted", code="NON_SELECT_QUERY")
 
     try:
         engine = create_async_engine(connection_string, future=True)
