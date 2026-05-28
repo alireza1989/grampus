@@ -1,5 +1,6 @@
 """Tests for nexus.core.models — base ABC and provider clients."""
 
+from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -778,3 +779,214 @@ class TestGeminiClient:
         assert _stop_reason("MAX_TOKENS") == "max_tokens"
         assert _stop_reason("SAFETY") == "safety"
         assert _stop_reason("UNKNOWN") == "stop"
+
+
+# ---------------------------------------------------------------------------
+# OllamaClient
+# ---------------------------------------------------------------------------
+
+from nexus.core.models.ollama import OllamaClient, _to_ollama_messages  # noqa: E402
+from nexus.core.models.ollama import _stop_reason as _ollama_stop_reason  # noqa: E402
+
+
+def _make_ollama_response(
+    content: str = "hello",
+    tool_name: str | None = None,
+    input_tokens: int = 10,
+    output_tokens: int = 5,
+    done_reason: str = "stop",
+) -> MagicMock:
+    resp = MagicMock()
+    resp.prompt_eval_count = input_tokens
+    resp.eval_count = output_tokens
+    resp.done_reason = done_reason
+    msg = MagicMock()
+    msg.content = content if not tool_name else ""
+    if tool_name:
+        tc = MagicMock()
+        tc.function.name = tool_name
+        tc.function.arguments = {"query": "test"}
+        msg.tool_calls = [tc]
+    else:
+        msg.tool_calls = None
+    resp.message = msg
+    return resp
+
+
+async def _fake_ollama_stream() -> AsyncIterator[MagicMock]:
+    for text in ["Hello", " world"]:
+        chunk = MagicMock()
+        chunk.done = False
+        chunk.message.content = text
+        yield chunk
+    final = MagicMock()
+    final.done = True
+    final.done_reason = "stop"
+    final.prompt_eval_count = 10
+    final.eval_count = 5
+    yield final
+
+
+class TestOllamaClient:
+    def _make_client(self, mock_response: MagicMock | None = None) -> OllamaClient:
+        mock_sdk = MagicMock()
+        if mock_response is None:
+            mock_response = _make_ollama_response()
+        mock_sdk.chat = AsyncMock(return_value=mock_response)
+        return OllamaClient(_client=mock_sdk)
+
+    async def test_complete_returns_model_response(self) -> None:
+        client = self._make_client()
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="Hello")],
+            model="llama3.2",
+        )
+        assert isinstance(result, ModelResponse)
+        assert result.content == "hello"
+        assert result.token_usage.input_tokens == 10
+        assert result.token_usage.output_tokens == 5
+        assert result.stop_reason == "end_turn"
+
+    async def test_complete_with_tool_call(self) -> None:
+        client = self._make_client(_make_ollama_response(tool_name="search"))
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="search something")],
+            model="llama3.2",
+        )
+        assert len(result.tool_calls) == 1
+        assert result.tool_calls[0].name == "search"
+        assert result.tool_calls[0].arguments == {"query": "test"}
+
+    async def test_complete_includes_system_message(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(return_value=_make_ollama_response("ok"))
+        client = OllamaClient(_client=mock_sdk)
+        messages = [
+            Message(role=Role.SYSTEM, content="You are helpful."),
+            Message(role=Role.USER, content="hello"),
+        ]
+        await client.complete(messages=messages, model="llama3.2")
+        call_kwargs = mock_sdk.chat.call_args.kwargs
+        sent_messages = call_kwargs["messages"]
+        roles = [m["role"] for m in sent_messages]
+        assert "system" in roles
+
+    async def test_complete_with_tools(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(return_value=_make_ollama_response("ok"))
+        client = OllamaClient(_client=mock_sdk)
+        tool = ToolDefinition(
+            name="search",
+            description="search the web",
+            parameters=[ToolParameter(name="query", type="string", description="q", required=True)],
+        )
+        await client.complete(
+            messages=[Message(role=Role.USER, content="search something")],
+            model="llama3.2",
+            tools=[tool],
+        )
+        call_kwargs = mock_sdk.chat.call_args.kwargs
+        assert "tools" in call_kwargs
+
+    async def test_complete_connection_error_raises_model_error(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(side_effect=Exception("connection refused"))
+        client = OllamaClient(_client=mock_sdk)
+        with pytest.raises(ModelError) as exc_info:
+            await client.complete(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="llama3.2",
+            )
+        assert exc_info.value.code == "MODEL_API_ERROR"
+        assert "ollama serve" in (exc_info.value.hint or "")
+
+    async def test_complete_model_not_found_raises_model_error(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(side_effect=Exception("model not found"))
+        client = OllamaClient(_client=mock_sdk)
+        with pytest.raises(ModelError) as exc_info:
+            await client.complete(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="llama3.2",
+            )
+        assert exc_info.value.code == "MODEL_API_ERROR"
+        assert "ollama pull" in (exc_info.value.hint or "")
+
+    async def test_complete_zero_cost(self) -> None:
+        client = self._make_client()
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="llama3.2",
+        )
+        assert result.token_usage.cost_usd == 0.0
+
+    async def test_stream_yields_chunks(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(return_value=_fake_ollama_stream())
+        client = OllamaClient(_client=mock_sdk)
+        chunks = []
+        async for chunk in client.stream(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="llama3.2",
+        ):
+            chunks.append(chunk)
+        non_final = [c for c in chunks if not c.is_final]
+        assert len(non_final) >= 1
+        assert any(c.delta for c in non_final)
+        final_chunks = [c for c in chunks if c.is_final]
+        assert len(final_chunks) == 1
+        assert final_chunks[0].token_usage is not None
+
+    async def test_stream_final_chunk_has_zero_cost(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(return_value=_fake_ollama_stream())
+        client = OllamaClient(_client=mock_sdk)
+        chunks = []
+        async for chunk in client.stream(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="llama3.2",
+        ):
+            chunks.append(chunk)
+        final = next(c for c in chunks if c.is_final)
+        assert final.token_usage is not None
+        assert final.token_usage.cost_usd == 0.0
+
+    async def test_stream_api_error_raises_model_error(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.chat = AsyncMock(side_effect=Exception("stream failed"))
+        client = OllamaClient(_client=mock_sdk)
+        with pytest.raises(ModelError):
+            async for _ in client.stream(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="llama3.2",
+            ):
+                pass
+
+    def test_is_subclass_of_model_client(self) -> None:
+        assert issubclass(OllamaClient, ModelClient)
+
+    def test_tool_result_message_uses_tool_name(self) -> None:
+        tc = ToolCall(id="call-001", name="search", arguments={"q": "test"})
+        tr = ToolResult(tool_call_id="call-001", output="result text")
+        messages = [
+            Message(role=Role.USER, content="search for me"),
+            Message(role=Role.ASSISTANT, tool_calls=[tc]),
+            Message(role=Role.TOOL, tool_results=[tr]),
+        ]
+        result = _to_ollama_messages(messages)
+        tool_entry = next(m for m in result if m["role"] == "tool")
+        assert "tool_name" in tool_entry
+        assert "name" not in tool_entry
+        assert tool_entry["tool_name"] == "search"
+
+    def test_stop_reason_mapping(self) -> None:
+        assert _ollama_stop_reason("stop") == "end_turn"
+        assert _ollama_stop_reason("length") == "max_tokens"
+        assert _ollama_stop_reason("tool_calls") == "tool_use"
+        assert _ollama_stop_reason(None) == "stop"
+        assert _ollama_stop_reason("unknown") == "stop"
+
+    def test_custom_host_stored(self) -> None:
+        mock_sdk = MagicMock()
+        client = OllamaClient(host="http://myserver:11434", _client=mock_sdk)
+        assert client._host == "http://myserver:11434"

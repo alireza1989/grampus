@@ -1358,6 +1358,7 @@ all = [
     { name = "ipython" },
     { name = "langchain-core" },
     { name = "nest-asyncio" },
+    { name = "ollama" },
     { name = "openai" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
@@ -1378,7 +1379,11 @@ langchain = [
 llm = [
     { name = "anthropic" },
     { name = "google-genai" },
+    { name = "ollama" },
     { name = "openai" },
+]
+ollama = [
+    { name = "ollama" },
 ]
 openai = [
     { name = "openai" },
@@ -1440,6 +1445,9 @@ requires-dist = [
     { name = "langchain-core", marker = "extra == 'langchain'", specifier = ">=0.2" },
     { name = "nest-asyncio", marker = "extra == 'all'", specifier = ">=1.6" },
     { name = "nest-asyncio", marker = "extra == 'jupyter'", specifier = ">=1.6" },
+    { name = "ollama", marker = "extra == 'all'", specifier = ">=0.6" },
+    { name = "ollama", marker = "extra == 'llm'", specifier = ">=0.6" },
+    { name = "ollama", marker = "extra == 'ollama'", specifier = ">=0.6" },
     { name = "openai", marker = "extra == 'all'", specifier = ">=2.0" },
     { name = "openai", marker = "extra == 'llm'", specifier = ">=2.0" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=2.0" },
@@ -1456,7 +1464,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'all'", specifier = ">=0.32" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.32" },
 ]
-provides-extras = ["anthropic", "openai", "gemini", "phoenix", "sql", "langchain", "server", "jupyter", "all", "llm"]
+provides-extras = ["anthropic", "openai", "gemini", "ollama", "phoenix", "sql", "langchain", "server", "jupyter", "all", "llm"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1474,6 +1482,19 @@ dev = [
     { name = "testcontainers", specifier = ">=4.14" },
     { name = "types-pyyaml", specifier = ">=6.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
+]
+
+[[package]]
+name = "ollama"
+version = "0.6.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/72/5f12423b6b39ca8430fbe56f77fcf4ef60f63067c7c4a2e30e200ed9ec16/ollama-0.6.2.tar.gz", hash = "sha256:936d55daa684f474364c098611c933626f8d6c7d67065c5b7ae0c477b508b07f", size = 53145, upload-time = "2026-04-29T21:21:15.018Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/ab/d6722beeb2d10f7a3b9ff49375708904fde18f82b5609a0bc4aeb5996a4d/ollama-0.6.2-py3-none-any.whl", hash = "sha256:3ad7daab28e5a973445c36a73882a3ef698c2ebb00e21e308652741577509f7d", size = 15115, upload-time = "2026-04-29T21:21:13.794Z" },
 ]
 
 [[package]]
