@@ -735,6 +735,43 @@ class TestGeminiClient:
         assert last["role"] == "user"
         fn_resp = last["parts"][0]["function_response"]
         assert fn_resp["name"] == "search"
+        # id must be echoed back for Gemini 3+ models
+        assert fn_resp["id"] == "call-001"
+
+    def test_function_call_id_in_history(self) -> None:
+        # function_call parts in assistant history should carry the id for Gemini 3+
+        tc = ToolCall(id="gemini-fc-id-abc123", name="search", arguments={"q": "x"})
+        messages = [
+            Message(role=Role.USER, content="go"),
+            Message(role=Role.ASSISTANT, tool_calls=[tc]),
+        ]
+        contents = _to_gemini_contents(messages)
+        assistant_entry = next(c for c in contents if c["role"] == "model")
+        fc_part = assistant_entry["parts"][0]["function_call"]
+        assert fc_part["id"] == "gemini-fc-id-abc123"
+
+    async def test_gemini3_sdk_id_preserved_as_tool_call_id(self) -> None:
+        # When the SDK returns a real string id on function_call (Gemini 3),
+        # it should be stored as ToolCall.id instead of generating a UUID.
+        fc = MagicMock()
+        fc.name = "search"
+        fc.args = {"query": "test"}
+        fc.id = "fc-real-id-from-sdk"  # string id as Gemini 3 provides
+
+        part = MagicMock()
+        part.text = None
+        part.function_call = fc
+
+        resp = MagicMock()
+        resp.usage_metadata = MagicMock(prompt_token_count=5, candidates_token_count=3)
+        resp.candidates = [MagicMock(content=MagicMock(parts=[part]), finish_reason="STOP")]
+
+        client = self._make_client(resp)
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="search")],
+            model="gemini-3.5-flash",
+        )
+        assert result.tool_calls[0].id == "fc-real-id-from-sdk"
 
     def test_stop_reason_mapping(self) -> None:
         assert _stop_reason("STOP") == "end_turn"

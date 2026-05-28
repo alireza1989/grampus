@@ -12,9 +12,20 @@ from nexus.core.types import Message, Role, StreamChunk, TokenUsage, ToolCall, T
 
 # Per-model pricing in USD per 1M tokens (input, output)
 _PRICING: dict[str, tuple[float, float]] = {
+    # Gemini 3.x (released May 2026)
+    "gemini-3.5-flash": (1.50, 9.00),
+    "gemini-3.1-pro-preview": (2.00, 12.00),  # ≤200k context tier
+    "gemini-3.1-flash-lite": (0.25, 1.50),
+    "gemini-3-flash-preview": (0.50, 3.00),
+    # Gemini 2.5
+    "gemini-2.5-pro": (1.25, 10.00),
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    # Gemini 2.0
     "gemini-2.0-flash-001": (0.075, 0.30),
     "gemini-2.0-flash-lite-001": (0.0375, 0.15),
     "gemini-2.0-pro-exp": (0.0, 0.0),
+    # Gemini 1.5
     "gemini-1.5-flash": (0.075, 0.30),
     "gemini-1.5-flash-8b": (0.0375, 0.15),
     "gemini-1.5-pro": (1.25, 5.00),
@@ -51,24 +62,21 @@ def _to_gemini_contents(messages: list[Message]) -> list[dict[str, Any]]:
                 parts.append({"text": msg.content})
             if msg.tool_calls:
                 for tc in msg.tool_calls:
-                    parts.append(
-                        {
-                            "function_call": {
-                                "name": tc.name,
-                                "args": tc.arguments,
-                            }
-                        }
-                    )
+                    # Include id for Gemini 3+ models (ignored by older models)
+                    fc_dict: dict[str, Any] = {"name": tc.name, "args": tc.arguments, "id": tc.id}
+                    parts.append({"function_call": fc_dict})
 
         elif msg.role == Role.TOOL:
             for tr in msg.tool_results:
                 fn_name = id_to_name.get(tr.tool_call_id, tr.tool_call_id)
                 output = str(tr.output) if tr.output is not None else (tr.error or "")
+                # id must be echoed back for Gemini 3+ models
                 parts.append(
                     {
                         "function_response": {
                             "name": fn_name,
                             "response": {"result": output},
+                            "id": tr.tool_call_id,
                         }
                     }
                 )
@@ -182,13 +190,14 @@ class GeminiClient(ModelClient):
                 content_text = part.text
             fc = getattr(part, "function_call", None)
             if fc is not None:
-                tool_calls.append(
-                    ToolCall(
-                        id=f"gemini-{fc.name}-{_uuid.uuid4().hex[:8]}",
-                        name=fc.name,
-                        arguments=dict(fc.args),
-                    )
+                # Gemini 3+ returns a real id; older models don't — fall back to generated UUID
+                sdk_id = getattr(fc, "id", None)
+                call_id = (
+                    sdk_id
+                    if isinstance(sdk_id, str)
+                    else f"gemini-{fc.name}-{_uuid.uuid4().hex[:8]}"
                 )
+                tool_calls.append(ToolCall(id=call_id, name=fc.name, arguments=dict(fc.args)))
 
         return ModelResponse(
             content=content_text,
