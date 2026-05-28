@@ -8,8 +8,17 @@ import pytest
 from nexus.core.errors import ModelError
 from nexus.core.models.anthropic import AnthropicClient
 from nexus.core.models.base import ModelClient, ModelResponse
+from nexus.core.models.gemini import GeminiClient, _stop_reason, _to_gemini_contents
 from nexus.core.models.openai import OpenAIClient
-from nexus.core.types import Message, Role, TokenUsage, ToolCall, ToolDefinition, ToolParameter
+from nexus.core.types import (
+    Message,
+    Role,
+    TokenUsage,
+    ToolCall,
+    ToolDefinition,
+    ToolParameter,
+    ToolResult,
+)
 
 # ---------------------------------------------------------------------------
 # ModelResponse
@@ -394,3 +403,341 @@ class TestOpenAIClient:
         messages = [Message(role=Role.USER, content="hi")]
         response = await client.complete(messages=messages, model="gpt-4o-mini")
         assert response.token_usage.cost_usd >= 0.0
+
+
+# ---------------------------------------------------------------------------
+# GeminiClient
+# ---------------------------------------------------------------------------
+
+
+def _make_gemini_mock_part(text: str | None = None, function_call: Any = None) -> MagicMock:
+    part = MagicMock()
+    part.text = text
+    part.function_call = function_call
+    return part
+
+
+def _make_gemini_mock_response(
+    text: str = "hello",
+    tool_name: str | None = None,
+    input_tokens: int = 10,
+    output_tokens: int = 5,
+    finish_reason: str = "STOP",
+) -> MagicMock:
+    resp = MagicMock()
+    resp.usage_metadata = MagicMock(
+        prompt_token_count=input_tokens,
+        candidates_token_count=output_tokens,
+    )
+    if tool_name:
+        fc = MagicMock()
+        fc.name = tool_name
+        fc.args = {"query": "test"}
+        part = _make_gemini_mock_part(function_call=fc)
+        part.text = None
+    else:
+        part = _make_gemini_mock_part(text=text)
+        part.function_call = None
+    resp.candidates = [
+        MagicMock(
+            content=MagicMock(parts=[part]),
+            finish_reason=finish_reason,
+        )
+    ]
+    return resp
+
+
+def _make_gemini_chunk(
+    text: str = "",
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    finish_reason: str | None = None,
+) -> MagicMock:
+    chunk = MagicMock()
+    chunk.usage_metadata = MagicMock(
+        prompt_token_count=input_tokens,
+        candidates_token_count=output_tokens,
+    )
+    part = MagicMock()
+    part.text = text if text else None
+    candidate = MagicMock(
+        content=MagicMock(parts=[part] if text else []),
+        finish_reason=finish_reason,
+    )
+    chunk.candidates = [candidate]
+    return chunk
+
+
+class TestGeminiClient:
+    def _make_client(self, mock_response: MagicMock | None = None) -> GeminiClient:
+        mock_sdk = MagicMock()
+        if mock_response is None:
+            mock_response = _make_gemini_mock_response("hello")
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+        # Stub for GenerateContentConfig used in complete/stream
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(side_effect=lambda **kw: MagicMock(**kw))
+        sys.modules.setdefault("google", MagicMock())
+        sys.modules.setdefault("google.genai", MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        return GeminiClient(api_key="test-key", _client=mock_sdk)
+
+    async def test_complete_returns_model_response(self) -> None:
+        client = self._make_client()
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="Hello")],
+            model="gemini-2.0-flash-001",
+        )
+        assert isinstance(result, ModelResponse)
+        assert result.content == "hello"
+        assert result.token_usage.input_tokens == 10
+        assert result.stop_reason == "end_turn"
+
+    async def test_complete_with_tool_call(self) -> None:
+        client = self._make_client(_make_gemini_mock_response(tool_name="search"))
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="search something")],
+            model="gemini-2.0-flash-001",
+        )
+        assert len(result.tool_calls) == 1
+        assert result.tool_calls[0].name == "search"
+        assert result.tool_calls[0].arguments == {"query": "test"}
+        assert result.content is None
+
+    async def test_complete_system_message_extracted(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content = AsyncMock(
+            return_value=_make_gemini_mock_response("ok")
+        )
+        import sys
+
+        types_mod = MagicMock()
+        captured: dict[str, Any] = {}
+
+        def capture_config(**kw: Any) -> MagicMock:
+            captured.update(kw)
+            m = MagicMock()
+            for k, v in kw.items():
+                setattr(m, k, v)
+            return m
+
+        types_mod.GenerateContentConfig = MagicMock(side_effect=capture_config)
+        sys.modules.setdefault("google.genai", MagicMock())
+        sys.modules["google.genai"].types = types_mod
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        system_msg = Message(role=Role.SYSTEM, content="You are helpful.")
+        user_msg = Message(role=Role.USER, content="hello")
+        await client.complete(
+            messages=[system_msg, user_msg],
+            model="gemini-2.0-flash-001",
+        )
+
+        assert captured.get("system_instruction") == "You are helpful."
+        call_args = mock_sdk.aio.models.generate_content.call_args
+        contents = call_args.kwargs["contents"]
+        assert not any(c.get("role") == "system" for c in contents if isinstance(c, dict))
+
+    async def test_complete_with_tools(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content = AsyncMock(
+            return_value=_make_gemini_mock_response("ok")
+        )
+        import sys
+
+        types_mod = MagicMock()
+        captured: dict[str, Any] = {}
+
+        def capture_config(**kw: Any) -> MagicMock:
+            captured.update(kw)
+            m = MagicMock()
+            for k, v in kw.items():
+                setattr(m, k, v)
+            return m
+
+        types_mod.GenerateContentConfig = MagicMock(side_effect=capture_config)
+        sys.modules.setdefault("google.genai", MagicMock())
+        sys.modules["google.genai"].types = types_mod
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        tool = ToolDefinition(
+            name="search",
+            description="search the web",
+            parameters=[ToolParameter(name="query", type="string", description="q", required=True)],
+        )
+        await client.complete(
+            messages=[Message(role=Role.USER, content="search something")],
+            model="gemini-2.0-flash-001",
+            tools=[tool],
+        )
+        assert captured.get("tools") is not None
+
+    async def test_complete_api_error_raises_model_error(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content = AsyncMock(side_effect=Exception("api_key invalid"))
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        with pytest.raises(ModelError) as exc_info:
+            await client.complete(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="gemini-2.0-flash-001",
+            )
+        assert exc_info.value.code == "MODEL_API_ERROR"
+        assert "GOOGLE_API_KEY" in (exc_info.value.hint or "")
+
+    async def test_complete_api_error_non_auth(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content = AsyncMock(
+            side_effect=Exception("rate limit exceeded")
+        )
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        with pytest.raises(ModelError) as exc_info:
+            await client.complete(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="gemini-2.0-flash-001",
+            )
+        assert "status page" in (exc_info.value.hint or "")
+
+    async def test_complete_cost_calculated(self) -> None:
+        client = self._make_client(
+            _make_gemini_mock_response("ok", input_tokens=1000, output_tokens=500)
+        )
+        result = await client.complete(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="gemini-2.0-flash-001",
+        )
+        expected_cost = (1000 * 0.075 + 500 * 0.30) / 1_000_000
+        assert result.token_usage.cost_usd == pytest.approx(expected_cost)
+
+    async def test_stream_yields_chunks(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
+            yield _make_gemini_chunk("Hello", input_tokens=0, output_tokens=0)
+            yield _make_gemini_chunk(" world", input_tokens=0, output_tokens=0)
+            yield _make_gemini_chunk("", input_tokens=10, output_tokens=5, finish_reason="STOP")
+
+        mock_sdk.aio.models.generate_content_stream = AsyncMock(return_value=_fake_stream())
+
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        chunks = []
+        async for chunk in client.stream(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="gemini-2.0-flash-001",
+        ):
+            chunks.append(chunk)
+
+        non_final = [c for c in chunks if not c.is_final]
+        assert len(non_final) >= 1
+        final_chunks = [c for c in chunks if c.is_final]
+        assert len(final_chunks) == 1
+
+    async def test_stream_final_chunk_has_usage(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
+            yield _make_gemini_chunk("text", input_tokens=0, output_tokens=0)
+            yield _make_gemini_chunk("", input_tokens=10, output_tokens=5, finish_reason="STOP")
+
+        mock_sdk.aio.models.generate_content_stream = AsyncMock(return_value=_fake_stream())
+
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        chunks = []
+        async for chunk in client.stream(
+            messages=[Message(role=Role.USER, content="hi")],
+            model="gemini-2.0-flash-001",
+        ):
+            chunks.append(chunk)
+
+        final = next(c for c in chunks if c.is_final)
+        assert final.token_usage is not None
+        assert final.token_usage.total_tokens == 15
+
+    async def test_stream_api_error_raises_model_error(self) -> None:
+        mock_sdk = MagicMock()
+        mock_sdk.aio = MagicMock()
+        mock_sdk.aio.models = MagicMock()
+        mock_sdk.aio.models.generate_content_stream = AsyncMock(
+            side_effect=Exception("stream failed")
+        )
+
+        import sys
+
+        types_mod = MagicMock()
+        types_mod.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        sys.modules["google.genai.types"] = types_mod
+
+        client = GeminiClient(api_key="test-key", _client=mock_sdk)
+        with pytest.raises(ModelError):
+            async for _ in client.stream(
+                messages=[Message(role=Role.USER, content="hi")],
+                model="gemini-2.0-flash-001",
+            ):
+                pass
+
+    def test_is_subclass_of_model_client(self) -> None:
+        assert issubclass(GeminiClient, ModelClient)
+
+    def test_tool_result_message_conversion(self) -> None:
+        tc = ToolCall(id="call-001", name="search", arguments={"q": "test"})
+        tr = ToolResult(tool_call_id="call-001", output="result text")
+        messages = [
+            Message(role=Role.USER, content="search for me"),
+            Message(role=Role.ASSISTANT, tool_calls=[tc]),
+            Message(role=Role.TOOL, tool_results=[tr]),
+        ]
+        contents = _to_gemini_contents(messages)
+
+        last = contents[-1]
+        assert last["role"] == "user"
+        fn_resp = last["parts"][0]["function_response"]
+        assert fn_resp["name"] == "search"
+
+    def test_stop_reason_mapping(self) -> None:
+        assert _stop_reason("STOP") == "end_turn"
+        assert _stop_reason("MAX_TOKENS") == "max_tokens"
+        assert _stop_reason("SAFETY") == "safety"
+        assert _stop_reason("UNKNOWN") == "stop"

@@ -46,6 +46,7 @@ Changelog = "https://github.com/nexus-ai/nexus-agentic-platform/blob/main/CHANGE
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.97"]
 openai = ["openai>=2.0"]
+gemini = ["google-genai>=1.0"]
 phoenix = ["arize-phoenix-otel>=0.6"]
 sql = ["sqlalchemy>=2.0", "aiosqlite>=0.19", "greenlet>=3.0"]
 langchain = ["langchain-core>=0.2"]
@@ -54,6 +55,7 @@ jupyter = ["ipython>=8.0", "nest_asyncio>=1.6"]
 all = [
     "anthropic>=0.97",
     "openai>=2.0",
+    "google-genai>=1.0",
     "arize-phoenix-otel>=0.6",
     "sqlalchemy>=2.0",
     "aiosqlite>=0.19",
@@ -64,7 +66,7 @@ all = [
     "ipython>=8.0",
     "nest_asyncio>=1.6",
 ]
-llm = ["anthropic>=0.97", "openai>=2.0"]
+llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0"]
 
 [project.scripts]
 nexus = "nexus.cli.main:cli"
