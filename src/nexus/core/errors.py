@@ -82,3 +82,7 @@ class LockAcquisitionError(DaprError):
 
 class StateSerializationError(DaprError):
     """Raised when state store bytes cannot be deserialized into the expected model."""
+
+
+class DaprJobsError(DaprError):
+    """Raised when the Dapr Jobs API returns an unexpected response."""

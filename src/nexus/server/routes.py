@@ -16,7 +16,9 @@ try:
 except ImportError as _exc:  # pragma: no cover
     raise ImportError("Install server deps: pip install nexus-ai[server]") from _exc
 
+from nexus.core.logging import get_logger
 from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
+from nexus.dapr.schedule_store import ScheduleStore
 from nexus.observability.events import AgentEvent, EventLog
 from nexus.server.models import (
     AgentStateResponse,
@@ -39,6 +41,8 @@ from nexus.server.models import (
 from nexus.server.trace_ui import TRACE_HTML
 from nexus.server.ui import UI_HTML
 from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
+
+_log = get_logger(__name__)
 
 
 def _mask_secret(data: dict[str, Any]) -> dict[str, Any]:
@@ -86,6 +90,47 @@ async def _run_and_callback(
                     )
             except Exception:
                 pass
+
+
+async def _run_scheduled_job(
+    runner: Any,
+    agent_def: AgentDefinition,
+    input_text: str,
+    session_id: str,
+    job_name: str,
+    schedule_store: ScheduleStore | None,
+) -> None:
+    """Background task: run agent for a scheduled job and update trigger metadata."""
+    from nexus.core.logging import get_logger as _get_logger
+
+    log = _get_logger(__name__)
+    try:
+        result = await runner.run(agent_def, input_text, session_id=session_id)
+        log.info(
+            "scheduled_job_completed",
+            job=job_name,
+            session_id=session_id,
+            status=str(result.status),
+        )
+        if schedule_store is not None:
+            cfg = await schedule_store.get(job_name)
+            if cfg is not None:
+                from datetime import UTC, datetime
+
+                updated = cfg.model_copy(
+                    update={
+                        "last_triggered_at": datetime.now(UTC),
+                        "trigger_count": cfg.trigger_count + 1,
+                    }
+                )
+                await schedule_store.save(updated)
+    except Exception as exc:
+        log.error(
+            "scheduled_job_failed",
+            job=job_name,
+            session_id=session_id,
+            error=str(exc),
+        )
 
 
 def _pkg_version() -> str:
@@ -392,6 +437,38 @@ def create_router(has_memory: bool) -> APIRouter:
             token_usage=result.token_usage,
             duration_seconds=result.duration_seconds,
         )
+
+    @router.post("/job/{job_name}", include_in_schema=False)
+    async def job_callback(job_name: str, request: Request) -> dict[str, Any]:
+        """Dapr Jobs callback — fired when a scheduled job triggers."""
+        from uuid import uuid4
+
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        schedule_store = cast(
+            ScheduleStore | None,
+            getattr(request.app.state, "schedule_store", None),
+        )
+
+        raw = await request.body()
+        try:
+            outer: dict[str, Any] = _json.loads(raw) if raw else {}
+            inner_str: str = outer.get("value", "{}")
+            payload: dict[str, Any] = _json.loads(inner_str) if inner_str else {}
+        except (ValueError, KeyError):
+            payload = {}
+
+        input_text: str = payload.get("input", f"Scheduled run: {job_name}")
+        session_prefix: str = payload.get("session_prefix", "sched")
+        session_id = f"{session_prefix}-{uuid4().hex[:8]}"
+
+        _log.info("job_callback_fired", job=job_name, session_id=session_id)
+
+        asyncio.create_task(
+            _run_scheduled_job(runner, agent_def, input_text, session_id, job_name, schedule_store)
+        )
+
+        return {"accepted": True, "session_id": session_id, "job": job_name}
 
     if has_memory:
 

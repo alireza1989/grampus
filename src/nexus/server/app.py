@@ -31,6 +31,7 @@ def create_app(
     *,
     memory_manager: Any | None = None,
     webhook_registry: Any | None = None,
+    schedule_store: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -39,6 +40,7 @@ def create_app(
         agent_def: The AgentDefinition this server exposes.
         memory_manager: Optional MemoryManager for the /memory endpoints.
         webhook_registry: Optional WebhookRegistry; a new one is created if omitted.
+        schedule_store: Optional ScheduleStore for the /job callback endpoints.
 
     Returns:
         Configured FastAPI app with all routes mounted.
@@ -71,6 +73,7 @@ def create_app(
     app.state.webhook_registry = (
         webhook_registry if webhook_registry is not None else WebhookRegistry()
     )
+    app.state.schedule_store = schedule_store
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:
