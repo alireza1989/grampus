@@ -56,6 +56,10 @@ class BudgetExceededError(OrchestrationError):
     """Raised when an agent exceeds its cost or token budget."""
 
 
+class HandoffError(OrchestrationError):
+    """Raised when an agent handoff is rejected or fails."""
+
+
 class SafetyError(NexusError):
     """Raised when a safety check blocks an action."""
 

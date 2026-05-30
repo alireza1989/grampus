@@ -28,6 +28,9 @@ class EventType(StrEnum):
     SAFETY_VIOLATION = "agent.safety_violation"
     HUMAN_INPUT_REQUESTED = "agent.human_input_requested"
     BUDGET_EXCEEDED = "agent.budget_exceeded"
+    HANDOFF_INITIATED = "agent.handoff_initiated"
+    HANDOFF_COMPLETED = "agent.handoff_completed"
+    HANDOFF_FAILED = "agent.handoff_failed"
 
 
 class AgentEvent(BaseModel):

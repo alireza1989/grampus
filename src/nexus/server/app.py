@@ -32,6 +32,7 @@ def create_app(
     memory_manager: Any | None = None,
     webhook_registry: Any | None = None,
     schedule_store: Any | None = None,
+    agent_registry: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -67,6 +68,8 @@ def create_app(
         allow_headers=["*"],
     )
 
+    from nexus.orchestration.handoff import AgentRegistry
+
     app.state.runner = runner
     app.state.agent_def = agent_def
     app.state.memory_manager = memory_manager
@@ -74,6 +77,7 @@ def create_app(
         webhook_registry if webhook_registry is not None else WebhookRegistry()
     )
     app.state.schedule_store = schedule_store
+    app.state.agent_registry = agent_registry if agent_registry is not None else AgentRegistry()
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:

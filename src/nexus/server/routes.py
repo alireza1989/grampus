@@ -10,6 +10,8 @@ from collections.abc import AsyncGenerator
 from typing import Any, cast
 from uuid import uuid4
 
+from pydantic import BaseModel
+
 try:
     from fastapi import APIRouter, Request
     from fastapi.responses import HTMLResponse, StreamingResponse
@@ -20,6 +22,7 @@ from nexus.core.logging import get_logger
 from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
 from nexus.dapr.schedule_store import ScheduleStore
 from nexus.observability.events import AgentEvent, EventLog
+from nexus.orchestration.handoff import AgentRegistry
 from nexus.server.models import (
     AgentStateResponse,
     HealthResponse,
@@ -43,6 +46,21 @@ from nexus.server.ui import UI_HTML
 from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
 
 _log = get_logger(__name__)
+
+
+class _A2ATaskRequest(BaseModel):
+    """A2A Protocol task submission body."""
+
+    id: str | None = None
+    message: dict[str, Any]
+
+
+class _A2ATaskResponse(BaseModel):
+    """A2A Protocol task submission response."""
+
+    id: str
+    status: str = "submitted"
+    message: str = "Task received. Use /a2a/tasks/{id} to poll status."
 
 
 def _mask_secret(data: dict[str, Any]) -> dict[str, Any]:
@@ -469,6 +487,42 @@ def create_router(has_memory: bool) -> APIRouter:
         )
 
         return {"accepted": True, "session_id": session_id, "job": job_name}
+
+    # ------------------------------------------------------------------
+    # A2A Protocol v1.2 endpoints
+    # ------------------------------------------------------------------
+
+    @router.get("/.well-known/agent.json")
+    async def agent_card(request: Request) -> Any:
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        registry: AgentRegistry = getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        base_url = str(request.base_url).rstrip("/")
+        card = registry.generate_agent_card(agent_def, base_url)
+        return card.model_dump()
+
+    @router.get("/a2a/agents")
+    async def list_a2a_agents(request: Request) -> dict[str, Any]:
+        registry: AgentRegistry = getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        return {"agents": registry.list_agents()}
+
+    @router.post("/a2a/tasks", response_model=_A2ATaskResponse)
+    async def submit_a2a_task(body: _A2ATaskRequest, request: Request) -> _A2ATaskResponse:
+        runner = request.app.state.runner
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        task_id = body.id or uuid4().hex[:8]
+        session_id = f"a2a-{task_id}"
+
+        parts: list[dict[str, Any]] = body.message.get("parts", [])
+        input_text = " ".join(p.get("text", "") for p in parts if p.get("type") == "text")
+        if not input_text:
+            input_text = str(body.message)
+
+        await runner.run(agent_def, input_text, session_id=session_id)
+        return _A2ATaskResponse(
+            id=task_id,
+            status="completed",
+            message=f"Task {task_id} completed.",
+        )
 
     if has_memory:
 

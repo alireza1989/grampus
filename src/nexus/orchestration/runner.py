@@ -29,6 +29,7 @@ from nexus.core.types import (
     ToolResult,
 )
 from nexus.observability.events import AgentEvent, EventLog, EventType
+from nexus.orchestration.handoff import HandoffContext, HandoffExecutor, HandoffRequest
 from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
@@ -71,6 +72,7 @@ class AgentRunner:
         memory_manager: MemoryManager | None = None,
         cost_tracker: CostTracker | None = None,
         state_store: Any | None = None,
+        handoff_executor: HandoffExecutor | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -78,6 +80,7 @@ class AgentRunner:
         self._memory_manager = memory_manager
         self._cost_tracker = cost_tracker
         self._state_store = state_store
+        self._handoff_executor = handoff_executor
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -93,6 +96,8 @@ class AgentRunner:
         *,
         session_id: str,
         agent_state: AgentState | None = None,
+        _handoff_depth: int = 0,
+        _prefix_messages: list[Message] | None = None,
     ) -> ExecutionResult:
         """Execute the agent loop for one user turn.
 
@@ -127,6 +132,9 @@ class AgentRunner:
 
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
+
+        if _prefix_messages:
+            state.messages.extend(_prefix_messages)
 
         state.messages.append(Message(role=Role.USER, content=user_input))
 
@@ -178,7 +186,7 @@ class AgentRunner:
 
             if response.tool_calls:
                 results = await self._execute_tool_calls(
-                    response.tool_calls, state, event_log=event_log
+                    response.tool_calls, state, event_log=event_log, handoff_depth=_handoff_depth
                 )
                 tool_calls_made += len(results)
                 state.messages.append(Message(role=Role.TOOL, tool_results=results))
@@ -472,6 +480,7 @@ class AgentRunner:
         tool_calls: list[ToolCall],
         state: AgentState | None = None,
         event_log: EventLog | None = None,
+        handoff_depth: int = 0,
     ) -> list[ToolResult]:
         results = []
         for tc in tool_calls:
@@ -490,6 +499,31 @@ class AgentRunner:
                         output="Paused: waiting for human input.",
                         error=None,
                         duration_ms=0,
+                    )
+                )
+            elif tc.name.startswith("transfer_to_") and self._handoff_executor is not None:
+                target_name = tc.name[len("transfer_to_"):]
+                context = HandoffContext(
+                    task=str(tc.arguments.get("task", "")),
+                    context_summary=str(tc.arguments.get("context_summary", "")) or None,
+                    constraints=[],
+                )
+                request = HandoffRequest(
+                    source_agent_id=state.agent_id if state else "unknown",
+                    source_session_id=state.session_id if state else "unknown",
+                    target_agent_name=target_name,
+                    context=context,
+                    handoff_depth=handoff_depth,
+                    trace_context=_extract_trace_context(),
+                )
+                handoff_result = await self._handoff_executor.execute(request)
+                results.append(
+                    ToolResult(
+                        tool_call_id=tc.id,
+                        output=handoff_result.output
+                        or f"Handoff to {target_name} completed.",
+                        error=handoff_result.error,
+                        duration_ms=int(handoff_result.duration_seconds * 1000),
                     )
                 )
             else:
@@ -557,6 +591,24 @@ class AgentRunner:
 # ------------------------------------------------------------------
 # Module-level helpers
 # ------------------------------------------------------------------
+
+
+def _extract_trace_context() -> dict[str, str]:
+    """Extract W3C traceparent from the current OpenTelemetry span."""
+    try:
+        from opentelemetry import trace
+
+        span = trace.get_current_span()
+        ctx = span.get_span_context()
+        if not ctx.is_valid:
+            return {}
+        return {
+            "traceparent": (
+                f"00-{ctx.trace_id:032x}-{ctx.span_id:016x}-{ctx.trace_flags:02x}"
+            )
+        }
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def _zero_usage(model: str) -> TokenUsage:
