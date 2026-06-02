@@ -13,8 +13,8 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 try:
-    from fastapi import APIRouter, Request
-    from fastapi.responses import HTMLResponse, StreamingResponse
+    from fastapi import APIRouter, HTTPException, Request, Response
+    from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 except ImportError as _exc:  # pragma: no cover
     raise ImportError("Install server deps: pip install nexus-ai[server]") from _exc
 
@@ -22,6 +22,7 @@ from nexus.core.logging import get_logger
 from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
 from nexus.dapr.schedule_store import ScheduleStore
 from nexus.observability.events import AgentEvent, EventLog
+from nexus.observability.metrics import NexusMetrics
 from nexus.orchestration.handoff import AgentRegistry
 from nexus.server.models import (
     AgentStateResponse,
@@ -46,6 +47,13 @@ from nexus.server.ui import UI_HTML
 from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
 
 _log = get_logger(__name__)
+
+
+class SnapshotRestoreRequest(BaseModel):
+    """Request body for POST /agents/snapshot/restore."""
+
+    snapshot: dict[str, Any]
+    session_id_override: str | None = None
 
 
 class _A2ATaskRequest(BaseModel):
@@ -198,6 +206,14 @@ def _event_to_chunk(event: StreamEvent) -> StreamChunkResponse:
 def create_router(has_memory: bool) -> APIRouter:
     """Build and return the API router, optionally including memory endpoints."""
     router = APIRouter()
+
+    @router.get("/metrics", response_class=PlainTextResponse)
+    async def metrics_endpoint(request: Request) -> str:
+        """Prometheus metrics in text exposition format."""
+        nexus_metrics: NexusMetrics | None = getattr(request.app.state, "nexus_metrics", None)
+        if nexus_metrics is None:
+            return "# No metrics collector configured\n"
+        return nexus_metrics.to_prometheus_text()
 
     @router.get("/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:
@@ -495,14 +511,18 @@ def create_router(has_memory: bool) -> APIRouter:
     @router.get("/.well-known/agent.json")
     async def agent_card(request: Request) -> Any:
         agent_def = cast(AgentDefinition, request.app.state.agent_def)
-        registry: AgentRegistry = getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        registry: AgentRegistry = (
+            getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        )
         base_url = str(request.base_url).rstrip("/")
         card = registry.generate_agent_card(agent_def, base_url)
         return card.model_dump()
 
     @router.get("/a2a/agents")
     async def list_a2a_agents(request: Request) -> dict[str, Any]:
-        registry: AgentRegistry = getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        registry: AgentRegistry = (
+            getattr(request.app.state, "agent_registry", None) or AgentRegistry()
+        )
         return {"agents": registry.list_agents()}
 
     @router.post("/a2a/tasks", response_model=_A2ATaskResponse)
@@ -523,6 +543,53 @@ def create_router(has_memory: bool) -> APIRouter:
             status="completed",
             message=f"Task {task_id} completed.",
         )
+
+    @router.get("/agents/{session_id}/snapshot")
+    async def get_agent_snapshot(session_id: str, request: Request) -> Response:
+        """Download the current state of a session as a JSON snapshot file."""
+        from nexus.core.errors import SnapshotError
+        from nexus.orchestration.snapshot import SnapshotManager
+
+        agent_def = cast(AgentDefinition, request.app.state.agent_def)
+        state_store = getattr(request.app.state, "state_store", None)
+        if state_store is None:
+            raise HTTPException(status_code=503, detail="State store not configured.")
+
+        mgr = SnapshotManager(state_store)
+        try:
+            snapshot = await mgr.export_session(agent_def.name, session_id)
+        except SnapshotError as exc:
+            status = 404 if exc.code == "STATE_NOT_FOUND" else 500
+            raise HTTPException(status_code=status, detail=str(exc)) from exc
+
+        content = snapshot.model_dump_json(indent=2)
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{session_id}_snapshot.json"'},
+        )
+
+    @router.post("/agents/snapshot/restore", status_code=200)
+    async def restore_agent_snapshot(
+        body: SnapshotRestoreRequest, request: Request
+    ) -> dict[str, str]:
+        """Restore an agent session from a snapshot JSON body."""
+        from nexus.core.errors import SnapshotError
+        from nexus.orchestration.snapshot import SnapshotManager
+
+        state_store = getattr(request.app.state, "state_store", None)
+        if state_store is None:
+            raise HTTPException(status_code=503, detail="State store not configured.")
+
+        mgr = SnapshotManager(state_store)
+        try:
+            snapshot = SnapshotManager.from_dict(body.snapshot)
+            await mgr.restore_snapshot(snapshot, session_id_override=body.session_id_override)
+        except SnapshotError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        target = body.session_id_override or snapshot.session_id
+        return {"status": "restored", "agent_id": snapshot.agent_id, "session_id": target}
 
     if has_memory:
 

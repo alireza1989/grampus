@@ -90,3 +90,7 @@ class StateSerializationError(DaprError):
 
 class DaprJobsError(DaprError):
     """Raised when the Dapr Jobs API returns an unexpected response."""
+
+
+class SnapshotError(NexusError):
+    """Raised when a snapshot export, import, or restore operation fails."""

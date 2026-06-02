@@ -13,6 +13,7 @@ from nexus.cli.commands.replay import replay
 from nexus.cli.commands.run import run
 from nexus.cli.commands.schedule import schedule
 from nexus.cli.commands.serve import serve
+from nexus.cli.commands.state import state
 
 
 @click.group()
@@ -30,3 +31,4 @@ cli.add_command(dev)
 cli.add_command(serve)
 cli.add_command(replay)
 cli.add_command(schedule)
+cli.add_command(state)
