@@ -35,6 +35,22 @@ from nexus.evaluation.reporter import (
     EvalReporter,
     ReportFormat,
 )
+from nexus.evaluation.streaming import (
+    StreamingAssertion,
+    StreamingEvalCase,
+    StreamingEvalSuite,
+    StreamingResult,
+    chunk_count_between,
+    first_token_within,
+    min_throughput,
+    no_repetition,
+    no_stall,
+    stream_completes,
+    stream_contains,
+    stream_not_empty,
+    stream_output_length,
+    token_usage_reported,
+)
 from nexus.evaluation.suite import (
     CaseResult,
     EvalCase,
@@ -79,4 +95,19 @@ __all__ = [
     "EvalReport",
     "EvalReporter",
     "ReportFormat",
+    # streaming
+    "StreamingAssertion",
+    "StreamingEvalCase",
+    "StreamingEvalSuite",
+    "StreamingResult",
+    "chunk_count_between",
+    "first_token_within",
+    "min_throughput",
+    "no_repetition",
+    "no_stall",
+    "stream_completes",
+    "stream_contains",
+    "stream_not_empty",
+    "stream_output_length",
+    "token_usage_reported",
 ]

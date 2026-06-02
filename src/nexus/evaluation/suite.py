@@ -6,13 +6,16 @@ import asyncio
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from nexus.core.logging import get_logger
 from nexus.core.types import AgentDefinition, ExecutionResult
 from nexus.evaluation.assertions import AssertionResult
+
+if TYPE_CHECKING:
+    from nexus.evaluation.streaming import StreamingResult
 
 logger = get_logger(__name__)
 
@@ -59,9 +62,11 @@ class CaseResult(BaseModel):
     passed: bool
     assertion_results: list[AssertionResult]
     execution_result: ExecutionResult | None = None
+    streaming_result: StreamingResult | None = None
     error: str | None = None
     duration_seconds: float = 0.0
     tags: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class SuiteResult(BaseModel):
