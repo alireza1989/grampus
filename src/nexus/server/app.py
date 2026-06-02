@@ -33,6 +33,7 @@ def create_app(
     webhook_registry: Any | None = None,
     schedule_store: Any | None = None,
     agent_registry: Any | None = None,
+    nexus_metrics: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -78,6 +79,7 @@ def create_app(
     )
     app.state.schedule_store = schedule_store
     app.state.agent_registry = agent_registry if agent_registry is not None else AgentRegistry()
+    app.state.nexus_metrics = nexus_metrics
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:

@@ -34,6 +34,7 @@ from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
+    from nexus.observability.metrics import NexusMetrics
     from nexus.orchestration.cost_tracker import CostSummary, CostTracker
     from nexus.tools.executor import ToolExecutor
 
@@ -73,6 +74,7 @@ class AgentRunner:
         cost_tracker: CostTracker | None = None,
         state_store: Any | None = None,
         handoff_executor: HandoffExecutor | None = None,
+        nexus_metrics: NexusMetrics | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -81,6 +83,7 @@ class AgentRunner:
         self._cost_tracker = cost_tracker
         self._state_store = state_store
         self._handoff_executor = handoff_executor
+        self._metrics = nexus_metrics
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -143,59 +146,79 @@ class AgentRunner:
         steps = 0
         hit_limit = True
 
-        for i in range(self._config.max_iterations):
-            steps = i + 1
-            response = await self._model_client.complete(
-                messages=state.messages,
-                model=agent_def.model,
-                temperature=agent_def.temperature,
-            )
+        try:
+            for i in range(self._config.max_iterations):
+                steps = i + 1
+                _llm_start = time.monotonic()
+                response = await self._model_client.complete(
+                    messages=state.messages,
+                    model=agent_def.model,
+                    temperature=agent_def.temperature,
+                )
+                _llm_ms = (time.monotonic() - _llm_start) * 1000
 
-            accumulated = _add_usage(accumulated, response.token_usage)
+                accumulated = _add_usage(accumulated, response.token_usage)
 
-            _evt = await event_log.append(
-                EventType.LLM_CALLED,
-                {
-                    "model": agent_def.model,
-                    "step": steps,
-                    "finish_reason": response.stop_reason or "",
-                    "input_tokens": response.token_usage.input_tokens
-                    if response.token_usage
-                    else 0,
-                    "output_tokens": response.token_usage.output_tokens
-                    if response.token_usage
-                    else 0,
-                },
-            )
-            self._publish_trace(session_id, _evt)
+                if self._metrics and response.token_usage:
+                    self._metrics.record_llm_call(
+                        model=response.token_usage.model,
+                        input_tokens=response.token_usage.input_tokens,
+                        output_tokens=response.token_usage.output_tokens,
+                        cost_usd=response.token_usage.cost_usd,
+                        latency_ms=_llm_ms,
+                    )
 
-            if self._cost_tracker:
-                await self._cost_tracker.record(
-                    response.token_usage,
-                    step_name=f"step_{steps}",
-                    model_spec=_minimal_spec(response.model),
+                _evt = await event_log.append(
+                    EventType.LLM_CALLED,
+                    {
+                        "model": agent_def.model,
+                        "step": steps,
+                        "finish_reason": response.stop_reason or "",
+                        "input_tokens": response.token_usage.input_tokens
+                        if response.token_usage
+                        else 0,
+                        "output_tokens": response.token_usage.output_tokens
+                        if response.token_usage
+                        else 0,
+                    },
+                )
+                self._publish_trace(session_id, _evt)
+
+                if self._cost_tracker:
+                    await self._cost_tracker.record(
+                        response.token_usage,
+                        step_name=f"step_{steps}",
+                        model_spec=_minimal_spec(response.model),
+                    )
+
+                state.messages.append(
+                    Message(
+                        role=Role.ASSISTANT,
+                        content=response.content,
+                        tool_calls=response.tool_calls,
+                    )
                 )
 
-            state.messages.append(
-                Message(
-                    role=Role.ASSISTANT,
-                    content=response.content,
-                    tool_calls=response.tool_calls,
-                )
-            )
-
-            if response.tool_calls:
-                results = await self._execute_tool_calls(
-                    response.tool_calls, state, event_log=event_log, handoff_depth=_handoff_depth
-                )
-                tool_calls_made += len(results)
-                state.messages.append(Message(role=Role.TOOL, tool_results=results))
-                if state.status == AgentStatus.WAITING_FOR_HUMAN:
+                if response.tool_calls:
+                    results = await self._execute_tool_calls(
+                        response.tool_calls,
+                        state,
+                        event_log=event_log,
+                        handoff_depth=_handoff_depth,
+                    )
+                    tool_calls_made += len(results)
+                    state.messages.append(Message(role=Role.TOOL, tool_results=results))
+                    if state.status == AgentStatus.WAITING_FOR_HUMAN:
+                        hit_limit = False
+                        break
+                else:
                     hit_limit = False
                     break
-            else:
-                hit_limit = False
-                break
+
+        except Exception as exc:
+            if self._metrics:
+                self._metrics.record_error(error_type=type(exc).__name__)
+            raise
 
         if hit_limit:
             self._publish_trace(session_id, None)
@@ -297,6 +320,7 @@ class AgentRunner:
             finish_reason: str | None = None
             chunk_usage: TokenUsage | None = None
 
+            _stream_start = time.monotonic()
             async for chunk in self._model_client.stream(
                 messages=state.messages,
                 model=agent_def.model,
@@ -308,6 +332,7 @@ class AgentRunner:
                 if chunk.is_final:
                     finish_reason = chunk.finish_reason
                     chunk_usage = chunk.token_usage
+            _stream_ms = (time.monotonic() - _stream_start) * 1000
 
             tool_calls: list[ToolCall] = []
             if finish_reason == "tool_use":
@@ -322,6 +347,14 @@ class AgentRunner:
 
             if chunk_usage:
                 accumulated = _add_usage(accumulated, chunk_usage)
+                if self._metrics:
+                    self._metrics.record_llm_call(
+                        model=chunk_usage.model,
+                        input_tokens=chunk_usage.input_tokens,
+                        output_tokens=chunk_usage.output_tokens,
+                        cost_usd=chunk_usage.cost_usd,
+                        latency_ms=_stream_ms,
+                    )
 
             if self._cost_tracker and chunk_usage:
                 await self._cost_tracker.record(
@@ -502,7 +535,7 @@ class AgentRunner:
                     )
                 )
             elif tc.name.startswith("transfer_to_") and self._handoff_executor is not None:
-                target_name = tc.name[len("transfer_to_"):]
+                target_name = tc.name[len("transfer_to_") :]
                 context = HandoffContext(
                     task=str(tc.arguments.get("task", "")),
                     context_summary=str(tc.arguments.get("context_summary", "")) or None,
@@ -520,8 +553,7 @@ class AgentRunner:
                 results.append(
                     ToolResult(
                         tool_call_id=tc.id,
-                        output=handoff_result.output
-                        or f"Handoff to {target_name} completed.",
+                        output=handoff_result.output or f"Handoff to {target_name} completed.",
                         error=handoff_result.error,
                         duration_ms=int(handoff_result.duration_seconds * 1000),
                     )
@@ -535,6 +567,12 @@ class AgentRunner:
                     if state is not None:
                         self._publish_trace(state.session_id, _evt)
                 result = await self._tool_executor.execute(tc)
+                if self._metrics:
+                    self._metrics.record_tool_call(
+                        tool_name=tc.name,
+                        success=result.error is None,
+                        latency_ms=result.duration_ms,
+                    )
                 if event_log is not None:
                     _evt = await event_log.append(
                         EventType.TOOL_RESULT,
@@ -602,11 +640,7 @@ def _extract_trace_context() -> dict[str, str]:
         ctx = span.get_span_context()
         if not ctx.is_valid:
             return {}
-        return {
-            "traceparent": (
-                f"00-{ctx.trace_id:032x}-{ctx.span_id:016x}-{ctx.trace_flags:02x}"
-            )
-        }
+        return {"traceparent": (f"00-{ctx.trace_id:032x}-{ctx.span_id:016x}-{ctx.trace_flags:02x}")}
     except Exception:  # noqa: BLE001
         return {}
 

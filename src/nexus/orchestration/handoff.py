@@ -55,9 +55,7 @@ def _sanitize_context(context: HandoffContext) -> HandoffContext:
             "context_summary": clean(context.context_summary),
             "constraints": [clean(c) or c for c in context.constraints],
             "relevant_messages": [
-                msg.model_copy(update={"content": clean(msg.content)})
-                if msg.content
-                else msg
+                msg.model_copy(update={"content": clean(msg.content)}) if msg.content else msg
                 for msg in context.relevant_messages
             ],
         }
@@ -354,15 +352,13 @@ class HandoffExecutor:
                     f"to '{request.target_agent_name}'.",
                     code="HANDOFF_NOT_PERMITTED",
                     hint=(
-                        f"Update HandoffPolicy.allowed_targets for "
-                        f"'{request.target_agent_name}'."
+                        f"Update HandoffPolicy.allowed_targets for '{request.target_agent_name}'."
                     ),
                 )
 
             if request.handoff_depth >= policy.max_depth:
                 raise HandoffError(
-                    f"Handoff chain depth {request.handoff_depth} exceeds "
-                    f"max {policy.max_depth}.",
+                    f"Handoff chain depth {request.handoff_depth} exceeds max {policy.max_depth}.",
                     code="MAX_HANDOFF_DEPTH_EXCEEDED",
                     hint="Increase HandoffPolicy.max_depth or restructure the agent workflow.",
                 )
