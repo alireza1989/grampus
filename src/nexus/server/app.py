@@ -34,6 +34,7 @@ def create_app(
     schedule_store: Any | None = None,
     agent_registry: Any | None = None,
     nexus_metrics: Any | None = None,
+    alert_evaluator: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -69,6 +70,8 @@ def create_app(
         allow_headers=["*"],
     )
 
+    from collections import deque
+
     from nexus.orchestration.handoff import AgentRegistry
 
     app.state.runner = runner
@@ -80,6 +83,8 @@ def create_app(
     app.state.schedule_store = schedule_store
     app.state.agent_registry = agent_registry if agent_registry is not None else AgentRegistry()
     app.state.nexus_metrics = nexus_metrics
+    app.state.alert_evaluator = alert_evaluator
+    app.state.alert_history = deque(maxlen=500)
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from nexus.cli.commands.alerts import alerts
 from nexus.cli.commands.cost import cost
 from nexus.cli.commands.dev import dev
 from nexus.cli.commands.eval import eval_cmd
@@ -22,6 +23,7 @@ def cli() -> None:
     """Nexus — production-grade agentic AI framework."""
 
 
+cli.add_command(alerts)
 cli.add_command(init)
 cli.add_command(run)
 cli.add_command(eval_cmd, name="eval")

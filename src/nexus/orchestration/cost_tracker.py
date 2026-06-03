@@ -25,6 +25,8 @@ class CostEvent(BaseModel):
     input_tokens: int
     output_tokens: int
     cost_usd: float
+    cumulative_session_usd: float = 0.0
+    cumulative_agent_usd: float = 0.0
     timestamp: datetime
 
 
@@ -61,12 +63,14 @@ class CostTracker:
         budget_usd: float | None = None,
         pubsub: Any | None = None,
         cost_topic: str = "nexus.cost.events",
+        alert_evaluator: Any | None = None,
     ) -> None:
         self._agent_id = agent_id
         self._session_id = session_id
         self._budget_usd = budget_usd
         self._pubsub = pubsub
         self._cost_topic = cost_topic
+        self._alert_evaluator = alert_evaluator
         self._reset_state()
 
     # ------------------------------------------------------------------
@@ -98,9 +102,12 @@ class CostTracker:
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             cost_usd=usage.cost_usd,
+            cumulative_session_usd=self._total_cost,
+            cumulative_agent_usd=self._total_cost,
             timestamp=datetime.now(UTC),
         )
         await self._publish(event)
+        await self._evaluate_alerts(event)
 
         _log.debug(
             "cost_recorded",
@@ -185,3 +192,15 @@ class CostTracker:
         if self._pubsub is None:
             return
         await self._pubsub.publish(self._cost_topic, event)
+
+    async def _evaluate_alerts(self, event: CostEvent) -> None:
+        if self._alert_evaluator is None:
+            return
+        try:
+            await self._alert_evaluator.evaluate(
+                event.agent_id,
+                event.session_id,
+                event.model_dump(mode="json"),
+            )
+        except Exception as exc:
+            _log.warning("alert_evaluation_failed", error=str(exc))

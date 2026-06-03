@@ -21,6 +21,7 @@ except ImportError as _exc:  # pragma: no cover
 from nexus.core.logging import get_logger
 from nexus.core.types import AgentDefinition, Role, StreamEvent, StreamEventType
 from nexus.dapr.schedule_store import ScheduleStore
+from nexus.observability.alerts import AlertEvaluator, AlertRule, AlertSeverity, ThresholdType
 from nexus.observability.events import AgentEvent, EventLog
 from nexus.observability.metrics import NexusMetrics
 from nexus.orchestration.handoff import AgentRegistry
@@ -68,6 +69,24 @@ class _A2ATaskResponse(BaseModel):
 
     id: str
     status: str = "submitted"
+
+
+class _AlertRuleCreate(BaseModel):
+    """Request body for POST /alerts/rules."""
+
+    name: str
+    threshold_type: str
+    threshold_usd: float
+    agent_id: str | None = None
+    severity: str = "warning"
+    cooldown_seconds: int = 3600
+    tags: dict[str, str] = {}  # noqa: RUF012
+
+
+class _AlertToggleRequest(BaseModel):
+    """Request body for PATCH /alerts/rules/{rule_id}."""
+
+    enabled: bool
     message: str = "Task received. Use /a2a/tasks/{id} to poll status."
 
 
@@ -590,6 +609,90 @@ def create_router(has_memory: bool) -> APIRouter:
 
         target = body.session_id_override or snapshot.session_id
         return {"status": "restored", "agent_id": snapshot.agent_id, "session_id": target}
+
+    # ------------------------------------------------------------------
+    # Alert rule endpoints
+    # ------------------------------------------------------------------
+
+    @router.post("/alerts/rules", status_code=201)
+    async def create_alert_rule(body: _AlertRuleCreate, request: Request) -> Any:
+        evaluator: AlertEvaluator | None = getattr(request.app.state, "alert_evaluator", None)
+        if evaluator is None:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=503, detail="Alert evaluator not configured.")
+        rule = AlertRule(
+            name=body.name,
+            threshold_type=ThresholdType(body.threshold_type),
+            threshold_usd=body.threshold_usd,
+            agent_id=body.agent_id,
+            severity=AlertSeverity(body.severity),
+            cooldown_seconds=body.cooldown_seconds,
+            tags=body.tags,
+        )
+        evaluator.add_rule(rule)
+        return rule.model_dump(mode="json")
+
+    @router.get("/alerts/rules")
+    async def list_alert_rules(request: Request) -> Any:
+        evaluator: AlertEvaluator | None = getattr(request.app.state, "alert_evaluator", None)
+        if evaluator is None:
+            return {"rules": [], "count": 0}
+        rules = [r.model_dump(mode="json") for r in evaluator.list_rules()]
+        return {"rules": rules, "count": len(rules)}
+
+    @router.get("/alerts/rules/{rule_id}")
+    async def get_alert_rule(rule_id: str, request: Request) -> Any:
+        from fastapi import HTTPException
+
+        evaluator: AlertEvaluator | None = getattr(request.app.state, "alert_evaluator", None)
+        if evaluator is None:
+            raise HTTPException(status_code=503, detail="Alert evaluator not configured.")
+        for rule in evaluator.list_rules():
+            if rule.rule_id == rule_id:
+                return rule.model_dump(mode="json")
+        raise HTTPException(status_code=404, detail=f"Rule '{rule_id}' not found.")
+
+    @router.delete("/alerts/rules/{rule_id}", status_code=204)
+    async def delete_alert_rule(rule_id: str, request: Request) -> None:
+        from fastapi import HTTPException
+
+        evaluator: AlertEvaluator | None = getattr(request.app.state, "alert_evaluator", None)
+        if evaluator is None:
+            raise HTTPException(status_code=503, detail="Alert evaluator not configured.")
+        existing = [r for r in evaluator.list_rules() if r.rule_id == rule_id]
+        if not existing:
+            raise HTTPException(status_code=404, detail=f"Rule '{rule_id}' not found.")
+        evaluator.remove_rule(rule_id)
+
+    @router.patch("/alerts/rules/{rule_id}")
+    async def toggle_alert_rule(rule_id: str, body: _AlertToggleRequest, request: Request) -> Any:
+        from fastapi import HTTPException
+
+        evaluator: AlertEvaluator | None = getattr(request.app.state, "alert_evaluator", None)
+        if evaluator is None:
+            raise HTTPException(status_code=503, detail="Alert evaluator not configured.")
+        for rule in evaluator.list_rules():
+            if rule.rule_id == rule_id:
+                rule.enabled = body.enabled
+                return rule.model_dump(mode="json")
+        raise HTTPException(status_code=404, detail=f"Rule '{rule_id}' not found.")
+
+    @router.get("/alerts/history")
+    async def alert_history(
+        request: Request,
+        limit: int = 50,
+        agent_id: str | None = None,
+    ) -> Any:
+        from collections import deque
+
+        history: deque[Any] = getattr(request.app.state, "alert_history", deque())
+        events = list(history)
+        if agent_id is not None:
+            events = [e for e in events if getattr(e, "agent_id", None) == agent_id]
+        events = events[-limit:]
+        serialised = [e.model_dump(mode="json") for e in events]
+        return {"events": serialised, "count": len(serialised)}
 
     if has_memory:
 
