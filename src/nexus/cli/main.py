@@ -10,6 +10,7 @@ from nexus.cli.commands.dev import dev
 from nexus.cli.commands.eval import eval_cmd
 from nexus.cli.commands.init import init
 from nexus.cli.commands.memory import memory
+from nexus.cli.commands.playground import playground
 from nexus.cli.commands.replay import replay
 from nexus.cli.commands.run import run
 from nexus.cli.commands.schedule import schedule
@@ -34,3 +35,4 @@ cli.add_command(serve)
 cli.add_command(replay)
 cli.add_command(schedule)
 cli.add_command(state)
+cli.add_command(playground)

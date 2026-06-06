@@ -18,6 +18,8 @@ class ModelConfig(BaseSettings):
     max_tokens: int = 4096
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
+    gemini_api_key: SecretStr | None = None
+    ollama_host: str = "http://localhost:11434"
 
     model_config = {"env_prefix": "NEXUS_MODEL__", "extra": "ignore"}
 
