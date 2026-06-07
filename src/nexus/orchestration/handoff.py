@@ -7,11 +7,11 @@ import time
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from nexus.core.errors import HandoffError
+from nexus.core.errors import HandoffError, OrchestrationError
 from nexus.core.types import (
     AgentDefinition,
     Message,
@@ -21,6 +21,10 @@ from nexus.core.types import (
     ToolParameter,
 )
 from nexus.observability.events import EventLog, EventType
+
+if TYPE_CHECKING:
+    from nexus.orchestration.a2a.client import A2AAgentClient
+    from nexus.orchestration.a2a.registry import AgentEntry
 
 # ---------------------------------------------------------------------------
 # Module-level callback registry keyed by tool name (transfer_to_<name>)
@@ -290,12 +294,47 @@ class AgentRegistry:
 
 
 # ---------------------------------------------------------------------------
+# A2A response helpers
+# ---------------------------------------------------------------------------
+
+
+def _extract_output_from_a2a_response(response: Any) -> str | None:
+    """Extract plain text output from an A2A send_message result dict."""
+    if response is None:
+        return None
+    if isinstance(response, dict):
+        status = response.get("status", {})
+        msg = status.get("message", {})
+        parts = msg.get("parts", []) if isinstance(msg, dict) else []
+        texts = [p.get("text", "") for p in parts if isinstance(p, dict) and "text" in p]
+        return "\n".join(texts) or None
+    # Handle proto-style response objects
+    try:
+        task = getattr(response, "task", None) or response
+        status = getattr(task, "status", None)
+        message = getattr(status, "message", None)
+        parts = getattr(message, "parts", [])
+        texts = []
+        for part in parts:
+            if hasattr(part, "HasField") and part.HasField("text") or hasattr(part, "text"):
+                texts.append(part.text)
+        return "\n".join(t for t in texts if t) or None
+    except Exception:
+        return str(response)
+
+
+# ---------------------------------------------------------------------------
 # Handoff executor
 # ---------------------------------------------------------------------------
 
 
 class HandoffExecutor:
     """Executes validated handoff requests against the AgentRegistry.
+
+    Supports two registry types:
+    - The legacy ``AgentRegistry`` in this module (in-process runners only).
+    - The A2A ``AgentRegistry`` from ``nexus.orchestration.a2a.registry`` which
+      supports both local runners and remote A2A agents.
 
     Security guarantees enforced here (allowlist, depth, sanitize).
     Observability events written here (not in AgentRunner).
@@ -307,7 +346,7 @@ class HandoffExecutor:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: Any,
         event_log: EventLog | None = None,
     ) -> None:
         self._registry = registry
@@ -341,82 +380,45 @@ class HandoffExecutor:
             )
 
         try:
-            runner, target_def, policy = self._registry.get(request.target_agent_name)
+            raw_entry = self._registry.get(request.target_agent_name)
 
-            if (
-                policy.allowed_targets is not None
-                and request.source_agent_id not in policy.allowed_targets
-            ):
+            # New A2A AgentRegistry returns AgentEntry | None
+            if raw_entry is None:
                 raise HandoffError(
-                    f"Agent '{request.source_agent_id}' is not permitted to hand off "
-                    f"to '{request.target_agent_name}'.",
-                    code="HANDOFF_NOT_PERMITTED",
-                    hint=(
-                        f"Update HandoffPolicy.allowed_targets for '{request.target_agent_name}'."
-                    ),
+                    f"Agent '{request.target_agent_name}' not found in registry.",
+                    code="AGENT_NOT_FOUND",
+                    hint=f"Register the agent first. Available: {self._registry.list_agent_names()}"
+                    if hasattr(self._registry, "list_agent_names")
+                    else "Register the agent first.",
                 )
 
-            if request.handoff_depth >= policy.max_depth:
-                raise HandoffError(
-                    f"Handoff chain depth {request.handoff_depth} exceeds max {policy.max_depth}.",
-                    code="MAX_HANDOFF_DEPTH_EXCEEDED",
-                    hint="Increase HandoffPolicy.max_depth or restructure the agent workflow.",
+            if isinstance(raw_entry, tuple):
+                # Legacy registry returns (runner, agent_def, policy)
+                runner, target_def, policy = raw_entry
+                handoff_result = await self._local_handoff(
+                    runner, target_def, policy, request, start
                 )
-
-            safe_context = _sanitize_context(request.context)
-
-            tool_name = (
-                f"transfer_to_"
-                f"{request.target_agent_name.lower().replace(' ', '_').replace('-', '_')}"
-            )
-            callback = _HANDOFF_CALLBACKS.get(tool_name)
-            if callback is not None:
-                await callback(safe_context)
-
-            input_text = safe_context.task
-            messages_prefix: list[Message] = list(safe_context.relevant_messages)
-            if safe_context.context_summary:
-                messages_prefix.insert(
-                    0,
-                    Message(
-                        role=Role.SYSTEM,
-                        content=f"[Handoff context]\n{safe_context.context_summary}",
-                    ),
-                )
-            if safe_context.constraints:
-                constraint_text = "Constraints:\n" + "\n".join(
-                    f"- {c}" for c in safe_context.constraints
-                )
-                messages_prefix.append(Message(role=Role.SYSTEM, content=constraint_text))
-
-            child_session = f"{request.source_session_id}__handoff_{request.id[:8]}"
-            result = await runner.run(
-                target_def,
-                input_text,
-                session_id=child_session,
-                _handoff_depth=request.handoff_depth + 1,
-                _prefix_messages=messages_prefix if messages_prefix else None,
-            )
-
-            handoff_result = HandoffResult(
-                request_id=request.id,
-                output=result.output,
-                messages=result.messages,
-                token_usage=result.token_usage,
-                status="completed",
-                duration_seconds=time.monotonic() - start,
-            )
+            else:
+                # New AgentEntry: route to remote or local
+                entry: AgentEntry = raw_entry
+                if entry.client is not None:
+                    handoff_result = await self._remote_handoff(entry.client, request, start)
+                elif entry.runner is not None:
+                    target_def = entry.agent_def or AgentDefinition(
+                        name=entry.name, model="claude-3-5-haiku-20241022"
+                    )
+                    handoff_result = await self._local_handoff(
+                        entry.runner, target_def, HandoffPolicy(), request, start
+                    )
+                else:
+                    raise HandoffError(
+                        f"Agent '{request.target_agent_name}' has neither a runner nor a client.",
+                        code="AGENT_NOT_CONFIGURED",
+                    )
 
         except HandoffError:
             raise
         except Exception as exc:
-            handoff_result = HandoffResult(
-                request_id=request.id,
-                output=None,
-                status="failed",
-                error=str(exc),
-                duration_seconds=time.monotonic() - start,
-            )
             if self._event_log:
                 await self._event_log.append(
                     EventType.HANDOFF_FAILED,
@@ -440,3 +442,105 @@ class HandoffExecutor:
             )
 
         return handoff_result
+
+    # ------------------------------------------------------------------
+    # Internal execution paths
+    # ------------------------------------------------------------------
+
+    async def _local_handoff(
+        self,
+        runner: Any,
+        target_def: AgentDefinition,
+        policy: HandoffPolicy,
+        request: HandoffRequest,
+        start: float,
+    ) -> HandoffResult:
+        """Execute a handoff against a local in-process AgentRunner."""
+        if (
+            policy.allowed_targets is not None
+            and request.source_agent_id not in policy.allowed_targets
+        ):
+            raise HandoffError(
+                f"Agent '{request.source_agent_id}' is not permitted to hand off "
+                f"to '{request.target_agent_name}'.",
+                code="HANDOFF_NOT_PERMITTED",
+                hint=f"Update HandoffPolicy.allowed_targets for '{request.target_agent_name}'.",
+            )
+
+        if request.handoff_depth >= policy.max_depth:
+            raise HandoffError(
+                f"Handoff chain depth {request.handoff_depth} exceeds max {policy.max_depth}.",
+                code="MAX_HANDOFF_DEPTH_EXCEEDED",
+                hint="Increase HandoffPolicy.max_depth or restructure the agent workflow.",
+            )
+
+        safe_context = _sanitize_context(request.context)
+
+        tool_name = (
+            f"transfer_to_{request.target_agent_name.lower().replace(' ', '_').replace('-', '_')}"
+        )
+        callback = _HANDOFF_CALLBACKS.get(tool_name)
+        if callback is not None:
+            await callback(safe_context)
+
+        input_text = safe_context.task
+        messages_prefix: list[Message] = list(safe_context.relevant_messages)
+        if safe_context.context_summary:
+            messages_prefix.insert(
+                0,
+                Message(
+                    role=Role.SYSTEM,
+                    content=f"[Handoff context]\n{safe_context.context_summary}",
+                ),
+            )
+        if safe_context.constraints:
+            constraint_text = "Constraints:\n" + "\n".join(
+                f"- {c}" for c in safe_context.constraints
+            )
+            messages_prefix.append(Message(role=Role.SYSTEM, content=constraint_text))
+
+        child_session = f"{request.source_session_id}__handoff_{request.id[:8]}"
+        result = await runner.run(
+            target_def,
+            input_text,
+            session_id=child_session,
+            _handoff_depth=request.handoff_depth + 1,
+            _prefix_messages=messages_prefix if messages_prefix else None,
+        )
+
+        return HandoffResult(
+            request_id=request.id,
+            output=result.output,
+            messages=result.messages,
+            token_usage=result.token_usage,
+            status="completed",
+            duration_seconds=time.monotonic() - start,
+        )
+
+    async def _remote_handoff(
+        self,
+        client: A2AAgentClient,
+        request: HandoffRequest,
+        start: float,
+    ) -> HandoffResult:
+        """Execute a handoff against a remote A2A agent via A2AAgentClient."""
+        safe_context = _sanitize_context(request.context)
+        input_text = safe_context.task
+        if safe_context.context_summary:
+            input_text = f"[Context]\n{safe_context.context_summary}\n\n{input_text}"
+
+        try:
+            response = await client.send_message(input_text)
+        except OrchestrationError as exc:
+            raise HandoffError(
+                f"Remote handoff to '{request.target_agent_name}' failed: {exc}",
+                code="HANDOFF_EXECUTION_FAILED",
+            ) from exc
+
+        output = _extract_output_from_a2a_response(response)
+        return HandoffResult(
+            request_id=request.id,
+            output=output,
+            status="completed",
+            duration_seconds=time.monotonic() - start,
+        )

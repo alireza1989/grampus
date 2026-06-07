@@ -42,6 +42,9 @@ def create_app(
     nexus_metrics: Any | None = None,
     alert_evaluator: Any | None = None,
     eval_run_store: Any | None = None,
+    a2a_executor: Any | None = None,
+    a2a_task_store: Any | None = None,
+    a2a_api_key: str | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -63,8 +66,9 @@ def create_app(
             "FastAPI is not installed. Install server deps: pip install nexus-ai[server]"
         )
 
+    from nexus.orchestration.handoff import AgentRegistry as LegacyAgentRegistry
     from nexus.server.openai_compat import create_openai_router
-    from nexus.server.routes import create_router
+    from nexus.server.routes import build_a2a_router, create_router
     from nexus.server.ui.router import router as ui_router
     from nexus.server.webhook import WebhookRegistry
 
@@ -80,8 +84,6 @@ def create_app(
 
     from collections import deque
 
-    from nexus.orchestration.handoff import AgentRegistry
-
     app.state.runner = runner
     app.state.agent_def = agent_def
     app.state.memory_manager = memory_manager
@@ -89,11 +91,16 @@ def create_app(
         webhook_registry if webhook_registry is not None else WebhookRegistry()
     )
     app.state.schedule_store = schedule_store
-    app.state.agent_registry = agent_registry if agent_registry is not None else AgentRegistry()
+    app.state.agent_registry = (
+        agent_registry if agent_registry is not None else LegacyAgentRegistry()
+    )
     app.state.nexus_metrics = nexus_metrics
     app.state.alert_evaluator = alert_evaluator
     app.state.alert_history = deque(maxlen=500)
     app.state.eval_run_store = eval_run_store
+    app.state.a2a_executor = a2a_executor
+    app.state.a2a_task_store = a2a_task_store
+    app.state.a2a_api_key = a2a_api_key
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:
@@ -113,4 +120,14 @@ def create_app(
     app.include_router(create_router(memory_manager is not None))
     app.include_router(create_openai_router(), prefix="/v1")
     app.include_router(ui_router, prefix="/ui")
+
+    a2a_router = build_a2a_router(
+        agent_def=agent_def,
+        a2a_executor=a2a_executor,
+        a2a_task_store=a2a_task_store,
+        agent_registry=app.state.agent_registry,
+        api_key=a2a_api_key,
+    )
+    app.include_router(a2a_router)
+
     return app

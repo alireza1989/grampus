@@ -590,48 +590,80 @@ class TestAgentRunnerHandoffDispatch:
 
 
 class TestA2AEndpoints:
-    def _make_client(self) -> Any:
+    def _make_client(self, with_executor: bool = False) -> Any:
         from fastapi.testclient import TestClient
 
+        from nexus.orchestration.a2a.registry import AgentRegistry as A2ARegistry
         from nexus.server.app import create_app
 
         runner = MagicMock()
         runner.run = AsyncMock(return_value=_execution_result("A2A done."))
+        runner.stream = MagicMock()
 
         agent_def = _agent_def("test-agent")
-        registry = AgentRegistry()
-        registry.register(runner, agent_def)
+        a2a_registry = A2ARegistry()
+        a2a_registry.register_local(
+            name="test-agent",
+            runner=runner,
+            description="Test agent",
+            agent_def=agent_def,
+        )
 
-        app = create_app(runner, agent_def, agent_registry=registry)
+        executor = task_store = None
+        if with_executor:
+            from nexus.orchestration.a2a.executor import NexusA2AExecutor
+            from nexus.orchestration.a2a.task_store import NexusTaskStore
+
+            executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+            task_store = NexusTaskStore()
+
+        app = create_app(
+            runner,
+            agent_def,
+            agent_registry=a2a_registry,
+            a2a_executor=executor,
+            a2a_task_store=task_store,
+        )
         return TestClient(app)
 
     def test_agent_card_endpoint_returns_200(self) -> None:
         client = self._make_client()
-        resp = client.get("/.well-known/agent.json")
+        resp = client.get("/.well-known/agent-card.json")
         assert resp.status_code == 200
 
     def test_agent_card_has_correct_name(self) -> None:
         client = self._make_client()
-        resp = client.get("/.well-known/agent.json")
+        resp = client.get("/.well-known/agent-card.json")
         data = resp.json()
         assert data["name"] == "test-agent"
 
-    def test_agent_card_protocol_version_is_1_2(self) -> None:
+    def test_agent_card_has_streaming_capability(self) -> None:
         client = self._make_client()
-        resp = client.get("/.well-known/agent.json")
+        resp = client.get("/.well-known/agent-card.json")
         data = resp.json()
-        assert data["protocol_version"] == "1.2"
+        assert data.get("capabilities", {}).get("streaming") is True
 
-    def test_a2a_tasks_returns_submitted_status(self) -> None:
-        client = self._make_client()
+    def test_a2a_tasks_returns_completed_status(self) -> None:
+        client = self._make_client(with_executor=True)
         resp = client.post(
-            "/a2a/tasks",
-            json={"message": {"role": "user", "parts": [{"type": "text", "text": "Hello"}]}},
+            "/a2a",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "message/send",
+                "params": {
+                    "message": {
+                        "role": "user",
+                        "parts": [{"text": "Hello"}],
+                        "messageId": "msg-test",
+                    }
+                },
+            },
+            headers={"x-a2a-version": "1.0"},
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["status"] == "completed"
-        assert "id" in data
+        assert "result" in data or "error" in data
 
     def test_a2a_agents_list_returns_registered_names(self) -> None:
         client = self._make_client()

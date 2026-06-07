@@ -24,7 +24,6 @@ from nexus.dapr.schedule_store import ScheduleStore
 from nexus.observability.alerts import AlertEvaluator, AlertRule, AlertSeverity, ThresholdType
 from nexus.observability.events import AgentEvent, EventLog
 from nexus.observability.metrics import NexusMetrics
-from nexus.orchestration.handoff import AgentRegistry
 from nexus.server._hitl_html import UI_HTML
 from nexus.server.models import (
     AgentStateResponse,
@@ -55,20 +54,6 @@ class SnapshotRestoreRequest(BaseModel):
 
     snapshot: dict[str, Any]
     session_id_override: str | None = None
-
-
-class _A2ATaskRequest(BaseModel):
-    """A2A Protocol task submission body."""
-
-    id: str | None = None
-    message: dict[str, Any]
-
-
-class _A2ATaskResponse(BaseModel):
-    """A2A Protocol task submission response."""
-
-    id: str
-    status: str = "submitted"
 
 
 class _AlertRuleCreate(BaseModel):
@@ -220,6 +205,307 @@ def _event_to_chunk(event: StreamEvent) -> StreamChunkResponse:
             token_usage=event.chunk.token_usage if event.chunk else None,
         )
     return StreamChunkResponse(event_type=etype, message=event.message)
+
+
+def build_a2a_router(
+    agent_def: AgentDefinition,
+    a2a_executor: Any | None,
+    a2a_task_store: Any | None,
+    agent_registry: Any | None,
+    api_key: str | None = None,
+) -> APIRouter:
+    """Build the A2A-protocol APIRouter.
+
+    Mounts:
+      - /.well-known/agent-card.json  (AgentCard discovery)
+      - /a2a                          (JSON-RPC: message/send, tasks/get, tasks/cancel)
+      - /a2a/agents                   (Nexus-specific: list registered agents)
+
+    When ``a2a_executor`` is None, the ``/a2a`` endpoint returns 503.
+
+    Args:
+        agent_def: The AgentDefinition this server exposes.
+        a2a_executor: Configured NexusA2AExecutor, or None.
+        a2a_task_store: Configured NexusTaskStore, or None.
+        agent_registry: AgentRegistry (new or legacy) for card generation.
+        api_key: Optional API key for Bearer-token auth on /a2a endpoints.
+
+    Returns:
+        Configured APIRouter ready for ``app.include_router()``.
+    """
+    from fastapi.responses import JSONResponse as _JSONResponse
+
+    from nexus.orchestration.a2a.auth import make_api_key_verifier
+
+    router = APIRouter()
+    _verify_key = make_api_key_verifier(api_key)
+
+    # /.well-known/agent-card.json — served from the a2a-sdk route factory if
+    # the executor is configured; otherwise built manually from the agent_def.
+    @router.get("/.well-known/agent-card.json", include_in_schema=False)
+    async def well_known_agent_card(request: Request) -> Any:
+        base_url = str(request.base_url).rstrip("/")
+        reg = getattr(request.app.state, "agent_registry", None)
+
+        if reg is not None and hasattr(reg, "generate_server_card"):
+            card = reg.generate_server_card(
+                name=agent_def.name,
+                description=agent_def.system_prompt or agent_def.name,
+                base_url=base_url,
+            )
+            try:
+                from google.protobuf.json_format import MessageToDict
+
+                return _JSONResponse(MessageToDict(card))
+            except Exception:
+                pass
+
+        # Fallback: minimal card dict
+        return _JSONResponse(
+            {
+                "name": agent_def.name,
+                "description": agent_def.system_prompt or agent_def.name,
+                "version": "1.0.0",
+                "supportedInterfaces": [
+                    {
+                        "url": f"{base_url}/a2a",
+                        "protocolBinding": "JSONRPC",
+                        "protocolVersion": "1.0",
+                    }
+                ],
+                "capabilities": {"streaming": True, "pushNotifications": False},
+            }
+        )
+
+    # /a2a — JSON-RPC endpoint (message/send, tasks/get, tasks/cancel)
+    @router.post("/a2a", include_in_schema=False)
+    async def a2a_jsonrpc(request: Request) -> Any:
+        import json as _json
+
+        # Auth check
+        _verify_key(request)
+
+        exec_: Any = getattr(request.app.state, "a2a_executor", None)
+        if exec_ is None:
+            from fastapi.responses import JSONResponse as _JR
+
+            return _JR(
+                status_code=503,
+                content={"error": "No A2A executor configured. Pass a2a_executor= to create_app()"},
+            )
+
+        raw = await request.body()
+        try:
+            body: dict[str, Any] = _json.loads(raw)
+        except Exception:
+            return _JSONResponse(
+                {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
+                status_code=400,
+            )
+
+        method = body.get("method", "")
+        req_id = body.get("id")
+        params: dict[str, Any] = body.get("params", {})
+
+        task_store: Any = getattr(request.app.state, "a2a_task_store", None)
+
+        if method == "message/send":
+            return await _handle_message_send(exec_, task_store, params, req_id, request)
+        elif method == "tasks/get":
+            return await _handle_tasks_get(task_store, params, req_id)
+        elif method == "tasks/cancel":
+            return await _handle_tasks_cancel(exec_, task_store, params, req_id)
+        else:
+            return _JSONResponse(
+                {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32601, "message": f"Method not found: {method}"},
+                }
+            )
+
+    # /a2a/agents — list registered local agents (Nexus-specific, keep from D3)
+    @router.get("/a2a/agents", include_in_schema=False)
+    async def list_a2a_agents(request: Request) -> dict[str, Any]:
+        reg = getattr(request.app.state, "agent_registry", None)
+        if reg is None:
+            return {"agents": []}
+        if hasattr(reg, "list_agent_names"):
+            return {"agents": reg.list_agent_names()}
+        if hasattr(reg, "list_agents"):
+            names = reg.list_agents()
+            # Support both AgentCard protos and plain strings
+            if names and hasattr(names[0], "name"):
+                return {"agents": [c.name for c in names]}
+            return {"agents": names}
+        return {"agents": []}
+
+    return router
+
+
+# ---------------------------------------------------------------------------
+# A2A JSON-RPC method handlers (used by build_a2a_router)
+# ---------------------------------------------------------------------------
+
+
+async def _handle_message_send(
+    executor: Any,
+    task_store: Any,
+    params: dict[str, Any],
+    req_id: Any,
+    request: Request,
+) -> Any:
+    """Handle the message/send JSON-RPC method."""
+    import uuid as _uuid
+
+    from fastapi.responses import JSONResponse as _JR
+
+    try:
+        from a2a.server.agent_execution import RequestContext
+        from a2a.server.context import ServerCallContext
+        from a2a.server.events.event_queue import EventQueueLegacy
+        from a2a.types.a2a_pb2 import Role, SendMessageRequest, Task, TaskState
+        from google.protobuf.json_format import MessageToDict
+    except ImportError:
+        return _JR(
+            status_code=503,
+            content={"error": "a2a-sdk not installed"},
+        )
+
+    msg_dict = params.get("message", {})
+    task_id = msg_dict.get("taskId") or msg_dict.get("task_id") or _uuid.uuid4().hex[:8]
+    context_id = msg_dict.get("contextId") or msg_dict.get("context_id") or _uuid.uuid4().hex[:8]
+
+    # Build SendMessageRequest proto
+    send_req = SendMessageRequest()
+    send_req.message.role = Role.ROLE_USER
+    send_req.message.task_id = task_id
+    send_req.message.context_id = context_id
+    send_req.message.message_id = msg_dict.get("messageId", _uuid.uuid4().hex)
+    for part in msg_dict.get("parts", []):
+        p = send_req.message.parts.add()
+        if "text" in part:
+            p.text = part["text"]
+
+    call_context = ServerCallContext()
+    existing_task: Task | None = None
+    if task_store is not None:
+        existing_task = await task_store.get(task_id, call_context)
+
+    rc = RequestContext(
+        call_context=call_context,
+        request=send_req,
+        task_id=task_id,
+        context_id=context_id,
+        task=existing_task,
+    )
+
+    queue = EventQueueLegacy()
+    await executor.execute(rc, queue)
+
+    # Collect result from queue
+    events = []
+    try:
+        while True:
+            try:
+                evt = queue.queue.get_nowait()
+                events.append(evt)
+            except Exception:
+                break
+    except Exception:
+        pass
+
+    # Build response task
+    task = Task()
+    task.id = task_id
+    task.context_id = context_id
+
+    from a2a.types.a2a_pb2 import TaskState, TaskStatusUpdateEvent
+
+    for evt in reversed(events):
+        if isinstance(evt, TaskStatusUpdateEvent) and evt.status.state in (
+            TaskState.TASK_STATE_COMPLETED,
+            TaskState.TASK_STATE_FAILED,
+            TaskState.TASK_STATE_CANCELED,
+        ):
+            task.status.CopyFrom(evt.status)
+            break
+    else:
+        from a2a.types.a2a_pb2 import TaskStatus
+
+        status = TaskStatus()
+        status.state = TaskState.TASK_STATE_COMPLETED
+        task.status.CopyFrom(status)
+
+    if task_store is not None:
+        await task_store.save(task, call_context)
+
+    task_dict = MessageToDict(task)
+    task_dict["kind"] = "task"
+    return _JR({"jsonrpc": "2.0", "id": req_id, "result": task_dict})
+
+
+async def _handle_tasks_get(
+    task_store: Any,
+    params: dict[str, Any],
+    req_id: Any,
+) -> Any:
+    from fastapi.responses import JSONResponse as _JR
+
+    task_id = params.get("id", "")
+    if task_store is None:
+        return _JR(
+            {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32603, "message": "No task store"}}
+        )
+
+    try:
+        from a2a.server.context import ServerCallContext
+        from google.protobuf.json_format import MessageToDict
+    except ImportError:
+        return _JR(status_code=503, content={"error": "a2a-sdk not installed"})
+
+    task = await task_store.get(task_id, ServerCallContext())
+    if task is None:
+        return _JR(
+            {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32001, "message": "Task not found"}}
+        )
+    return _JR({"jsonrpc": "2.0", "id": req_id, "result": MessageToDict(task)})
+
+
+async def _handle_tasks_cancel(
+    executor: Any,
+    task_store: Any,
+    params: dict[str, Any],
+    req_id: Any,
+) -> Any:
+
+    from fastapi.responses import JSONResponse as _JR
+
+    task_id = params.get("id", "")
+    try:
+        from a2a.server.agent_execution import RequestContext
+        from a2a.server.context import ServerCallContext
+        from a2a.server.events.event_queue import EventQueueLegacy
+        from a2a.types.a2a_pb2 import Task, TaskState, TaskStatus
+        from google.protobuf.json_format import MessageToDict
+    except ImportError:
+        return _JR(status_code=503, content={"error": "a2a-sdk not installed"})
+
+    call_context = ServerCallContext()
+    rc = RequestContext(call_context=call_context, task_id=task_id, context_id="")
+    queue = EventQueueLegacy()
+    await executor.cancel(rc, queue)
+
+    task = Task()
+    task.id = task_id
+    status = TaskStatus()
+    status.state = TaskState.TASK_STATE_CANCELED
+    task.status.CopyFrom(status)
+
+    if task_store is not None:
+        await task_store.save(task, call_context)
+
+    return _JR({"jsonrpc": "2.0", "id": req_id, "result": MessageToDict(task)})
 
 
 def create_router(has_memory: bool) -> APIRouter:
@@ -523,41 +809,7 @@ def create_router(has_memory: bool) -> APIRouter:
 
         return {"accepted": True, "session_id": session_id, "job": job_name}
 
-    # ------------------------------------------------------------------
-    # A2A Protocol v1.2 endpoints
-    # ------------------------------------------------------------------
-
-    @router.get("/.well-known/agent.json")
-    async def agent_card(request: Request) -> Any:
-        agent_def = cast(AgentDefinition, request.app.state.agent_def)
-        registry: AgentRegistry = (
-            getattr(request.app.state, "agent_registry", None) or AgentRegistry()
-        )
-        base_url = str(request.base_url).rstrip("/")
-        card = registry.generate_agent_card(agent_def, base_url)
-        return card.model_dump()
-
-    @router.get("/a2a/agents")
-    async def list_a2a_agents(request: Request) -> dict[str, Any]:
-        registry: AgentRegistry = (
-            getattr(request.app.state, "agent_registry", None) or AgentRegistry()
-        )
-        return {"agents": registry.list_agents()}
-
-    @router.post("/a2a/tasks", response_model=_A2ATaskResponse)
-    async def submit_a2a_task(body: _A2ATaskRequest, request: Request) -> _A2ATaskResponse:
-        runner = request.app.state.runner
-        agent_def = cast(AgentDefinition, request.app.state.agent_def)
-        task_id = body.id or uuid4().hex[:8]
-        session_id = f"a2a-{task_id}"
-
-        parts: list[dict[str, Any]] = body.message.get("parts", [])
-        input_text = " ".join(p.get("text", "") for p in parts if p.get("type") == "text")
-        if not input_text:
-            input_text = str(body.message)
-
-        await runner.run(agent_def, input_text, session_id=session_id)
-        return _A2ATaskResponse(id=task_id, status="completed")
+    # (A2A Protocol endpoints are now mounted via build_a2a_router in app.py)
 
     @router.get("/agents/{session_id}/snapshot")
     async def get_agent_snapshot(session_id: str, request: Request) -> Response:
