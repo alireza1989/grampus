@@ -1,0 +1,23 @@
+name: simple-agent
+version: "1.0.0"
+description: "Minimal single-agent starter template"
+long_description: |
+  A minimal single-agent starter project. Includes one agent with a
+  web_search tool. Ideal for getting started with Nexus in under 5 minutes.
+tags: [starter, simple, general]
+category: general
+author: nexus-team
+min_nexus_version: "0.1.0"
+required_tools: [web_search]
+required_models: [fast]
+entry_point: agent.py
+parameters:
+  - name: project_name
+    description: "Python-safe project name (lowercase, underscores)"
+    default: my_agent
+  - name: model
+    description: "Model to use (e.g. claude-sonnet-4-6, gpt-4o)"
+    default: claude-sonnet-4-6
+files:
+  - agent.py
+  - README.md

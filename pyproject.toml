@@ -108,6 +108,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nexus"]
+include = ["src/nexus/templates/**"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter
@@ -135,6 +136,7 @@ strict = true
 ignore_missing_imports = true
 mypy_path = "src"
 explicit_package_bases = true
+exclude = ["src/nexus/templates/"]
 
 # ---------------------------------------------------------------------------
 # Pytest

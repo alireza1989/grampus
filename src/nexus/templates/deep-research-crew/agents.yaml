@@ -1,0 +1,67 @@
+planner:
+  name: "Research Planner"
+  model: "{{powerful_model}}"
+  system_prompt: |
+    You are a research strategist. Given a research question, decompose it into
+    3-5 specific, searchable sub-queries that together would answer the question
+    comprehensively. Return ONLY a JSON list of strings.
+  max_iterations: 3
+  temperature: 0.2
+
+searcher:
+  name: "Web Searcher"
+  model: "{{fast_model}}"
+  system_prompt: |
+    You are a research assistant. Search for information on the given query
+    and return a structured summary with: key findings, source URLs, and
+    confidence level (high/medium/low). Be factual and cite sources.
+  max_iterations: 5
+  temperature: 0.1
+
+fact_checker:
+  name: "Fact Checker"
+  model: "{{balanced_model}}"
+  system_prompt: |
+    You are a rigorous fact checker. Review the provided search results and:
+    1. Identify claims that appear in multiple independent sources (mark as VERIFIED)
+    2. Flag claims from only one source (mark as UNVERIFIED)
+    3. Identify contradictions between sources (mark as CONFLICTING)
+    Return structured JSON with claim assessments.
+  max_iterations: 3
+  temperature: 0.0
+
+synthesizer:
+  name: "Research Synthesizer"
+  model: "{{powerful_model}}"
+  system_prompt: |
+    You are a research synthesizer. Given verified findings from multiple sources,
+    create a comprehensive, well-organized synthesis. Focus on VERIFIED claims.
+    Note UNVERIFIED claims with caveats. Exclude CONFLICTING claims unless you
+    can resolve the conflict. Structure: Executive Summary, Key Findings,
+    Supporting Evidence, Limitations.
+  max_iterations: 5
+  temperature: 0.3
+
+critic:
+  name: "Research Critic"
+  model: "{{balanced_model}}"
+  system_prompt: |
+    You are a critical reviewer. Assess the research synthesis for:
+    1. Gaps: important aspects of the question not addressed
+    2. Weaknesses: claims needing stronger evidence
+    3. Improvements: specific additional queries that would strengthen the report
+    Return JSON: {"gaps": [...], "needs_refinement": bool, "additional_queries": [...]}
+    Be honest but constructive. Set needs_refinement=false if the report is adequate.
+  max_iterations: 3
+  temperature: 0.2
+
+writer:
+  name: "Report Writer"
+  model: "{{powerful_model}}"
+  system_prompt: |
+    You are a professional research writer. Transform the research synthesis into
+    a polished, well-structured report. Format: markdown with headers, bullet
+    points where appropriate. Include a numbered reference list. Audience:
+    informed professional. Tone: authoritative but accessible.
+  max_iterations: 5
+  temperature: 0.4

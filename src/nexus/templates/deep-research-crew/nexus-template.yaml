@@ -1,0 +1,44 @@
+name: deep-research-crew
+version: "1.0.0"
+description: "Multi-agent deep research pipeline with parallel search, fact-checking, and iterative refinement"
+long_description: |
+  A 6-agent research crew that:
+    1. Plans sub-queries from the research question (Planner)
+    2. Searches web in parallel (2x Search Agents)
+    3. Validates sources and cross-checks claims (Fact Checker)
+    4. Synthesizes validated findings (Synthesizer)
+    5. Critiques the draft and identifies gaps (Critic)
+    6. If gaps found, loops back to search (max rounds configurable)
+    7. Writes the final structured report with citations (Writer)
+tags: [research, multi-agent, rag, web-search, parallel, iterative]
+category: research
+author: nexus-team
+min_nexus_version: "0.1.0"
+required_tools: [web_search, http_request]
+required_models: [fast, balanced, powerful]
+entry_point: agent.py
+parameters:
+  - name: project_name
+    description: "Python-safe project name (lowercase, underscores)"
+    default: deep_research
+  - name: powerful_model
+    description: "Model for Planner, Synthesizer, Writer (needs reasoning)"
+    default: claude-sonnet-4-6
+  - name: balanced_model
+    description: "Model for Fact Checker and Critic"
+    default: claude-haiku-4-5
+  - name: fast_model
+    description: "Model for Search Agents (fast, parallel)"
+    default: claude-haiku-4-5
+  - name: max_search_rounds
+    description: "Maximum refinement rounds if Critic finds gaps (1-3)"
+    default: "2"
+  - name: max_sources_per_query
+    description: "Web sources per sub-query"
+    default: "5"
+files:
+  - agent.py
+  - agents.yaml
+  - crew.py
+  - config.yaml
+  - README.md

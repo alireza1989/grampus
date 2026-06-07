@@ -8,6 +8,7 @@ from nexus.cli.commands.alerts import alerts
 from nexus.cli.commands.cost import cost
 from nexus.cli.commands.dev import dev
 from nexus.cli.commands.eval import eval_cmd
+from nexus.cli.commands.hub import hub
 from nexus.cli.commands.init import init
 from nexus.cli.commands.memory import memory
 from nexus.cli.commands.playground import playground
@@ -25,6 +26,7 @@ def cli() -> None:
 
 
 cli.add_command(alerts)
+cli.add_command(hub)
 cli.add_command(init)
 cli.add_command(run)
 cli.add_command(eval_cmd, name="eval")
