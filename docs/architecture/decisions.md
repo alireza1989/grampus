@@ -162,3 +162,23 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 - Other frameworks' agents can discover and invoke Nexus agents via A2A
 - Avoids ecosystem lock-in — Nexus works alongside LangGraph, CrewAI, and Autogen
 - Requires tracking protocol evolution as both MCP and A2A mature
+
+---
+
+## ADR-011: Consolidated HTMX + Jinja2 Web UI
+
+**Status:** Accepted
+
+**Context:** Multiple post-launch phases require visual interfaces: memory inspector (D9), eval dashboard (D10), cost analytics, alert management, and an execution trace viewer. Two alternative approaches were considered: (a) separate CLI commands for each feature, or (b) separate web apps or SPAs per feature. Both create fragmentation — users must remember different URLs or commands, state cannot be shared across views (e.g., filtering by agent_id in the sidebar should filter all pages), and each feature reimplements the same table/chart components.
+
+**Decision:** All web UI phases build into a single consolidated web app served at `/ui/` from the existing FastAPI server. Technology stack: HTMX (loaded from CDN — no npm, no build step) + Jinja2 templates for server-side rendering. The D9 phase builds the shell (base template, sidebar navigation, layout system) and all subsequent UI phases add pages to it. One new optional dependency: `jinja2>=3.0` added to the `server` extras group (already a transitive FastAPI dependency in practice).
+
+**Exception:** The Visual Agent Builder (drag-and-drop graph editor) requires rich interactivity — sortable nodes, canvas pan/zoom, live edge drawing — that HTMX cannot support. That feature uses a minimal React SPA bundled at `src/nexus/server/ui/static/builder/` and served at `/ui/builder/`. It is the only component permitted to introduce a frontend build step.
+
+**Consequences:**
+- No Node.js toolchain required to run or develop the UI — `uv sync` is sufficient
+- Single URL entry point; sidebar navigation shared across all views
+- HTMX partial endpoints (`/ui/<feature>/_<partial>`) enable dynamic updates (live cost tickers, SSE-driven agent status) without full page reloads
+- HTMX has limits on complex client-side interactivity — sufficient for developer dashboards, not for visual graph editors (see exception above)
+- Static assets (CSS, minimal JS helpers) live in `src/nexus/server/ui/static/` and are served by FastAPI's `StaticFiles` mount
+- Jinja2 templates live in `src/nexus/server/ui/templates/` with a `base.html` that all pages extend

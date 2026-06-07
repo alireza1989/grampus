@@ -44,13 +44,41 @@ Phase 0
        │    │    └► Phase 4 (semantic + procedural memory)
        │    │         └► Phase 5 (memory security)
        │    ├► Phase 6 (tools + sandbox)
-       │    └► Phase 7 (orchestration) ← needs Phase 3 + 6
+       │    └── Phase 7 (orchestration) ← needs Phase 3 + 6
        │         └► Phase 8 (safety)
        ├► Phase 9 (observability) — can start after Phase 2
        └► Phase 10 (evaluation) — can start after Phase 5
   Phase 11 (CLI) — after Phase 7
   Phase 12 (integration + release) — after ALL others
 ```
+
+---
+
+## Web UI Strategy (Post-Launch Phases)
+
+All post-launch phases that expose a visual interface (D9 Memory Inspector, D10 Eval Dashboard, and any future UI pages) **must build into a single consolidated web app** rather than separate apps or standalone endpoints.
+
+**Technology stack:** HTMX (loaded from CDN — no build step, no Node.js) + Jinja2 templates + FastAPI. Served at `/ui/` from the existing Nexus server.
+
+**Dependency:** Add `jinja2>=3.0` to the `server` optional dep group in `pyproject.toml`. No other new deps.
+
+**Structure:**
+- D9 builds the **shell**: `src/nexus/server/ui/` package, base Jinja2 template with sidebar nav, layout, and HTMX wiring. Every subsequent UI phase adds pages to this shell.
+- Pages follow the pattern `/ui/<feature>/` with HTMX partial endpoints at `/ui/<feature>/_<partial>` for dynamic updates.
+- Static assets (CSS, any minimal JS) live in `src/nexus/server/ui/static/`.
+- FastAPI mounts the UI router at `/ui` via `app.include_router(ui_router, prefix="/ui")`.
+
+**Planned pages:**
+| Path | Phase | Description |
+|---|---|---|
+| `/ui/` | D9 | Dashboard: active agents, cost today, recent errors |
+| `/ui/memory/` | D9 | Memory inspector: browse, search, filter, delete entries |
+| `/ui/evals/` | D10 | Eval suite history, pass rates, regression trends |
+| `/ui/cost/` | D10 | Cost analytics by model/agent/session/time |
+| `/ui/alerts/` | D7+ | Alert rule management (supplements REST API) |
+| `/ui/traces/` | future | Execution trace viewer |
+
+**Exception:** The Visual Agent Builder (Phase C13 in roadmap) requires drag-and-drop graph editing which HTMX cannot support. That phase uses a minimal React SPA bundled separately under `src/nexus/server/ui/static/builder/` and served at `/ui/builder/`. It is the only phase permitted to introduce a frontend build step.
 
 ---
 
@@ -365,7 +393,7 @@ Dev: pytest>=8.3, pytest-asyncio>=0.24, pytest-cov>=5, hypothesis>=6.112,
 4. `nexus eval <suite.py>` — run evaluation suite
 5. `nexus deploy` — generate Kubernetes manifests + Helm chart
 6. `nexus cost` — show cost summary for recent sessions
-7. `nexus memory inspect/clear <agent_id>` — view/clear agent memory
+7. `nexus memory clear <agent_id>` — clear agent memory from CLI; visual inspection is handled by the web UI at `/ui/memory/` (see Web UI Strategy above)
 8. `nexus dev` — watch mode: start everything, auto-reload on changes, show live cost/traces
 9. Agent definition DSL: YAML for simple agents, Python decorators for code-first
 10. Project templates: simple (single agent), crew (multi-agent), rag (document retrieval)

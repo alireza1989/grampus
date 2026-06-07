@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import importlib.metadata
+from pathlib import Path
 from typing import Any
 
 try:
     from fastapi import FastAPI, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
+    from fastapi.staticfiles import StaticFiles
 
     _HAS_FASTAPI = True
 except ImportError:  # pragma: no cover
@@ -16,6 +18,10 @@ except ImportError:  # pragma: no cover
 
 from nexus.core.errors import NexusError
 from nexus.core.types import AgentDefinition
+
+
+def _ui_static_path() -> str:
+    return str(Path(__file__).parent / "ui" / "static")
 
 
 def _pkg_version() -> str:
@@ -58,6 +64,7 @@ def create_app(
 
     from nexus.server.openai_compat import create_openai_router
     from nexus.server.routes import create_router
+    from nexus.server.ui.router import router as ui_router
     from nexus.server.webhook import WebhookRegistry
 
     app = FastAPI(title="Nexus Agent API", version=_pkg_version())
@@ -100,6 +107,8 @@ def create_app(
             content={"error": str(exc), "code": "INTERNAL_ERROR"},
         )
 
+    app.mount("/ui/static", StaticFiles(directory=_ui_static_path()), name="ui-static")
     app.include_router(create_router(memory_manager is not None))
     app.include_router(create_openai_router(), prefix="/v1")
+    app.include_router(ui_router, prefix="/ui")
     return app

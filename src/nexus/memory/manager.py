@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -17,7 +18,7 @@ from nexus.memory.provenance import Provenance, ProvenanceTracker, SourceType
 from nexus.memory.retriever import EpisodicRetriever
 from nexus.memory.semantic import SemanticMemory
 from nexus.memory.semantic_retriever import SemanticRetriever
-from nexus.memory.types import RetrievedRecord, SemanticFact
+from nexus.memory.types import EpisodicRecord, Procedure, RetrievedRecord, SemanticFact
 from nexus.memory.validator import MemoryValidator
 from nexus.memory.working import WorkingMemory
 
@@ -243,3 +244,152 @@ class MemoryManager:
         Delegates directly to :meth:`WorkingMemory.get_messages`.
         """
         return await self._working.get_messages()
+
+    async def list_records(
+        self,
+        *,
+        agent_id: str | None = None,
+        memory_type: str | None = None,
+        query: str | None = None,
+        min_trust: float = 0.0,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """List memory records for UI inspection.
+
+        Gathers records from each backend (filtered by *memory_type* if given),
+        normalises them to a common dict schema, applies filters, sorts by
+        ``created_at`` descending, and returns a paginated slice.
+
+        Args:
+            agent_id: When set, only return records belonging to this agent.
+            memory_type: Restrict to one backend: ``"episodic"``, ``"semantic"``,
+                ``"working"``, or ``"procedural"``.  ``None`` means all backends.
+            query: Case-insensitive substring filter on the ``content`` field.
+            min_trust: Exclude records whose ``trust_score`` is below this value.
+            limit: Maximum number of records to return.
+            offset: Number of records to skip (for pagination).
+
+        Returns:
+            A list of dicts, each with keys: ``id``, ``agent_id``,
+            ``memory_type``, ``content``, ``trust_score``, ``created_at``,
+            ``last_accessed``, ``metadata``, ``provenance``.
+        """
+        types_to_fetch = (
+            ["episodic", "semantic", "working", "procedural"]
+            if memory_type is None
+            else [memory_type]
+        )
+
+        all_records: list[dict[str, Any]] = []
+        for mtype in types_to_fetch:
+            try:
+                records = await self._fetch_records_of_type(mtype)
+                all_records.extend(records)
+            except Exception:  # noqa: BLE001
+                _log.warning("list_records_backend_error", memory_type=mtype)
+
+        if agent_id is not None:
+            all_records = [r for r in all_records if r.get("agent_id") == agent_id]
+
+        all_records = [
+            r
+            for r in all_records
+            if (r.get("trust_score") is None or (r.get("trust_score") or 0.0) >= min_trust)
+        ]
+
+        if query:
+            q = query.lower()
+            all_records = [r for r in all_records if q in (r.get("content") or "").lower()]
+
+        all_records.sort(
+            key=lambda r: r.get("created_at") or datetime.min.replace(tzinfo=UTC),
+            reverse=True,
+        )
+
+        return all_records[offset : offset + limit]
+
+    async def _fetch_records_of_type(self, memory_type: str) -> list[dict[str, Any]]:
+        """Load and normalise records from a single backend."""
+        if memory_type == "episodic":
+            return [_norm_episodic(r) for r in await self._episodic.list_all()]
+        if memory_type == "semantic":
+            return [_norm_semantic(f) for f in await self._semantic.list_all()]
+        if memory_type == "working":
+            return [_norm_message(m) for m in await self._working.get_messages()]
+        if memory_type == "procedural":
+            return [_norm_procedure(p) for p in await self._procedural.list_all()]
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Normalisation helpers
+# ---------------------------------------------------------------------------
+
+
+def _norm_episodic(rec: EpisodicRecord) -> dict[str, Any]:
+    prov: dict[str, Any] | None = None
+    if rec.provenance:
+        try:
+            import json
+
+            prov = json.loads(rec.provenance)
+        except Exception:  # noqa: BLE001
+            prov = {"raw": rec.provenance}
+    return {
+        "id": rec.id,
+        "agent_id": rec.agent_id,
+        "memory_type": "episodic",
+        "content": rec.content,
+        "trust_score": rec.trust_score,
+        "created_at": rec.timestamp,
+        "last_accessed": rec.last_accessed,
+        "metadata": rec.metadata,
+        "provenance": prov,
+    }
+
+
+def _norm_semantic(fact: SemanticFact) -> dict[str, Any]:
+    content = f"{fact.subject} {fact.predicate} {fact.object_value}"
+    return {
+        "id": fact.id,
+        "agent_id": fact.subject,
+        "memory_type": "semantic",
+        "content": content,
+        "trust_score": fact.confidence,
+        "created_at": fact.created_at,
+        "last_accessed": None,
+        "metadata": {"source_episode_ids": fact.source_episode_ids},
+        "provenance": None,
+    }
+
+
+def _norm_message(msg: Message) -> dict[str, Any]:
+    content = str(msg.content) if msg.content is not None else ""
+    return {
+        "id": str(uuid.uuid4()),
+        "agent_id": None,
+        "memory_type": "working",
+        "content": content,
+        "trust_score": None,
+        "created_at": msg.timestamp if hasattr(msg, "timestamp") else None,
+        "last_accessed": None,
+        "metadata": {},
+        "provenance": None,
+    }
+
+
+def _norm_procedure(proc: Procedure) -> dict[str, Any]:
+    steps_summary = " ".join(s.action for s in proc.steps[:3])
+    content = f"{proc.name}: {proc.description}. {steps_summary}".strip(". ")
+    return {
+        "id": proc.id,
+        "agent_id": proc.agent_id,
+        "memory_type": "procedural",
+        "content": content,
+        "trust_score": None,
+        "created_at": proc.last_used,
+        "last_accessed": proc.last_used,
+        "metadata": {"success_count": proc.success_count, "failure_count": proc.failure_count},
+        "provenance": None,
+    }

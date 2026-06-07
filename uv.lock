@@ -1356,6 +1356,7 @@ all = [
     { name = "google-genai" },
     { name = "greenlet" },
     { name = "ipython" },
+    { name = "jinja2" },
     { name = "langchain-core" },
     { name = "nest-asyncio" },
     { name = "ollama" },
@@ -1393,6 +1394,7 @@ phoenix = [
 ]
 server = [
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 sql = [
@@ -1406,6 +1408,7 @@ dev = [
     { name = "anthropic" },
     { name = "fastapi" },
     { name = "hypothesis" },
+    { name = "jinja2" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mypy" },
@@ -1441,6 +1444,8 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "ipython", marker = "extra == 'all'", specifier = ">=8.0" },
     { name = "ipython", marker = "extra == 'jupyter'", specifier = ">=8.0" },
+    { name = "jinja2", marker = "extra == 'all'", specifier = ">=3.0" },
+    { name = "jinja2", marker = "extra == 'server'", specifier = ">=3.0" },
     { name = "langchain-core", marker = "extra == 'all'", specifier = ">=0.2" },
     { name = "langchain-core", marker = "extra == 'langchain'", specifier = ">=0.2" },
     { name = "nest-asyncio", marker = "extra == 'all'", specifier = ">=1.6" },
@@ -1471,6 +1476,7 @@ dev = [
     { name = "anthropic", specifier = ">=0.97" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "hypothesis", specifier = ">=6.112" },
+    { name = "jinja2", specifier = ">=3.0" },
     { name = "mkdocs-material", specifier = ">=9.7" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.26" },
     { name = "mypy", specifier = ">=1.20" },

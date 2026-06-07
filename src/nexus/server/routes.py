@@ -25,6 +25,7 @@ from nexus.observability.alerts import AlertEvaluator, AlertRule, AlertSeverity,
 from nexus.observability.events import AgentEvent, EventLog
 from nexus.observability.metrics import NexusMetrics
 from nexus.orchestration.handoff import AgentRegistry
+from nexus.server._hitl_html import UI_HTML
 from nexus.server.models import (
     AgentStateResponse,
     HealthResponse,
@@ -44,7 +45,6 @@ from nexus.server.models import (
     WebhookTriggerResponse,
 )
 from nexus.server.trace_ui import TRACE_HTML
-from nexus.server.ui import UI_HTML
 from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
 
 _log = get_logger(__name__)
