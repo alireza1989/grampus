@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-from a2a.types.a2a_pb2 import AgentCard, AgentCapabilities, AgentSkill
+from a2a.types.a2a_pb2 import AgentCard, AgentSkill
 
 from nexus.core.types import AgentDefinition
 
@@ -143,3 +142,85 @@ def test_register_local_with_skills() -> None:
     assert entry is not None
     assert len(entry.card.skills) == 1
     assert entry.card.skills[0].id == "summarize"
+
+
+# ---------------------------------------------------------------------------
+# Dapr service registration tests
+# ---------------------------------------------------------------------------
+
+
+def test_register_dapr_service_creates_entry() -> None:
+    from nexus.orchestration.a2a.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register_dapr_service(
+        name="sibling-agent",
+        dapr_app_id="nexus-worker",
+        description="Worker service",
+    )
+
+    entry = registry.get("sibling-agent")
+    assert entry is not None
+    assert isinstance(entry.card, AgentCard)
+
+
+def test_register_dapr_service_sets_app_id() -> None:
+    from nexus.orchestration.a2a.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register_dapr_service(
+        name="worker",
+        dapr_app_id="nexus-worker-svc",
+        description="Worker",
+    )
+
+    entry = registry.get("worker")
+    assert entry is not None
+    assert entry.dapr_app_id == "nexus-worker-svc"
+    assert entry.runner is None
+    assert entry.remote_url is None
+    assert entry.client is None
+
+
+def test_register_dapr_service_default_method_is_a2a() -> None:
+    from nexus.orchestration.a2a.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register_dapr_service(name="svc", dapr_app_id="my-app", description="svc")
+
+    entry = registry.get("svc")
+    assert entry is not None
+    assert entry.dapr_method == "a2a"
+
+
+def test_register_dapr_service_custom_method() -> None:
+    from nexus.orchestration.a2a.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register_dapr_service(
+        name="svc2",
+        dapr_app_id="my-app",
+        description="svc2",
+        dapr_method="invoke/a2a",
+    )
+
+    entry = registry.get("svc2")
+    assert entry is not None
+    assert entry.dapr_method == "invoke/a2a"
+
+
+def test_register_dapr_service_entry_has_no_runner_no_remote_url() -> None:
+    from nexus.orchestration.a2a.registry import AgentRegistry
+
+    registry = AgentRegistry()
+    registry.register_dapr_service(
+        name="pure-dapr",
+        dapr_app_id="pure-dapr-app",
+        description="pure dapr",
+    )
+
+    entry = registry.get("pure-dapr")
+    assert entry is not None
+    assert entry.runner is None
+    assert entry.remote_url is None
+    assert entry.client is None

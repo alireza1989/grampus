@@ -26,7 +26,7 @@ _log = get_logger(__name__)
 
 
 class AgentEntry(BaseModel):
-    """A registered agent — either a local runner or a remote URL."""
+    """A registered agent — local runner, Dapr sibling service, or remote A2A URL."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -34,7 +34,9 @@ class AgentEntry(BaseModel):
     card: Any  # AgentCard proto (typed Any to avoid import at class-definition time)
     runner: Any | None = None
     agent_def: Any | None = None  # AgentDefinition for local runners
-    remote_url: str | None = None
+    dapr_app_id: str | None = None  # path 2: sibling Nexus service via Dapr invocation
+    dapr_method: str = "a2a"  # Dapr method path (default: the /a2a endpoint)
+    remote_url: str | None = None  # path 3: external non-Nexus agent via A2A HTTP
     client: Any | None = None  # A2AAgentClient, lazily created from remote_url
 
 
@@ -120,6 +122,48 @@ class AgentRegistry:
             runner=None,
             remote_url=url,
             client=client,
+        )
+
+    def register_dapr_service(
+        self,
+        name: str,
+        dapr_app_id: str,
+        description: str = "",
+        dapr_method: str = "a2a",
+        skills: list[AgentSkill] | None = None,
+        dapr_http_port: int = 3500,
+    ) -> None:
+        """Register another Nexus service in the same cluster, reachable via Dapr service invocation.
+
+        Use this instead of register_remote() when the target is a Nexus service
+        running alongside this one. Traffic goes through the Dapr sidecar, gaining
+        automatic mTLS, retries, and distributed tracing.
+
+        Args:
+            name: Logical agent name used in handoff tool names.
+            dapr_app_id: Dapr application ID of the target service (matches --app-id at startup).
+            description: Human-readable description for AgentCard generation.
+            dapr_method: HTTP path on the target service to invoke (default: "a2a").
+            skills: Optional skills list for the generated AgentCard.
+            dapr_http_port: Dapr sidecar HTTP port (default: 3500).
+        """
+        invoke_url = (
+            f"http://localhost:{dapr_http_port}/v1.0/invoke/{dapr_app_id}/method/{dapr_method}"
+        )
+        card = self._build_card(
+            name=name,
+            description=description or f"Dapr service: {dapr_app_id}",
+            base_url=invoke_url,
+            skills=skills,
+        )
+        self._agents[name] = AgentEntry(
+            name=name,
+            card=card,
+            runner=None,
+            dapr_app_id=dapr_app_id,
+            dapr_method=dapr_method,
+            remote_url=None,
+            client=None,
         )
 
     def get(self, name: str) -> AgentEntry | None:

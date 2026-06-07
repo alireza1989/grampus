@@ -103,6 +103,7 @@ dev = [
     "uvicorn[standard]>=0.32",
     "jinja2>=3.0",
     "sse-starlette>=2.1",
+    "pytest-httpx>=0.35",
 ]
 
 [tool.hatch.build.targets.wheel]

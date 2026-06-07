@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from nexus.core.errors import HandoffError, OrchestrationError
@@ -323,6 +324,16 @@ def _extract_output_from_a2a_response(response: Any) -> str | None:
         return str(response)
 
 
+def _extract_output_from_jsonrpc_response(data: dict[str, Any]) -> str | None:
+    """Extract plain text from a JSON-RPC A2A message/send response dict."""
+    result = data.get("result", {}) if isinstance(data, dict) else {}
+    status = result.get("status", {}) if isinstance(result, dict) else {}
+    message = status.get("message", {}) if isinstance(status, dict) else {}
+    parts = message.get("parts", []) if isinstance(message, dict) else []
+    texts = [p.get("text", "") for p in parts if isinstance(p, dict) and "text" in p]
+    return "\n".join(texts) or None
+
+
 # ---------------------------------------------------------------------------
 # Handoff executor
 # ---------------------------------------------------------------------------
@@ -334,7 +345,7 @@ class HandoffExecutor:
     Supports two registry types:
     - The legacy ``AgentRegistry`` in this module (in-process runners only).
     - The A2A ``AgentRegistry`` from ``nexus.orchestration.a2a.registry`` which
-      supports both local runners and remote A2A agents.
+      supports local runners, Dapr sibling services, and remote A2A agents.
 
     Security guarantees enforced here (allowlist, depth, sanitize).
     Observability events written here (not in AgentRunner).
@@ -342,15 +353,18 @@ class HandoffExecutor:
     Args:
         registry: Agent registry for target lookup.
         event_log: Optional event log for audit trail.
+        dapr_http_port: Port of the local Dapr HTTP sidecar (default: 3500).
     """
 
     def __init__(
         self,
         registry: Any,
         event_log: EventLog | None = None,
+        dapr_http_port: int = 3500,
     ) -> None:
         self._registry = registry
         self._event_log = event_log
+        self._dapr_http_port = dapr_http_port
 
     async def execute(self, request: HandoffRequest) -> HandoffResult:
         """Execute a validated handoff request.
@@ -399,21 +413,40 @@ class HandoffExecutor:
                     runner, target_def, policy, request, start
                 )
             else:
-                # New AgentEntry: route to remote or local
+                # New AgentEntry — choose one of three communication paths:
+                #
+                #   Path 1 — Local runner (runner is not None):
+                #     Same process or same Nexus instance. Call AgentRunner directly.
+                #     No network hop. Dapr state/pub-sub still available to the target.
+                #
+                #   Path 2 — Dapr service invocation (dapr_app_id is not None):
+                #     Another Nexus service in the same cluster. Route through the Dapr
+                #     sidecar (localhost:{port}) to get automatic mTLS, retries, tracing.
+                #     Use this for Nexus-to-Nexus multi-service deployments.
+                #
+                #   Path 3 — External A2A HTTP (remote_url / client is not None):
+                #     Non-Nexus agent (LangGraph, CrewAI, etc.) or Nexus in a different
+                #     cluster. Plain HTTP with JSON-RPC A2A protocol. No Dapr involved.
                 entry: AgentEntry = raw_entry
-                if entry.client is not None:
-                    handoff_result = await self._remote_handoff(entry.client, request, start)
-                elif entry.runner is not None:
+                if entry.runner is not None:
                     target_def = entry.agent_def or AgentDefinition(
                         name=entry.name, model="claude-3-5-haiku-20241022"
                     )
                     handoff_result = await self._local_handoff(
                         entry.runner, target_def, HandoffPolicy(), request, start
                     )
+                elif entry.dapr_app_id is not None:
+                    handoff_result = await self._dapr_handoff(entry, request, start)
+                elif entry.client is not None:
+                    handoff_result = await self._remote_handoff(entry.client, request, start)
                 else:
                     raise HandoffError(
-                        f"Agent '{request.target_agent_name}' has neither a runner nor a client.",
+                        f"Agent '{request.target_agent_name}' has no execution path configured.",
                         code="AGENT_NOT_CONFIGURED",
+                        hint=(
+                            "Register with register_local(), register_dapr_service(), "
+                            "or register_remote()."
+                        ),
                     )
 
         except HandoffError:
@@ -538,6 +571,65 @@ class HandoffExecutor:
             ) from exc
 
         output = _extract_output_from_a2a_response(response)
+        return HandoffResult(
+            request_id=request.id,
+            output=output,
+            status="completed",
+            duration_seconds=time.monotonic() - start,
+        )
+
+    async def _dapr_handoff(
+        self,
+        entry: AgentEntry,
+        request: HandoffRequest,
+        start: float,
+    ) -> HandoffResult:
+        """Call a sibling Nexus service via Dapr service invocation.
+
+        Builds a JSON-RPC message/send payload and POSTs to
+        http://localhost:{dapr_http_port}/v1.0/invoke/{app_id}/method/{method}
+        so traffic routes through the Dapr sidecar for mTLS, retries, and tracing.
+
+        Args:
+            entry: AgentEntry with dapr_app_id and dapr_method set.
+            request: The handoff request to forward.
+            start: Monotonic start time for duration tracking.
+        """
+        safe_context = _sanitize_context(request.context)
+        input_text = safe_context.task
+        if safe_context.context_summary:
+            input_text = f"[Context]\n{safe_context.context_summary}\n\n{input_text}"
+
+        url = (
+            f"http://localhost:{self._dapr_http_port}"
+            f"/v1.0/invoke/{entry.dapr_app_id}/method/{entry.dapr_method}"
+        )
+        payload: dict[str, Any] = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": "message/send",
+            "params": {
+                "message": {
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": input_text}],
+                }
+            },
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                data: dict[str, Any] = response.json()
+        except Exception as exc:
+            raise HandoffError(
+                f"Dapr handoff to '{request.target_agent_name}' "
+                f"(app_id={entry.dapr_app_id}) failed: {exc}",
+                code="HANDOFF_DAPR_ERROR",
+                hint=(f"Ensure the target service is running with --app-id {entry.dapr_app_id}"),
+            ) from exc
+
+        output = _extract_output_from_jsonrpc_response(data)
         return HandoffResult(
             request_id=request.id,
             output=output,
