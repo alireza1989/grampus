@@ -310,8 +310,29 @@ When `detect_injection=True`, the validator blocks writes containing patterns li
 
 ---
 
+## Inspecting memory via the web UI
+
+You can browse all memory entries visually at `/ui/memory/` in the Nexus web interface. The memory inspector provides a filter bar to narrow by agent ID, memory type, search text, and minimum trust score. Each row in the table shows the record's type, content preview, trust score (color-coded: green ≥0.8, yellow 0.5–0.8, red <0.5), provenance source, and creation timestamp. Click any row to open the detail panel with the full content and complete provenance metadata. Start the server with `nexus serve` and open `http://localhost:8000/ui/memory/` to access it.
+
+To delete individual entries from the UI, click the trash icon in the row's Actions column. You can also delete programmatically using `MemoryManager.forget(record_id)` or the REST API:
+
+```python
+# Programmatic deletion
+await manager.forget(record_id="ep-001", memory_type="episodic")
+```
+
+```bash
+# REST API deletion
+curl -X DELETE "http://localhost:8000/memory/ep-001"
+```
+
+See the [Web UI guide](web-ui.md) for the full inspector reference.
+
+---
+
 ## Next steps
 
 - **[Memory API reference →](../reference/memory-api.md)** — Full `MemoryManager` and type reference
 - **[Security model →](../architecture/security.md)** — MINJA/MemoryGraft threat model and defenses
 - **[Observability guide →](observability.md)** — Trace memory reads and writes with OTEL
+- **[Web UI →](web-ui.md)** — Browse and manage memory entries visually

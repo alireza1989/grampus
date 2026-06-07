@@ -253,6 +253,83 @@ Open the Jaeger UI at `http://localhost:16686`.
 
 ---
 
+## Grafana dashboard
+
+A pre-built 14-panel Grafana dashboard is included at `grafana/dashboards/nexus-overview.json`. It auto-provisions when you start the Grafana stack:
+
+```bash
+docker compose -f grafana/docker-compose.grafana.yml up -d
+# Open http://localhost:3000  (default login: admin / admin)
+# Dashboard auto-provisions under the "Nexus" folder
+```
+
+### Dashboard panels
+
+| Panel | Type | Description |
+|-------|------|-------------|
+| Agent throughput | Time series | Runs completed per minute |
+| LLM call rate | Time series | Model API calls per minute |
+| P50 LLM latency | Stat | 50th percentile LLM response time |
+| P95 LLM latency | Stat | 95th percentile LLM response time |
+| P99 LLM latency | Stat | 99th percentile LLM response time |
+| LLM latency histogram | Heatmap | Full latency distribution over time |
+| Cost per model | Bar chart | Cumulative USD spend broken down by model |
+| Active agents | Gauge | Current count of running agent sessions |
+| Error rate | Time series | Errors per minute by error type |
+| Tool call rate | Time series | Tool executions per minute |
+| Tool success rate | Stat | Percentage of tool calls that succeeded |
+| Tokens per run (avg) | Stat | Average total tokens per agent run |
+| Session cost (avg) | Stat | Average USD per session |
+| Top tools by call count | Table | Most-used tools ranked by invocation count |
+
+### Template variables
+
+The dashboard includes two template variables you can use to filter all panels:
+
+- **`$datasource`** — switch between Prometheus instances
+- **`$agent_id`** — filter all panels to a specific agent ID (empty = all agents)
+
+---
+
+## Prometheus metrics endpoint
+
+The Nexus server exposes a Prometheus-compatible metrics endpoint at `GET /metrics`. Point your Prometheus scrape config at it:
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: nexus
+    static_configs:
+      - targets: ["localhost:8000"]
+    metrics_path: /metrics
+```
+
+### Available metrics
+
+**Counters** (ever-increasing, reset on restart):
+
+| Metric | Labels | Description |
+|--------|--------|-------------|
+| `nexus_llm_calls_total` | `agent_id`, `model` | Total LLM API calls made |
+| `nexus_tool_calls_total` | `agent_id`, `tool_name` | Total tool executions |
+| `nexus_cost_usd_total` | `agent_id`, `model` | Cumulative USD spend |
+| `nexus_errors_total` | `agent_id` | Total errors by agent |
+
+**Gauges** (current snapshot):
+
+| Metric | Labels | Description |
+|--------|--------|-------------|
+| `nexus_active_agents` | — | Number of currently running agent sessions |
+
+**Histograms** (latency distributions with `_bucket`, `_sum`, `_count` suffixes):
+
+| Metric | Labels | Description |
+|--------|--------|-------------|
+| `nexus_llm_latency_seconds` | `agent_id`, `model` | LLM API call duration |
+| `nexus_tool_latency_seconds` | `agent_id`, `tool_name` | Tool execution duration |
+
+---
+
 ## Next steps
 
 - **[Observability API reference →](../reference/observability-api.md)** — Full `NexusTracer` and `NexusMetrics` reference

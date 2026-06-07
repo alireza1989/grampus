@@ -383,6 +383,69 @@ else:
 
 ---
 
+## Streaming eval assertions
+
+Standard eval assertions test a completed `ExecutionResult`. Streaming eval assertions go further — they measure *how* a response streams, catching latency regressions and stall conditions that only appear at runtime.
+
+```python
+import asyncio
+
+from nexus.evaluation.streaming import (
+    StreamingEvalCase,
+    StreamingEvalSuite,
+    chunk_count_between,
+    first_token_within,
+    min_throughput,
+    no_repetition,
+    no_stall,
+    stream_contains,
+    stream_output_length,
+    token_usage_reported,
+)
+
+
+async def main() -> None:
+    suite = StreamingEvalSuite(runner=runner)
+
+    suite.add_case(
+        StreamingEvalCase(
+            name="fast-response",
+            user_message="What is 2 + 2?",
+            assertions=[
+                first_token_within(seconds=2.0),
+                no_stall(max_gap_seconds=5.0),
+                min_throughput(tokens_per_second=10.0),
+                stream_contains("4"),
+                no_repetition(window=20),
+            ],
+        )
+    )
+
+    suite.add_case(
+        StreamingEvalCase(
+            name="detailed-explanation",
+            user_message="Explain the water cycle.",
+            assertions=[
+                first_token_within(seconds=3.0),
+                stream_output_length(min_chars=200, max_chars=2000),
+                no_stall(max_gap_seconds=8.0),
+                chunk_count_between(min_count=5, max_count=200),
+                token_usage_reported(),
+            ],
+        )
+    )
+
+    results = await suite.run()
+    print(f"Pass rate: {results.pass_rate:.0%}  ({results.passed}/{results.total_cases})")
+
+
+asyncio.run(main())
+```
+
+For the full list of streaming assertions and parameters, see the [Streaming guide](streaming.md).
+
+---
+
 ## CI integration
 
 Gate deployments on eval pass rate:

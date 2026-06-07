@@ -102,6 +102,16 @@ The pipeline is configured via YAML policies — no code changes needed to tight
 
 ---
 
+## Agent handoffs
+
+Sometimes an agent discovers mid-run that a question is outside its expertise and needs to delegate to a specialist. That is an *agent handoff* — a runtime transfer of control from one agent to another, carrying the accumulated conversation context.
+
+Handoffs differ from [multi-agent crews](../guides/multi-agent-crew.md) in one key way: a crew's composition is decided upfront, before execution starts. A handoff happens dynamically, triggered by the running agent's own judgment. Use handoffs when the routing decision depends on what the user actually says, not what you predict they might say.
+
+Security is built into the handoff layer: context passed to the target agent is tagged as `LLM_GENERATED` (trust 0.7, lower than direct `USER_INPUT` at 0.9), injection patterns are scanned before context is handed over, and `HandoffPolicy.max_depth` prevents infinite agent loops. See the [Agent Handoffs guide →](../guides/agent-handoffs.md)
+
+---
+
 ## Dapr as infrastructure
 
 Nexus never writes to databases or message brokers directly. All persistence and messaging goes through the Dapr sidecar:

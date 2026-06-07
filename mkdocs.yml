@@ -73,12 +73,19 @@ nav:
   - Guides:
     - Single Agent: guides/single-agent.md
     - Multi-Agent Crew: guides/multi-agent-crew.md
+    - Agent Handoffs: guides/agent-handoffs.md
     - Memory: guides/memory.md
     - Tools: guides/tools.md
     - Safety: guides/safety.md
     - Evaluation: guides/evaluation.md
+    - Streaming: guides/streaming.md
     - Observability: guides/observability.md
     - Deployment: guides/deployment.md
+    - Model Providers: guides/model-providers.md
+    - Cost Management: guides/cost-management.md
+    - State Snapshots: guides/state-snapshots.md
+    - Web UI: guides/web-ui.md
+    - Prompt Playground: guides/playground.md
   - Reference:
     - Configuration: reference/config.md
     - CLI: reference/cli.md

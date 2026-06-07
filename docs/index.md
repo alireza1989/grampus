@@ -74,11 +74,18 @@ graph TB
 | **ReAct Agent Loop** | Built-in Observe→Think→Act loop with configurable max iterations |
 | **Graph Engine** | Multi-node workflows with conditional branching and Dapr checkpoints |
 | **Multi-Agent Crews** | Sequential, parallel, and hierarchical crew patterns |
+| **Agent Handoffs** | Runtime agent-to-agent delegation with A2A protocol discovery and injection-sanitized context |
 | **Memory Security** | Content hashing, provenance tracking, injection detection, rate limiting |
 | **Tool Sandboxing** | Docker-isolated execution, resource limits, network control |
 | **MCP Client** | Discover and invoke tools from any MCP-compatible server |
-| **Eval Framework** | 16 assertion types, LLM-as-judge, A/B prompt testing, regression detection |
-| **Cost Tracking** | Per-model, per-agent, per-session budget enforcement |
+| **Eval Framework** | 16 assertion types, streaming quality assertions, LLM-as-judge, A/B prompt testing, regression detection |
+| **Cost Tracking** | Per-model, per-agent, per-session budget enforcement with Slack/email/webhook alerts |
+| **Google Gemini** | Native Gemini client (`gemini-2.0-flash`, `gemini-1.5-pro`) alongside Anthropic and OpenAI |
+| **Local Models** | Ollama client for zero-cost local inference with any pulled model |
+| **Agent State Snapshots** | Export/import full session state for debugging, migration, and eval baselines |
+| **Grafana Dashboard** | Pre-built 14-panel dashboard for agent throughput, latency, cost, and errors |
+| **Prompt Playground** | Interactive CLI REPL for testing prompts and comparing models (`nexus playground`) |
+| **Web UI** | Built-in HTMX interface at `/ui/` for memory inspection and monitoring |
 
 ---
 

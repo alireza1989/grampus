@@ -379,3 +379,310 @@ nexus dev --config staging.yaml --port 8001
 |------|---------|
 | `0` | Clean exit (Ctrl+C) |
 | `1` | Config validation failed or Dapr unavailable |
+
+---
+
+## nexus state
+
+Manage agent state snapshots — export, inspect, and restore full session state.
+
+```bash
+nexus state COMMAND [OPTIONS]
+```
+
+### nexus state export
+
+Export the state of an agent session to a portable JSON snapshot.
+
+```bash
+nexus state export [OPTIONS] AGENT_ID
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `AGENT_ID` | (required) | Agent identifier |
+| `--session TEXT` | (latest session) | Session ID to export |
+| `--output TEXT` | `"<agent_id>_<session_id>.json"` | Output file path |
+| `--tag KEY=VALUE` | (repeatable) | Metadata tag attached to the snapshot |
+
+```bash
+# Export the latest session for research-bot
+nexus state export research-bot --output snapshot.json
+
+# Export a specific session with tags
+nexus state export research-bot \
+  --session ses_abc123 \
+  --output snapshot.json \
+  --tag env=production \
+  --tag reason=incident-review
+```
+
+### nexus state import
+
+Restore a previously exported snapshot into Dapr state.
+
+```bash
+nexus state import [OPTIONS] FILE
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `FILE` | (required) | Path to the snapshot JSON file |
+| `--dry-run` | `False` | Print what would be restored without writing any state |
+
+```bash
+# Preview changes without writing
+nexus state import snapshot.json --dry-run
+
+# Restore the snapshot
+nexus state import snapshot.json
+```
+
+### nexus state show
+
+Inspect a snapshot file without restoring it.
+
+```bash
+nexus state show [OPTIONS] [FILE]
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `FILE` | `None` | Path to the snapshot JSON file (stdin if omitted) |
+| `--format TEXT` | `"table"` | Output format: `table`, `json` |
+
+```bash
+# Human-readable summary
+nexus state show snapshot.json --format table
+
+# Full JSON dump
+nexus state show snapshot.json --format json
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | File not found, invalid snapshot format, or Dapr unavailable |
+| `2` | Session not found for the given agent |
+
+---
+
+## nexus alerts
+
+Manage cost alert rules and notification channels.
+
+```bash
+nexus alerts COMMAND [OPTIONS]
+```
+
+### nexus alerts list
+
+Show all configured alert rules.
+
+```bash
+nexus alerts list
+```
+
+Output:
+
+```
+ID           NAME                THRESHOLD        TYPE              SEVERITY   ENABLED
+rule_abc123  session-budget      $0.10            per_session_usd   warning    yes
+rule_def456  daily-spend         $5.00            per_day_usd       critical   yes
+rule_ghi789  per-run-spike       $0.25            per_run_usd       warning    no
+```
+
+### nexus alerts add
+
+Create a new alert rule.
+
+```bash
+nexus alerts add [OPTIONS]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--name TEXT` | (required) | Unique rule name |
+| `--threshold-usd FLOAT` | (required) | USD threshold that triggers the alert |
+| `--threshold-type TEXT` | (required) | `per_run_usd`, `per_session_usd`, `per_hour_usd`, `per_day_usd`, `per_month_usd` |
+| `--severity TEXT` | `"warning"` | Alert severity: `info`, `warning`, `critical` |
+| `--agent-id TEXT` | `None` | Scope to a specific agent (None = all agents) |
+| `--cooldown INT` | `3600` | Minimum seconds between repeated fires for this rule |
+
+```bash
+nexus alerts add \
+  --name "daily-spend" \
+  --threshold-usd 5.00 \
+  --threshold-type per_day_usd \
+  --severity critical \
+  --agent-id research-bot \
+  --cooldown 86400
+```
+
+### nexus alerts remove
+
+Delete an alert rule by ID.
+
+```bash
+nexus alerts remove RULE_ID
+```
+
+```bash
+nexus alerts remove rule_abc123
+```
+
+### nexus alerts enable / disable
+
+Enable or disable a rule without deleting it.
+
+```bash
+nexus alerts enable  RULE_ID
+nexus alerts disable RULE_ID
+```
+
+```bash
+nexus alerts disable rule_ghi789   # pause a noisy rule temporarily
+nexus alerts enable  rule_ghi789   # re-enable it
+```
+
+### nexus alerts test
+
+Fire a test notification for a rule to verify your notification channels are working.
+
+```bash
+nexus alerts test RULE_ID
+```
+
+```bash
+nexus alerts test rule_abc123
+# Sends a test alert to all configured notification channels
+# Prints: "Test alert sent to 2 channels (slack, log)"
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Rule not found or server unavailable |
+| `2` | Invalid option value |
+
+---
+
+## nexus playground
+
+Interactive prompt playground for testing and comparing LLM responses.
+
+```bash
+nexus playground COMMAND [OPTIONS]
+```
+
+### nexus playground start
+
+Launch the interactive REPL.
+
+```bash
+nexus playground start [OPTIONS]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--model TEXT` | `"claude-haiku-4-5"` | Starting model |
+| `--system TEXT` | `None` | System prompt string |
+| `--system-file PATH` | `None` | Load system prompt from a file |
+| `--load TEXT` | `None` | Resume a previously saved session by name |
+
+```bash
+# Start with defaults
+nexus playground start
+
+# Start with a specific model and system prompt
+nexus playground start --model gpt-4o-mini --system "You are a Python tutor."
+
+# Resume a saved session
+nexus playground start --load python-tutor
+```
+
+Inside the REPL, use `/help` to list all available commands.
+
+### nexus playground run
+
+Run a single prompt and exit (non-interactive).
+
+```bash
+nexus playground run [OPTIONS] MESSAGE
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `MESSAGE` | (required) | The user message to send |
+| `--model TEXT` | `"claude-haiku-4-5"` | Model to use |
+| `--system TEXT` | `None` | System prompt |
+| `--no-stream` | `False` | Disable streaming output |
+
+```bash
+nexus playground run "What is the capital of France?" --model claude-haiku-4-5
+nexus playground run "Explain recursion." --model gpt-4o-mini --no-stream
+```
+
+### nexus playground compare
+
+Run the same message against multiple models simultaneously.
+
+```bash
+nexus playground compare [OPTIONS] MESSAGE
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `MESSAGE` | (required) | The user message to send to all models |
+| `--models TEXT` | (required) | Comma-separated list of model names |
+| `--system TEXT` | `None` | System prompt applied to all models |
+
+```bash
+nexus playground compare "Explain async/await." \
+  --models claude-haiku-4-5,gpt-4o-mini,llama3.2
+```
+
+### nexus playground sessions
+
+List all saved playground sessions.
+
+```bash
+nexus playground sessions
+```
+
+Output:
+
+```
+NAME             MODEL              TURNS  COST      SAVED
+python-tutor     claude-haiku-4-5   8      $0.0012   2026-06-01 14:22
+billing-tests    gpt-4o-mini        3      $0.0003   2026-05-30 09:15
+```
+
+### nexus playground show
+
+Display the contents of a saved session.
+
+```bash
+nexus playground show [OPTIONS] NAME
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `NAME` | (required) | Saved session name |
+| `--format TEXT` | `"transcript"` | Output format: `transcript`, `json` |
+
+```bash
+nexus playground show python-tutor
+nexus playground show python-tutor --format json
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success or clean REPL exit |
+| `1` | Model provider not configured or session not found |
