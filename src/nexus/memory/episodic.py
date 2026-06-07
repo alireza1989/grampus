@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from nexus.core.logging import get_logger
 from nexus.memory.types import EpisodicRecord
+
+if TYPE_CHECKING:
+    from nexus.memory.vector.base import VectorStore
 
 _log = get_logger(__name__)
 
@@ -27,6 +30,14 @@ class EpisodicMemory:
     Importance scoring proxy: ``min(word_count / 200, 1.0)`` — longer
     content is treated as more important. Phase 4 consolidation upgrades this
     with LLM-based extraction.
+
+    Args:
+        state_store: Dapr state store (or duck-typed equivalent).
+        embedding_service: Service used to generate embedding vectors.
+        agent_id: Scopes all keys to this agent.
+        vector_store: Optional external vector store adapter. When set, vectors
+            are mirrored there for similarity search. Falls back to pgvector
+            path when ``None``.
     """
 
     def __init__(
@@ -35,10 +46,12 @@ class EpisodicMemory:
         embedding_service: Any,
         *,
         agent_id: str,
+        vector_store: VectorStore | None = None,
     ) -> None:
         self._store = state_store
         self._embeddings = embedding_service
         self._agent_id = agent_id
+        self._vector_store = vector_store
         self._index: list[str] = []
 
     # ------------------------------------------------------------------
@@ -80,8 +93,31 @@ class EpisodicMemory:
         await self._save_record(record)
         self._index.append(record_id)
         await self._save_index()
+
+        if self._vector_store is not None and embedding is not None:
+            await self._upsert_to_vector_store(record_id, embedding, record.metadata)
+
         _log.debug("episodic_stored", agent=self._agent_id, record_id=record_id)
         return record
+
+    async def _upsert_to_vector_store(
+        self, record_id: str, embedding: list[float], metadata: dict[str, Any]
+    ) -> None:
+        """Mirror a record's embedding to the external vector store. Failures are logged, not raised."""
+        from nexus.memory.vector.base import VectorRecord  # noqa: PLC0415
+
+        try:
+            await self._vector_store.upsert(  # type: ignore[union-attr]
+                [
+                    VectorRecord(
+                        id=record_id,
+                        vector=embedding,
+                        payload={"agent_id": self._agent_id, "type": "episodic", **metadata},
+                    )
+                ]
+            )
+        except Exception:
+            _log.warning("episodic_vector_store_upsert_failed", record_id=record_id)
 
     async def get(self, record_id: str) -> EpisodicRecord | None:
         """Load a single record by ID. Returns None if not found."""
@@ -127,6 +163,29 @@ class EpisodicMemory:
         records: list[EpisodicRecord] = []
         for rid in list(self._index):
             rec = await self.get(rid)
+            if rec is not None:
+                records.append(rec)
+        return records
+
+    async def search(
+        self,
+        query_embedding: list[float],
+        *,
+        top_k: int = 5,
+        filter: dict[str, Any] | None = None,
+    ) -> list[EpisodicRecord]:
+        """Return up to *top_k* records most similar to *query_embedding*.
+
+        Uses the external vector store when configured; otherwise returns an
+        empty list (the caller — EpisodicRetriever — handles pgvector search
+        via its own list_all + cosine path).
+        """
+        if self._vector_store is None:
+            return []
+        results = await self._vector_store.search(query_embedding, top_k=top_k, filter=filter)
+        records: list[EpisodicRecord] = []
+        for r in results:
+            rec = await self.get(r.id)
             if rec is not None:
                 records.append(rec)
         return records

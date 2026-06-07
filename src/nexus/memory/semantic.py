@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from nexus.core.logging import get_logger
 from nexus.memory.types import SemanticFact
+
+if TYPE_CHECKING:
+    from nexus.memory.vector.base import VectorStore
 
 _log = get_logger(__name__)
 
@@ -30,11 +33,20 @@ class SemanticMemory:
     Args:
         state_store: A DaprStateStore (or duck-typed equivalent).
         agent_id: Scopes all keys to this agent.
+        vector_store: Optional external vector store adapter. When set, fact
+            embeddings are mirrored there for similarity search.
     """
 
-    def __init__(self, state_store: Any, *, agent_id: str) -> None:
+    def __init__(
+        self,
+        state_store: Any,
+        *,
+        agent_id: str,
+        vector_store: VectorStore | None = None,
+    ) -> None:
         self._store = state_store
         self._agent_id = agent_id
+        self._vector_store = vector_store
         self._index: list[str] = []
 
     # ------------------------------------------------------------------
@@ -52,13 +64,39 @@ class SemanticMemory:
                 merged = _merge_facts(existing, fact)
                 await self._save_fact(merged)
                 _log.debug("semantic_fact_merged", subject=fact.subject, predicate=fact.predicate)
+                if self._vector_store is not None and merged.embedding is not None:
+                    await self._upsert_to_vector_store(merged)
                 return merged
 
         await self._save_fact(fact)
         self._index.append(fact.id)
         await self._save_index()
+        if self._vector_store is not None and fact.embedding is not None:
+            await self._upsert_to_vector_store(fact)
         _log.debug("semantic_fact_stored", fact_id=fact.id, agent=self._agent_id)
         return fact
+
+    async def _upsert_to_vector_store(self, fact: SemanticFact) -> None:
+        """Mirror a fact's embedding to the external vector store. Failures are logged, not raised."""
+        from nexus.memory.vector.base import VectorRecord  # noqa: PLC0415
+
+        try:
+            await self._vector_store.upsert(  # type: ignore[union-attr]
+                [
+                    VectorRecord(
+                        id=fact.id,
+                        vector=fact.embedding,  # type: ignore[arg-type]
+                        payload={
+                            "agent_id": self._agent_id,
+                            "type": "semantic",
+                            "subject": fact.subject,
+                            "predicate": fact.predicate,
+                        },
+                    )
+                ]
+            )
+        except Exception:
+            _log.warning("semantic_vector_store_upsert_failed", fact_id=fact.id)
 
     async def get(self, fact_id: str) -> SemanticFact | None:
         """Load a single fact by ID. Returns None if not found."""
@@ -80,6 +118,29 @@ class SemanticMemory:
         facts: list[SemanticFact] = []
         for fid in list(self._index):
             fact = await self.get(fid)
+            if fact is not None:
+                facts.append(fact)
+        return facts
+
+    async def search_similar(
+        self,
+        query_embedding: list[float],
+        *,
+        top_k: int = 5,
+        filter: dict[str, Any] | None = None,
+    ) -> list[SemanticFact]:
+        """Return up to *top_k* facts most similar to *query_embedding*.
+
+        Uses the external vector store when configured; otherwise returns an
+        empty list (the caller — SemanticRetriever — handles its own cosine
+        path via list_all).
+        """
+        if self._vector_store is None:
+            return []
+        results = await self._vector_store.search(query_embedding, top_k=top_k, filter=filter)
+        facts: list[SemanticFact] = []
+        for r in results:
+            fact = await self.get(r.id)
             if fact is not None:
                 facts.append(fact)
         return facts

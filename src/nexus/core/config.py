@@ -6,8 +6,34 @@ import os
 from pathlib import Path
 from typing import Any, ClassVar
 
-from pydantic import SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, YamlConfigSettingsSource
+
+from nexus.memory.vector.base import VectorStoreType
+
+
+class VectorStoreConfig(BaseModel):
+    """Vector store backend selection and credentials."""
+
+    type: VectorStoreType = VectorStoreType.PGVECTOR
+
+    # Pinecone (cloud)
+    pinecone_api_key: SecretStr | None = None
+    pinecone_index_host: str | None = None
+    pinecone_namespace: str = "nexus"
+    pinecone_cloud: str = "aws"
+    pinecone_region: str = "us-east-1"
+
+    # Weaviate
+    weaviate_host: str = "localhost"
+    weaviate_port: int = 8080
+    weaviate_api_key: SecretStr | None = None
+    weaviate_collection: str = "NexusMemory"
+
+    # Qdrant
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: SecretStr | None = None
+    qdrant_collection: str = "nexus_memory"
 
 
 class ModelConfig(BaseSettings):
@@ -31,6 +57,7 @@ class MemoryConfig(BaseSettings):
     episodic_top_k: int = 5
     decay_rate: float = 0.01
     summarization_strategy: str = "hybrid"
+    vector_store: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
 
     model_config = {"env_prefix": "NEXUS_MEMORY__", "extra": "ignore"}
 

@@ -53,6 +53,10 @@ sql = ["sqlalchemy>=2.0", "aiosqlite>=0.19", "greenlet>=3.0"]
 langchain = ["langchain-core>=0.2"]
 server = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "jinja2>=3.0"]
 jupyter = ["ipython>=8.0", "nest_asyncio>=1.6"]
+pinecone = ["pinecone[asyncio]>=9.0"]
+weaviate = ["weaviate-client>=4.9"]
+qdrant = ["qdrant-client>=1.9"]
+vectordb = ["pinecone[asyncio]>=9.0", "weaviate-client>=4.9", "qdrant-client>=1.9"]
 all = [
     "anthropic>=0.97",
     "openai>=2.0",
@@ -68,6 +72,9 @@ all = [
     "ipython>=8.0",
     "nest_asyncio>=1.6",
     "jinja2>=3.0",
+    "pinecone[asyncio]>=9.0",
+    "weaviate-client>=4.9",
+    "qdrant-client>=1.9",
 ]
 llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0", "ollama>=0.6"]
 
