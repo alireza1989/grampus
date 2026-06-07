@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import json
-from collections.abc import AsyncIterator
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-from a2a.types.a2a_pb2 import AgentCard, AgentInterface, AgentCapabilities, Task, TaskState
+from a2a.types.a2a_pb2 import AgentCard, Task, TaskState
 
 
 def _make_agent_card_dict(url: str = "http://agent.test") -> dict[str, Any]:
@@ -119,8 +117,8 @@ async def test_send_message_sets_bearer_token_when_api_key() -> None:
 
 
 async def test_send_message_raises_orchestration_error_on_http_error() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
     from nexus.core.errors import OrchestrationError
+    from nexus.orchestration.a2a.client import A2AAgentClient
 
     mock_http = _make_mock_http_client(
         get_response=_make_agent_card_dict(),
@@ -224,8 +222,8 @@ async def test_wait_for_completion_polls_until_terminal() -> None:
 
 
 async def test_wait_for_completion_times_out() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
     from nexus.core.errors import OrchestrationError
+    from nexus.orchestration.a2a.client import A2AAgentClient
 
     working_rpc = {
         "jsonrpc": "2.0",
@@ -255,8 +253,8 @@ async def test_wait_for_completion_times_out() -> None:
 
 
 async def test_missing_sdk_raises_tool_error() -> None:
-    from nexus.core.errors import ToolError
     import nexus.orchestration.a2a.client as _mod
+    from nexus.core.errors import ToolError
 
     orig = _mod._HAS_A2A
     try:

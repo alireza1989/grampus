@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from fastapi.testclient import TestClient
 
 from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
@@ -43,8 +41,8 @@ def _make_runner(output: str = "ok") -> MagicMock:
 
 def _make_app_with_a2a(api_key: str | None = None) -> Any:
     from nexus.orchestration.a2a.executor import NexusA2AExecutor
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
     from nexus.orchestration.a2a.registry import AgentRegistry
+    from nexus.orchestration.a2a.task_store import NexusTaskStore
     from nexus.server.app import create_app
 
     runner = _make_runner()

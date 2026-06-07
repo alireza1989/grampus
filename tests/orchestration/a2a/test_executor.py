@@ -3,25 +3,20 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from a2a.server.agent_execution import RequestContext
 from a2a.server.context import ServerCallContext
 from a2a.server.events.event_queue import EventQueueLegacy
 from a2a.types.a2a_pb2 import (
-    Message,
-    Part,
     Role,
     SendMessageRequest,
     Task,
     TaskState,
-    TaskStatus,
     TaskStatusUpdateEvent,
 )
-from google.protobuf.json_format import MessageToDict
 
-from nexus.core.types import AgentDefinition, ExecutionResult, AgentStatus, TokenUsage
+from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
 
 
 def _make_request_context(

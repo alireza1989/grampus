@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from a2a.server.context import ServerCallContext
-from a2a.types.a2a_pb2 import Task, TaskState, TaskStatus
+from a2a.types.a2a_pb2 import Task, TaskState
 
 
 def _make_task(task_id: str = "task-1", state: int = TaskState.TASK_STATE_WORKING) -> Task:
@@ -91,8 +90,9 @@ async def test_state_store_failure_does_not_raise() -> None:
 
 
 async def test_list_tasks_returns_stored() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
     from a2a.types.a2a_pb2 import ListTasksRequest
+
+    from nexus.orchestration.a2a.task_store import NexusTaskStore
 
     store = NexusTaskStore()
     ctx = _make_call_context()
