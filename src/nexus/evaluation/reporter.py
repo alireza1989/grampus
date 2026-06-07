@@ -49,7 +49,9 @@ class EvalReporter:
 
     Args:
         pubsub: Optional DaprPubSub for publishing results.
-        report_topic: Pub/sub topic name.
+        report_topic: Pub/sub topic for full report JSON.
+        run_store: Optional EvalRunStore to persist run records.
+        pubsub_topic: Pub/sub topic for the lightweight eval.suite.completed event.
     """
 
     def __init__(
@@ -57,9 +59,13 @@ class EvalReporter:
         *,
         pubsub: Any | None = None,
         report_topic: str = "nexus.eval.results",
+        run_store: Any | None = None,
+        pubsub_topic: str = "eval.suite.completed",
     ) -> None:
         self._pubsub = pubsub
         self._topic = report_topic
+        self._run_store = run_store
+        self._pubsub_topic = pubsub_topic
 
     def render(self, report: EvalReport, *, fmt: ReportFormat = ReportFormat.TEXT) -> str:
         """Render report as a string in the requested format.
@@ -87,18 +93,49 @@ class EvalReporter:
         print(self.render(report, fmt=fmt))  # noqa: T201 — intentional stdout
 
     async def publish(self, report: EvalReport) -> None:
-        """Publish report JSON to pub/sub topic.
+        """Publish report JSON to pub/sub topic; save to run_store; emit completed event.
 
-        No-op when pubsub is None.
+        Failures from the store or pub/sub never propagate to the caller.
 
         Args:
             report: The EvalReport to publish.
         """
-        if self._pubsub is None:
-            return
-        payload = json.dumps(json.loads(_render_json(report))).encode()
-        await self._pubsub.publish(topic=self._topic, data=payload)
-        logger.info("eval_report_published", topic=self._topic)
+        if self._pubsub is not None:
+            try:
+                payload = json.dumps(json.loads(_render_json(report))).encode()
+                await self._pubsub.publish(topic=self._topic, data=payload)
+                logger.info("eval_report_published", topic=self._topic)
+            except Exception:  # noqa: BLE001
+                logger.warning("eval_report_publish_failed", topic=self._topic)
+
+        if self._run_store is not None:
+            try:
+                record = self._run_store.from_suite_result(report.suite_result)
+                self._run_store.append(record)
+                logger.debug("eval_run_saved", run_id=record.run_id)
+            except Exception:  # noqa: BLE001
+                logger.warning("eval_run_save_failed")
+
+        if self._pubsub is not None and self._pubsub_topic:
+            try:
+                sr = report.suite_result
+                completed: dict[str, Any] = {
+                    "suite_name": sr.suite_name,
+                    "pass_rate": sr.pass_rate,
+                    "total_cases": sr.total_cases,
+                    "passed": sr.passed,
+                    "failed": sr.failed,
+                    "errors": sr.errors,
+                    "total_cost_usd": sr.total_cost_usd,
+                    "run_at": sr.run_at.isoformat(),
+                }
+                await self._pubsub.publish(
+                    topic=self._pubsub_topic,
+                    data=json.dumps(completed).encode(),
+                )
+                logger.info("eval_completed_published", topic=self._pubsub_topic)
+            except Exception:  # noqa: BLE001
+                logger.warning("eval_completed_publish_failed", topic=self._pubsub_topic)
 
 
 # ---------------------------------------------------------------------------

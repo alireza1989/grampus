@@ -557,11 +557,7 @@ def create_router(has_memory: bool) -> APIRouter:
             input_text = str(body.message)
 
         await runner.run(agent_def, input_text, session_id=session_id)
-        return _A2ATaskResponse(
-            id=task_id,
-            status="completed",
-            message=f"Task {task_id} completed.",
-        )
+        return _A2ATaskResponse(id=task_id, status="completed")
 
     @router.get("/agents/{session_id}/snapshot")
     async def get_agent_snapshot(session_id: str, request: Request) -> Response:
@@ -693,6 +689,54 @@ def create_router(has_memory: bool) -> APIRouter:
         events = events[-limit:]
         serialised = [e.model_dump(mode="json") for e in events]
         return {"events": serialised, "count": len(serialised)}
+
+    # ------------------------------------------------------------------
+    # Eval run REST endpoints
+    # ------------------------------------------------------------------
+
+    @router.get("/evals/runs")
+    async def list_eval_runs(
+        request: Request,
+        suite_name: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """List recorded eval suite runs."""
+        store = getattr(request.app.state, "eval_run_store", None)
+        if store is None:
+            return {"runs": [], "count": 0}
+        runs = store.list_runs(suite_name=suite_name, limit=limit)
+        return {
+            "runs": [r.model_dump(mode="json") for r in runs],
+            "count": len(runs),
+        }
+
+    @router.get("/evals/runs/{run_id}")
+    async def get_eval_run(run_id: str, request: Request) -> Any:
+        """Get a single eval run by ID."""
+        store = getattr(request.app.state, "eval_run_store", None)
+        if store is None:
+            raise HTTPException(status_code=404, detail="Eval run store not configured.")
+        record = store.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
+        return record.model_dump(mode="json")
+
+    @router.get("/evals/runs/{run_id}/export")
+    async def export_eval_run(run_id: str, request: Request) -> Response:
+        """Download a single eval run as a JSON file."""
+        store = getattr(request.app.state, "eval_run_store", None)
+        if store is None:
+            raise HTTPException(status_code=404, detail="Eval run store not configured.")
+        record = store.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
+        content = record.model_dump_json(indent=2)
+        filename = f"eval_run_{run_id[:8]}.json"
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     if has_memory:
 

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Cost{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Cost Analytics</h1>
+</div>
+
+<div
+  id="cost-summary"
+  hx-get="/ui/cost/_summary"
+  hx-trigger="load, every 30s"
+  hx-swap="innerHTML"
+>
+  Loading…
+</div>
+{% endblock %}

@@ -167,11 +167,10 @@ class TestEvalReporterPublish:
         mock_pubsub.publish = AsyncMock()
         reporter = EvalReporter(pubsub=mock_pubsub, report_topic="test.topic")
         await reporter.publish(_make_report())
-        mock_pubsub.publish.assert_called_once()
-        call_kwargs = mock_pubsub.publish.call_args
-        assert call_kwargs[1]["topic"] == "test.topic" or (
-            len(call_kwargs[0]) > 0 and "test.topic" in str(call_kwargs)
-        )
+        # publish() sends two events: the full report + the completed notification
+        assert mock_pubsub.publish.call_count >= 1
+        topics_called = {kw["topic"] for _, kw in mock_pubsub.publish.call_args_list}
+        assert "test.topic" in topics_called
 
     @pytest.mark.asyncio
     async def test_publish_noop_when_pubsub_none(self) -> None:

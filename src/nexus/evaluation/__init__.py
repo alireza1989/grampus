@@ -35,6 +35,10 @@ from nexus.evaluation.reporter import (
     EvalReporter,
     ReportFormat,
 )
+from nexus.evaluation.run_store import (
+    EvalRunRecord,
+    EvalRunStore,
+)
 from nexus.evaluation.streaming import (
     StreamingAssertion,
     StreamingEvalCase,
@@ -95,6 +99,9 @@ __all__ = [
     "EvalReport",
     "EvalReporter",
     "ReportFormat",
+    # run store
+    "EvalRunRecord",
+    "EvalRunStore",
     # streaming
     "StreamingAssertion",
     "StreamingEvalCase",

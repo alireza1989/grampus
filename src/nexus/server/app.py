@@ -41,6 +41,7 @@ def create_app(
     agent_registry: Any | None = None,
     nexus_metrics: Any | None = None,
     alert_evaluator: Any | None = None,
+    eval_run_store: Any | None = None,
 ) -> Any:
     """Create and configure the FastAPI application.
 
@@ -92,6 +93,7 @@ def create_app(
     app.state.nexus_metrics = nexus_metrics
     app.state.alert_evaluator = alert_evaluator
     app.state.alert_history = deque(maxlen=500)
+    app.state.eval_run_store = eval_run_store
 
     @app.exception_handler(NexusError)
     async def _nexus_error(request: Request, exc: NexusError) -> JSONResponse:

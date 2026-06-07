@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -24,6 +25,24 @@ class MetricsSnapshot(BaseModel):
     llm_call_count: int = 0
     per_model_tokens: dict[str, int] = Field(default_factory=dict)
     per_agent_cost: dict[str, float] = Field(default_factory=dict)
+
+
+class CostSummary(BaseModel):
+    """Cost breakdown by model and agent.
+
+    Attributes:
+        total_cost_usd: Aggregate USD cost recorded.
+        total_tokens: Aggregate token count.
+        total_llm_calls: Total LLM API calls.
+        by_model: Per-model rows sorted by cost descending.
+        by_agent: Per-agent rows sorted by cost descending.
+    """
+
+    total_cost_usd: float
+    total_tokens: int
+    total_llm_calls: int
+    by_model: list[dict[str, Any]] = Field(default_factory=list)
+    by_agent: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class _Histogram:
@@ -117,6 +136,7 @@ class NexusMetrics:
         self._active_agents: int = 0
         self._llm_call_count: int = 0
         self._per_model_tokens: dict[str, int] = {}
+        self._per_model_cost: dict[str, float] = {}
         self._llm_latency = _Histogram()
         self._tool_latency = _Histogram()
 
@@ -143,6 +163,7 @@ class NexusMetrics:
         self._total_cost += cost_usd
         self._llm_call_count += 1
         self._per_model_tokens[model] = self._per_model_tokens.get(model, 0) + total
+        self._per_model_cost[model] = self._per_model_cost.get(model, 0.0) + cost_usd
         self._llm_latency.observe(latency_ms)
         logger.debug("llm_call_recorded", model=model, tokens=total, cost_usd=cost_usd)
 
@@ -187,6 +208,44 @@ class NexusMetrics:
             llm_call_count=self._llm_call_count,
             per_model_tokens=dict(self._per_model_tokens),
             per_agent_cost=per_agent_cost,
+        )
+
+    def get_cost_summary(self) -> CostSummary:
+        """Return a structured cost breakdown by model and agent.
+
+        Returns:
+            CostSummary with by_model and by_agent rows sorted by cost descending.
+        """
+        total = self._total_cost
+        by_model: list[dict[str, Any]] = sorted(
+            [
+                {
+                    "model": model,
+                    "tokens": self._per_model_tokens.get(model, 0),
+                    "cost_usd": cost,
+                    "pct": (cost / total * 100.0) if total > 0 else 0.0,
+                }
+                for model, cost in self._per_model_cost.items()
+            ],
+            key=lambda r: -r["cost_usd"],
+        )
+        by_agent: list[dict[str, Any]] = (
+            [
+                {
+                    "agent_id": self._agent_id,
+                    "cost_usd": total,
+                    "pct": 100.0,
+                }
+            ]
+            if total > 0
+            else []
+        )
+        return CostSummary(
+            total_cost_usd=total,
+            total_tokens=self._total_tokens,
+            total_llm_calls=self._llm_call_count,
+            by_model=by_model,
+            by_agent=by_agent,
         )
 
     def to_prometheus_text(self) -> str:
