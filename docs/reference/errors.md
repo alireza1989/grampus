@@ -29,6 +29,7 @@ NexusError
 ├── OrchestrationError
 │   ├── BudgetExceededError
 │   └── UncertaintyError
+├── PlanningError
 ├── SafetyError
 ├── ModelError
 └── DaprError
@@ -260,6 +261,36 @@ except UncertaintyError as e:
 - Enable `enable_p_true=True` and `enable_semantic_sampling=True` for a better-calibrated signal before escalating.
 
 See the [Uncertainty Quantification guide](../guides/uncertainty.md) for full configuration details.
+
+---
+
+## PlanningError
+
+**Code:** `CIRCULAR_DEPENDENCY`, `MAX_REPLANS_EXCEEDED`, `REPLAN_PARSE_FAILED`, `PLAN_PARSE_FAILED`, `NO_SUBGOALS`
+
+**Raised when:** The long-horizon planning subsystem encounters an unrecoverable failure: a cycle in the subgoal dependency graph, the maximum replan limit is reached, or the replanner LLM output cannot be parsed after two attempts.
+
+```python
+from nexus.core.errors import PlanningError
+from nexus.orchestration import PlanningRunner, PlanningConfig
+
+planner = PlanningRunner(agent_runner, client, model_id, config=PlanningConfig(max_replans=3))
+
+try:
+    result = await planner.run(task, agent_def)
+except PlanningError as e:
+    print(e.code)   # one of the codes listed above
+```
+
+| Code | Cause | How to handle |
+|------|-------|---------------|
+| `CIRCULAR_DEPENDENCY` | Planner generated a subgoal DAG with a cycle (A depends on B, B depends on A) | Increase `max_subgoals` to give the planner more room, or add a system-prompt note about DAG constraints |
+| `MAX_REPLANS_EXCEEDED` | A subgoal kept failing and `max_replans` was reached | Increase `PlanningConfig.max_replans`, add more specific `fallback_strategy` to subgoals, or decompose the task |
+| `REPLAN_PARSE_FAILED` | Replanner LLM returned unparseable JSON on two consecutive attempts | Switch to a stronger `model_id`, or reduce task ambiguity |
+| `PLAN_PARSE_FAILED` | Planner failed to produce valid JSON after two attempts (degenerate fallback used instead, so not normally raised) | Check model ID; the degenerate single-subgoal plan is returned instead of raising in most cases |
+| `NO_SUBGOALS` | Planner returned an empty subgoals list | Provide a more specific task description |
+
+See the [Long-Horizon Planning guide](../guides/long-horizon-planning.md) for full usage details.
 
 ---
 

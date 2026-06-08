@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Long-Horizon Planning (Phase E34)** — `PlanningRunner` orchestrates complex multi-step
+  tasks via a structured SubGoal DAG. The planner decomposes any user task into a
+  topologically sorted set of `SubGoal` objects; independent subgoals execute concurrently
+  via `asyncio.gather` (parallel waves). Each subgoal runs in a scoped context containing
+  only the global task + one-line summaries of completed steps + the current subgoal
+  description — eliminating ~82% of token overhead versus passing full conversation history
+  (Task-Decoupled Planning, arXiv 2601.07577).
+
+  Key features:
+  - **Adaptive routing** — a single cheap complexity-estimate call skips planning entirely
+    for tasks estimated at ≤ 4 tool calls, eliminating overhead for simple queries.
+  - **FLARE-style lookahead** — before each subgoal, `LookaheadSimulator` generates `n`
+    candidate execution paths and selects the highest-scoring approach as a hint
+    (arXiv 2601.22311). Advisory only; parse failures are silently swallowed.
+  - **Retry / fallback control flow** — `PASS` → done; `PARTIAL` → retry up to
+    `max_retries`; `FAIL` → try `fallback_strategy` once; still failing → trigger
+    partial replan (ReAcTree, arXiv 2511.02424).
+  - **Partial replanning** — `Replanner` generates only the downstream subgoals, preserving
+    all completed work (Google DeepMind Subgoal Framework, arXiv 2603.19685). Version
+    counter increments on each replan; `MAX_REPLANS_EXCEEDED` raised after `max_replans`.
+  - **`PostconditionVerifier`** — fast-model LLM call after each subgoal determines
+    pass / partial / fail against a verifiable success criterion.
+  - **`planning_node()`** — graph node factory that wraps `PlanningRunner` for composable
+    multi-step pipelines; injects `PlanResult` into `AgentState.metadata["plan_result"]`
+    and sets `state.status` to `COMPLETED` or `FAILED`.
+  - **`PlanningError`** — new exception class with codes `CIRCULAR_DEPENDENCY`,
+    `MAX_REPLANS_EXCEEDED`, `REPLAN_PARSE_FAILED`, `PLAN_PARSE_FAILED`, `NO_SUBGOALS`.
+  - **33 new tests** in `tests/orchestration/test_planning.py` covering all components
+    end-to-end with `FakeModelClient` and `FakeAgentRunner` — zero real LLM calls.
+  - **Documentation** — new [Long-Horizon Planning guide](docs/guides/long-horizon-planning.md),
+    updated [Orchestration API reference](docs/reference/orchestration-api.md) with full
+    type tables, and updated [Error reference](docs/reference/errors.md) with
+    `PlanningError` codes and remediation guidance.
+
 ## [0.1.0] - 2026-05-04
 
 ### Added

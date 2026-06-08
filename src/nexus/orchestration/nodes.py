@@ -223,6 +223,58 @@ def uncertainty_guard_node(
     return handler
 
 
+def planning_node(
+    planning_runner: Any,
+    agent_def: Any,
+    *,
+    tool_names: list[str] | None = None,
+    memory_context_key: str = "memory_context",
+) -> NodeHandler:
+    """Return a handler that runs PlanningRunner and injects PlanResult into state.
+
+    Extracts task from the last USER message. Reads optional memory_context from
+    state.metadata[memory_context_key]. Appends the final synthesized answer as
+    an ASSISTANT message and stores the full PlanResult dict in state.metadata.
+
+    Args:
+        planning_runner: PlanningRunner instance (duck-typed to avoid circular import).
+        agent_def: AgentDefinition for subgoal execution.
+        tool_names: Optional list of available tool names passed to the planner.
+        memory_context_key: Key in state.metadata to read memory context from.
+    """
+
+    async def handler(state: AgentState) -> AgentState:
+        task = _last_user_message(state)
+        memory_ctx = state.metadata.get(memory_context_key, "")
+        result = await planning_runner.run(
+            task,
+            agent_def,
+            tool_names=tool_names,
+            memory_context=memory_ctx,
+        )
+        new_state = state.model_copy(deep=True)
+        new_state.messages.append(
+            Message(
+                role=Role.ASSISTANT,
+                content=result.final_output,
+                metadata={
+                    "plan_result": result.model_dump(),
+                    "replans_triggered": result.replans_triggered,
+                    "subgoals_completed": len(result.completed_subgoals),
+                },
+            )
+        )
+        if result.total_token_usage:
+            new_state.total_token_usage = _accumulate_usage(
+                new_state.total_token_usage, result.total_token_usage
+            )
+        new_state.status = AgentStatus.COMPLETED if result.success else AgentStatus.FAILED
+        new_state.metadata["plan_result"] = result.model_dump()
+        return new_state
+
+    return handler
+
+
 def debate_node(
     orchestrator: Any,
     *,

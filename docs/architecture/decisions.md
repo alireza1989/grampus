@@ -229,3 +229,29 @@ The three-tier escalation ladder (Zylos Research, April 2026) maps propagated co
 - `UncertaintyError` (code `UNCERTAINTY_CRITICAL`) gives callers a machine-readable signal on ABORT
 - `uncertainty_guard_node()` provides an explicit graph checkpoint between nodes — composable with the existing `debate_node()` and `human_node()` primitives
 - OTEL spans (`uncertainty.estimate`, `uncertainty.semantic`, `uncertainty.escalate`) are emitted per step when a tracer is provided, enabling confidence dashboards alongside cost and latency metrics
+
+---
+
+## ADR-014: Long-Horizon Planning as a First-Class Orchestration Layer
+
+**Status:** Accepted
+
+**Context:** The existing `AgentRunner` implements a greedy ReAct loop where each step is chosen independently from the prior step's observation. Research shows this is fundamentally broken for long-horizon tasks: locally optimal step choices lead to early commitments that compound — the longer the task, the worse the degradation ("Why Reasoning Fails to Plan", arXiv 2601.22311, Jan 2026). Existing mitigation strategies — increasing `max_iterations`, adding chain-of-thought — do not address the core problem of myopic greedy selection. Two additional failure modes motivated this decision: (a) passing full conversation history to every LLM call is the dominant token-cost driver for multi-step tasks, and (b) there is no recovery mechanism when an intermediate step fails other than starting over.
+
+**Decision:** Implement `PlanningRunner` as a distinct orchestration layer that wraps `AgentRunner` without modifying it. Four research findings are baked directly into the implementation:
+
+1. **Task-Decoupled Planning / scoped context** (arXiv 2601.07577, Jan 2026) — Each subgoal executor receives only: global task + one-line summaries of completed steps + current subgoal description. The full conversation history is never passed. This reduces token usage by ~82% on long plans and confines error propagation to the active node.
+2. **Fallback before replanning** (ReAcTree, arXiv 2511.02424, AAMAS 2026) — When a subgoal fails after `max_retries`, a pre-specified `fallback_strategy` is tried once before triggering a full (partial) replan. This doubles success rate (61% vs 31%) at negligible cost.
+3. **Partial replan only** (Google DeepMind Subgoal Framework, arXiv 2603.19685, Mar 2026) — When replanning is triggered, only the downstream unfinished subgoals are regenerated. Completed subgoals and their outputs are preserved. This reduces replan cost and eliminates the "restart from scratch" failure mode.
+4. **Adaptive engagement** ("Learning When to Plan", arXiv 2509.03581) — A cheap complexity estimate call gates planning engagement. Tasks estimated at ≤ `complexity_threshold` tool calls delegate directly to `AgentRunner`, eliminating planning overhead (~40% of queries in typical workloads).
+
+An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate execution paths before each subgoal and selects the highest-scoring approach. It is advisory only: parse failures are silently swallowed and execution continues without a hint.
+
+**Consequences:**
+- `AgentRunner` is unchanged — `PlanningRunner` wraps it, so all existing ReAct agents continue to work without modification
+- Subgoal DAG topology is validated at plan creation: unique IDs, no missing dependency references, no cycles (Kahn's algorithm); `PlanningError(code="CIRCULAR_DEPENDENCY")` is raised on cycle detection
+- `PostconditionVerifier` introduces one extra LLM call per subgoal; with the fast model tier this is negligible relative to subgoal execution cost
+- Parallel wave execution via `asyncio.gather` matches the existing `Graph` engine's parallel branch model — the same event loop runs both
+- `planning_node()` integrates cleanly with the existing `Graph` conditional-edge API; failure escalation uses the existing `human_node` pattern
+- Zero new required dependencies — stdlib `asyncio`, `json`, `re`, `collections` plus existing Pydantic and structlog
+- `PlanningError` is a top-level peer of `OrchestrationError`, not a subclass, because planning failures are structurally different from runner failures (they occur before execution begins or during plan maintenance, not during the ReAct loop)

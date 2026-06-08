@@ -1,5 +1,166 @@
 # Orchestration API Reference
 
+## Long-Horizon Planning
+
+### PlanningRunner
+
+Top-level orchestrator for structured multi-step task execution.
+
+```python
+from nexus.orchestration import PlanningRunner, PlanningConfig
+
+planner = PlanningRunner(
+    agent_runner=agent_runner,    # AgentRunner instance
+    model_client=client,          # LLM client for planning calls
+    model_id="claude-opus-4-7",   # model for planner/verifier/synthesizer
+    config=PlanningConfig(
+        complexity_threshold=4,
+        max_subgoals=12,
+        max_replans=3,
+        enable_lookahead=True,
+        enable_parallel_subgoals=True,
+    ),
+    cost_tracker=None,   # optional CostTracker
+    tracer=None,         # optional NexusTracer or any span(name, **attrs) tracer
+)
+result = await planner.run(task, agent_def, tool_names=["web_search"], memory_context="")
+```
+
+::: nexus.orchestration.planning.runner.PlanningRunner
+    options:
+      show_source: false
+      members: [run]
+
+### PlanningConfig
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `max_subgoals` | `int` | `12` | Hard cap on subgoals per plan |
+| `max_replans` | `int` | `3` | Maximum replan cycles before `PlanningError` |
+| `complexity_threshold` | `int` | `4` | Skip planning when estimated steps ≤ this |
+| `enable_lookahead` | `bool` | `True` | FLARE-style path simulation before each subgoal |
+| `lookahead_paths` | `int` | `2` | Candidate paths generated per lookahead call |
+| `enable_parallel_subgoals` | `bool` | `True` | Run independent subgoals via `asyncio.gather` |
+| `cost_budget_usd` | `float \| None` | `None` | Hard cost cap across all planning calls |
+| `planner_model_tier` | `str` | `"powerful"` | Model tier for plan generation |
+| `executor_model_tier` | `str` | `"balanced"` | Model tier for subgoal execution |
+| `verifier_model_tier` | `str` | `"fast"` | Model tier for postcondition verification |
+
+### Plan
+
+```python
+from nexus.orchestration import Plan, SubGoal
+
+plan = Plan(
+    task="original task",
+    subgoals=[SubGoal(...)],
+    total_estimated_steps=6,
+    version=1,   # increments on each replan
+)
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task` | `str` | Original user task |
+| `subgoals` | `list[SubGoal]` | Ordered list; DAG implied by `dependencies` |
+| `total_estimated_steps` | `int` | Planner's estimate of total tool calls |
+| `created_at` | `datetime` | UTC timestamp of plan creation |
+| `version` | `int` | Increments on each replan (starts at 1) |
+
+### SubGoal
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `id` | `str` | required | Short snake_case slug, ≤ 20 chars |
+| `description` | `str` | required | What this step should accomplish |
+| `success_criterion` | `str` | required | Verifiable completion condition |
+| `dependencies` | `list[str]` | `[]` | IDs of subgoals that must complete first |
+| `tool_hints` | `list[str]` | `[]` | Suggested tool names (advisory) |
+| `fallback_strategy` | `str` | `""` | Alternative approach if primary fails |
+| `max_retries` | `int` | `2` | PARTIAL retries before declaring FAIL |
+| `status` | `SubGoalStatus` | `PENDING` | Current execution status |
+| `output_summary` | `str` | `""` | 1-2 sentence summary filled after completion |
+| `attempts` | `int` | `0` | Total execution attempts so far |
+| `failure_reason` | `str` | `""` | Last failure reason (filled on FAIL) |
+
+### SubGoalStatus
+
+```python
+from nexus.orchestration import SubGoalStatus
+
+SubGoalStatus.PENDING     # not yet started
+SubGoalStatus.RUNNING     # currently executing
+SubGoalStatus.COMPLETED   # success criterion met
+SubGoalStatus.FAILED      # could not be completed after all retries
+SubGoalStatus.SKIPPED     # skipped (e.g. dependency failed)
+```
+
+### VerificationResult
+
+Returned by `PostconditionVerifier.verify()` after each subgoal execution:
+
+```python
+from nexus.orchestration import VerificationResult
+
+VerificationResult.PASS      # criterion clearly met
+VerificationResult.PARTIAL   # progress made; criterion not fully met (retry)
+VerificationResult.FAIL      # criterion not met; retry unlikely to help
+```
+
+### PlanResult
+
+Returned by `PlanningRunner.run()`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task` | `str` | Original user task |
+| `plan` | `Plan` | Final plan version executed |
+| `final_output` | `str` | Synthesized answer from all completed subgoals |
+| `completed_subgoals` | `list[str]` | IDs of successfully completed subgoals |
+| `failed_subgoals` | `list[str]` | IDs of subgoals that could not be completed |
+| `replans_triggered` | `int` | Number of replan cycles that occurred |
+| `total_token_usage` | `TokenUsage \| None` | Accumulated token usage |
+| `duration_seconds` | `float` | Wall-clock duration |
+| `success` | `bool` | `True` when all subgoals completed |
+
+### planning_node
+
+Graph node factory wrapping a `PlanningRunner`:
+
+```python
+from nexus.orchestration import planning_node, Graph, human_node
+
+handler = planning_node(
+    planning_runner=planner,
+    agent_def=agent_def,
+    tool_names=["web_search", "write_file"],
+    memory_context_key="memory_context",   # reads from state.metadata
+)
+
+async def route(state):
+    plan = state.metadata.get("plan_result", {})
+    return "review" if not plan.get("success") else "end"
+
+graph = (
+    Graph(graph_id="pipeline")
+    .add_node("plan", handler, entry=True)
+    .add_conditional_edge("plan", route, {"review": "review", "end": None})
+    .add_node("review", human_node("Planning failed — please review."))
+)
+```
+
+The ASSISTANT message appended by the node carries:
+
+```python
+message.metadata["plan_result"]           # full PlanResult serialised as dict
+message.metadata["replans_triggered"]     # int
+message.metadata["subgoals_completed"]    # int
+```
+
+See the [Long-Horizon Planning guide](../guides/long-horizon-planning.md) for full usage and research citations.
+
+---
+
 ## Multi-Agent Debate
 
 ### DebateOrchestrator

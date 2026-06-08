@@ -98,3 +98,11 @@ class SnapshotError(NexusError):
 
 class UncertaintyError(NexusError):
     """Raised when agent uncertainty reaches an unrecoverable CRITICAL level."""
+
+
+class PlanningError(NexusError):
+    """Raised for unrecoverable planning failures.
+
+    Codes: CIRCULAR_DEPENDENCY, MAX_REPLANS_EXCEEDED, REPLAN_PARSE_FAILED,
+    PLAN_PARSE_FAILED, NO_SUBGOALS.
+    """
