@@ -307,3 +307,47 @@ An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate 
 - `AgentRunner` with `reflexion_engine=None, skill_library=None` (the defaults) is behaviorally identical to the pre-F1 runner
 - `PromptOptimizer.optimize()` calls EvalSuite N+1 times (1 baseline + N candidates) — only use on non-production agents or with fast/cheap model configs
 - `SkillLibrary.run_sequential()` enables SAGE-style batch improvement where skills from earlier tasks in a sequence accelerate later tasks
+
+---
+
+## ADR-017: Three-Tier User Memory Hierarchy as a First-Class Memory Layer
+
+**Status:** Accepted
+
+**Context:** Agents currently have no persistent model of the individual user. Each session starts
+cold — the agent cannot remember that this user is a senior engineer who prefers concise answers and
+is currently migrating a legacy system. Single-layer key-value user profiles (e.g., {expertise: "high"})
+fail in practice because: (1) facts become stale without temporal validity metadata (Beyond Dialogue
+Time, arXiv 2601.07468); (2) extracting facts from noisy conversations without a reflective correction
+pass amplifies hallucinations during clustering (Bi-Mem, arXiv 2601.06490); (3) a flat profile has no
+mechanism to promote actively-relevant facts above infrequently-accessed background context (HMO,
+arXiv 2604.01670).
+
+**Decision:** Implement `UserFact`, `UserProfile`, `UserMemoryStore`, `FactExtractor`, and
+`ProfileSynthesizer` in `src/nexus/memory/user/`. The design uses three tiers: Tier 3
+(UserEpisodes — raw interactions in existing EpisodicMemory), Tier 2 (UserFacts — extracted,
+temporally-grounded facts about the user), and Tier 1 (UserProfile — synthesized persona,
+rebuilt from facts every N new extractions). `UserMemoryAdapter` integrates both hooks into
+`AgentRunner` as opt-in, zero-crash additions.
+
+**Key design choices:**
+1. **Temporal validity on every fact** (Beyond Dialogue Time): each `UserFact` has `valid_from`
+   and `valid_until`. Contradicted facts are expired rather than overwritten, preserving history.
+2. **Bidirectional construction** (Bi-Mem): inductive agent (FactExtractor) works bottom-up;
+   reflective agent (ProfileSynthesizer) works top-down. This prevents hallucination amplification.
+3. **Deduplication by cosine similarity** before storing: existing facts with similarity > 0.90
+   get a confidence update (EMA) rather than a duplicate record.
+4. **Synthesis threshold** (HMO): ProfileSynthesizer only fires every 10 new facts (configurable)
+   — prevents thrashing on rapid-fire short sessions while ensuring the profile stays fresh.
+5. **Context injection is selective**: `get_context()` uses cosine similarity to surface only the
+   facts most relevant to the current query. The full UserFact list is never injected wholesale.
+6. **Zero behavioral change when disabled**: `user_memory_adapter=None` (the default) means the
+   AgentRunner behaves identically to pre-F2. `user_id=None` silently skips all hooks.
+
+**Consequences:**
+- Zero new required dependencies — existing Dapr state store, embedding_service, and model_client
+- FactExtractor and ProfileSynthesizer each make 1 LLM call post-session; total overhead is
+  2 cheap LLM calls (temperature=0.2, max_tokens=400/300) per session end
+- UserFacts and UserProfile persist independently of the agent — the same user model is available
+  to any agent that shares the same UserMemoryStore instance
+- `user_id` is explicit — there is no implicit user tracking; the caller must pass it

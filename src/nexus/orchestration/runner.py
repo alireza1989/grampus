@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
     from nexus.memory.reflexion.engine import ReflexionEngine
     from nexus.memory.reflexion.skill_library import SkillLibrary
+    from nexus.memory.user.adapter import UserMemoryAdapter
     from nexus.observability.metrics import NexusMetrics
     from nexus.orchestration.cost_tracker import CostSummary, CostTracker
     from nexus.orchestration.uncertainty.monitor import UncertaintyMonitor
@@ -81,6 +82,7 @@ class AgentRunner:
         uncertainty_monitor: UncertaintyMonitor | None = None,
         reflexion_engine: ReflexionEngine | None = None,
         skill_library: SkillLibrary | None = None,
+        user_memory_adapter: UserMemoryAdapter | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -93,6 +95,7 @@ class AgentRunner:
         self._uncertainty_monitor = uncertainty_monitor
         self._reflexion_engine = reflexion_engine
         self._skill_library = skill_library
+        self._user_memory_adapter = user_memory_adapter
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -107,6 +110,7 @@ class AgentRunner:
         user_input: str,
         *,
         session_id: str,
+        user_id: str | None = None,
         agent_state: AgentState | None = None,
         _handoff_depth: int = 0,
         _prefix_messages: list[Message] | None = None,
@@ -130,6 +134,8 @@ class AgentRunner:
         start = time.monotonic()
         state = agent_state or self._build_state(agent_def, session_id)
         state.status = AgentStatus.RUNNING
+        if user_id is not None:
+            state.metadata["user_id"] = user_id
 
         event_log = await EventLog.open(
             agent_id=agent_def.name,
@@ -147,6 +153,11 @@ class AgentRunner:
 
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
+        elif self._user_memory_adapter:
+            # F2: user context when no memory manager is configured
+            _user_ctx = await self._build_user_context(user_input, state)
+            if _user_ctx:
+                state.messages.append(Message(role=Role.SYSTEM, content=_user_ctx))
 
         if _prefix_messages:
             state.messages.extend(_prefix_messages)
@@ -337,6 +348,15 @@ class AgentRunner:
                 await self._skill_library.observe_success(
                     agent_def, user_input, result, self._model_client
                 )
+
+        # F2: trigger fact extraction + profile update after session
+        if self._user_memory_adapter:
+            _user_id = state.metadata.get("user_id")
+            if _user_id:
+                with contextlib.suppress(Exception):
+                    await self._user_memory_adapter.observe_session_end(
+                        str(_user_id), session_id, self._model_client
+                    )
 
         _evt = await event_log.append(
             EventType.AGENT_COMPLETED,
@@ -599,8 +619,27 @@ class AgentRunner:
         if self_improvement_context:
             context = self_improvement_context + ("\n\n" + context if context else "")
 
+        # F2: prepend user model context
+        user_context = await self._build_user_context(query, state)
+        if user_context:
+            context = user_context + ("\n\n" + context if context else "")
+
         if context:
             state.messages.append(Message(role=Role.SYSTEM, content=context))
+
+    async def _build_user_context(self, query: str, state: AgentState) -> str:
+        """Fetch and format user memory context. Returns empty string if unavailable."""
+        if not self._user_memory_adapter:
+            return ""
+        user_id = state.metadata.get("user_id")
+        if not user_id:
+            return ""
+        with contextlib.suppress(Exception):
+            ctx = await self._user_memory_adapter.get_context(
+                str(user_id), query, self._model_client
+            )
+            return ctx.formatted_context
+        return ""
 
     async def _build_self_improvement_context(self, query: str) -> str:
         """Fetch relevant reflections and skills for this task."""
