@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -21,6 +22,11 @@ from nexus.memory.semantic_retriever import SemanticRetriever
 from nexus.memory.types import EpisodicRecord, Procedure, RetrievedRecord, SemanticFact
 from nexus.memory.validator import MemoryValidator
 from nexus.memory.working import WorkingMemory
+
+if TYPE_CHECKING:
+    from nexus.memory.graph.consolidator import SemanticConsolidator
+    from nexus.memory.lifecycle.adaptive_router import AdaptiveRetriever
+    from nexus.memory.lifecycle.tier_manager import LifecycleTierManager
 
 _log = get_logger(__name__)
 
@@ -53,6 +59,11 @@ class MemoryManager:
         memory_validator: Optional validator that gates writes through injection
             detection, size limits, and rate limiting.
             When ``None``, validation is skipped.
+        graph_consolidator: Optional F3 SemanticConsolidator. When set, the agent's
+            knowledge graph is available for graph-based retrieval.
+        lifecycle_manager: Optional F3 LifecycleTierManager for access tracking.
+        adaptive_router: Optional F3 AdaptiveRetriever. When set, ``recall()``
+            routes queries through it instead of calling retrievers directly.
     """
 
     def __init__(
@@ -68,6 +79,9 @@ class MemoryManager:
         agent_id: str,
         provenance_tracker: ProvenanceTracker | None = None,
         memory_validator: MemoryValidator | None = None,
+        graph_consolidator: SemanticConsolidator | None = None,
+        lifecycle_manager: LifecycleTierManager | None = None,
+        adaptive_router: AdaptiveRetriever | None = None,
     ) -> None:
         self._working = working_memory
         self._episodic = episodic_memory
@@ -79,6 +93,9 @@ class MemoryManager:
         self._agent_id = agent_id
         self._tracker = provenance_tracker
         self._validator = memory_validator
+        self._graph_consolidator = graph_consolidator
+        self._lifecycle_manager = lifecycle_manager
+        self._adaptive_router = adaptive_router
 
     async def remember(
         self,
@@ -155,6 +172,10 @@ class MemoryManager:
     ) -> MemoryRecallResult:
         """Query memory and return a combined result.
 
+        When an AdaptiveRetriever is configured (F3), routes the query through
+        it for optimal structure selection. Falls back to the existing path on
+        any error to guarantee zero behavioral change when router is absent.
+
         Args:
             query: Free-text query string.
             memory_types: Which stores to search (``"episodic"``, ``"semantic"``).
@@ -165,6 +186,12 @@ class MemoryManager:
         Returns:
             A :class:`MemoryRecallResult` with results from each queried store.
         """
+        # F3: route through AdaptiveRetriever when available
+        if self._adaptive_router is not None:
+            with contextlib.suppress(Exception):
+                return await self._adaptive_router.retrieve(self._agent_id, query, top_k=top_k)
+
+        # fallback: existing path (unchanged)
         types = memory_types if memory_types is not None else ["episodic", "semantic"]
 
         episodic_results: list[RetrievedRecord] = []

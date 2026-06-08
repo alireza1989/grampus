@@ -33,6 +33,7 @@ from nexus.orchestration.handoff import HandoffContext, HandoffExecutor, Handoff
 from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
+    from nexus.memory.graph.builder import GraphBuilder
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
     from nexus.memory.reflexion.engine import ReflexionEngine
     from nexus.memory.reflexion.skill_library import SkillLibrary
@@ -83,6 +84,7 @@ class AgentRunner:
         reflexion_engine: ReflexionEngine | None = None,
         skill_library: SkillLibrary | None = None,
         user_memory_adapter: UserMemoryAdapter | None = None,
+        graph_builder: GraphBuilder | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -96,6 +98,7 @@ class AgentRunner:
         self._reflexion_engine = reflexion_engine
         self._skill_library = skill_library
         self._user_memory_adapter = user_memory_adapter
+        self._graph_builder = graph_builder
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -150,6 +153,11 @@ class AgentRunner:
 
         if self._uncertainty_monitor:
             self._uncertainty_monitor.initialize(session_id=session_id, agent_id=agent_def.name)
+
+        # F3: initialize session event graph
+        if self._graph_builder:
+            with contextlib.suppress(Exception):
+                self._graph_builder.init_session(session_id, agent_def.name)
 
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
@@ -357,6 +365,18 @@ class AgentRunner:
                     await self._user_memory_adapter.observe_session_end(
                         str(_user_id), session_id, self._model_client
                     )
+
+        # F3: trigger graph consolidation at session end
+        if (
+            self._graph_builder
+            and self._memory_manager
+            and hasattr(self._memory_manager, "_graph_consolidator")
+        ):
+            with contextlib.suppress(Exception):
+                event_graph = self._graph_builder.end_session(session_id)
+                consolidator = self._memory_manager._graph_consolidator
+                if event_graph is not None and consolidator is not None:
+                    await consolidator.consolidate(event_graph, agent_def.name)
 
         _evt = await event_log.append(
             EventType.AGENT_COMPLETED,
@@ -736,6 +756,17 @@ class AgentRunner:
                     )
                     if state is not None:
                         self._publish_trace(state.session_id, _evt)
+                # F3: append tool event to session graph
+                if self._graph_builder:
+                    with contextlib.suppress(Exception):
+                        _sess_id = state.session_id if state else "unknown"
+                        _agent_id = state.agent_id if state else "unknown"
+                        await self._graph_builder.append_event(
+                            session_id=_sess_id,
+                            event_type="tool_call",
+                            content=f"{tc.name}: {str(result.output)[:100]}",
+                            agent_id=_agent_id,
+                        )
                 results.append(result)
         return results
 

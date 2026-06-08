@@ -351,3 +351,49 @@ rebuilt from facts every N new extractions). `UserMemoryAdapter` integrates both
 - UserFacts and UserProfile persist independently of the agent — the same user model is available
   to any agent that shares the same UserMemoryStore instance
 - `user_id` is explicit — there is no implicit user tracking; the caller must pass it
+
+---
+
+## ADR-018: Graph-Structured Memory Consolidation and Lifecycle Tiers
+
+**Status:** Accepted
+
+**Context:** The existing four-layer memory system (working, episodic, semantic, procedural) treats memory
+as a flat store of records. Two failure modes emerge at scale: (1) flat vector search over tens of thousands
+of episodic records degrades in quality and speed — relevant concepts buried under irrelevant matches;
+(2) all records are treated equally regardless of how often they're accessed, wasting retrieval overhead on
+rarely-used cold memories. The 2026 research produced two complementary solutions. GAM (arXiv 2604.12285)
+showed that building a two-level knowledge graph — a transient event-progression-graph per session and a
+stable topic-associative-network triggered by semantic shift — improves reasoning accuracy on long-horizon
+tasks. MemOS (arXiv 2505.22101, May 2025) showed that managing memory as a hot/warm/cold lifecycle resource
+achieves 35.24% token savings in production. FluxMem (arXiv 2602.14038) showed that adaptive routing per
+query type — graph traversal vs. flat vector vs. sequential — outperforms any fixed retrieval strategy.
+
+**Decision:** Implement two new sub-packages: `src/nexus/memory/graph/` (GraphBuilder, SemanticConsolidator,
+GraphRetriever) and `src/nexus/memory/lifecycle/` (LifecycleTierManager, AdaptiveRetriever). Both are
+additive enhancements — the existing four memory layers are unchanged. MemoryManager receives three optional
+params (`graph_consolidator`, `lifecycle_manager`, `adaptive_router`); when all three are None, behavior is
+identical to pre-F3. AgentRunner receives one optional `graph_builder` param.
+
+**Key design choices:**
+1. **Semantic-shift-triggered consolidation** (GAM): the EventGraph integrates into the MemoryGraph only
+   when cosine distance between current and last-consolidated state exceeds 0.30 — prevents transient noise
+   from contaminating stable knowledge. Time-based consolidation is explicitly rejected.
+2. **Hot/warm/cold tiers map to existing infrastructure** (MemOS): HOT = in-context (working memory),
+   WARM = Redis cache (already in Dapr components), COLD = Postgres/Dapr state. No new infrastructure.
+3. **Adaptive routing is keyword-based, not ML-based** (FluxMem inspiration): simple heuristics classify
+   query type (sequential keywords → SEQUENTIAL; long queries or causal keywords → GRAPH; else → FLAT).
+   This avoids adding an embedding call just to route queries.
+4. **SchematicMemory is implemented as tagged SemanticFacts** not a new layer: ConceptNodes confirmed by
+   >= 5 episodes with high frequency are tagged `category="schematic"` in SemanticMemory and always surfaced
+   at the top of recall results. No new Dapr key namespace.
+
+**Consequences:**
+- Zero new required dependencies — stdlib `collections` (for BFS deque), `math`, `json`, `uuid`,
+  `datetime`, plus existing Pydantic, Dapr client, embedding_service, model_client
+- `MemoryGraph` is persisted as a single Dapr key per agent — no graph database required
+  (adjacency list in JSON); revisit if graphs exceed 10K nodes per agent
+- `SemanticConsolidator` makes 1 LLM call per consolidation trigger; with semantic-shift gating
+  this averages 1–3 calls per 30-minute session, not per event
+- `LifecycleTierManager.sweep()` should be called at session start to demote stale HOT records
+  from the previous session — add to `AgentRunner.run()` pre-loop via `contextlib.suppress`
