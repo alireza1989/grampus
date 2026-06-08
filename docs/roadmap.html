@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Remaining Work</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3347;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --orange: #f97316;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 14px; }
+
+  .tag {
+    display: inline-block;
+    background: #1e2236;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-left { display: flex; flex-direction: column; gap: 6px; }
+  .header-sub { color: var(--muted); font-size: 13px; }
+
+  /* Progress */
+  .progress-section { margin-bottom: 32px; }
+  .progress-stats { display: flex; gap: 32px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-num.done { color: var(--green); }
+  .stat-num.remaining { color: var(--orange); }
+
+  .progress-bar-outer { height: 10px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 1s ease;
+    width: 0%;
+  }
+  .progress-label { margin-top: 6px; font-size: 12px; color: var(--muted); }
+
+  /* Charts row */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 680px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 90px 1fr 28px; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; font-weight: 600; }
+  .bar-track { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; opacity: 0.85; }
+  .bar-val { font-size: 12px; font-weight: 600; text-align: right; }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Timeline */
+  .timeline-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .timeline { display: flex; gap: 6px; min-width: 600px; }
+  .tl-phase { display: flex; flex-direction: column; gap: 5px; }
+  .tl-bar {
+    height: 34px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #fff;
+    white-space: nowrap;
+    padding: 0 10px;
+    opacity: 0.9;
+  }
+  .tl-label { font-size: 11px; color: var(--muted); }
+  .tl-sub   { font-size: 10px; color: var(--muted); opacity: 0.55; }
+
+  /* Phase grid */
+  .phases { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 32px; }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px 11px;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .phase-title { font-weight: 600; font-size: 13px; flex: 1; }
+  .phase-meta { font-size: 11px; color: var(--muted); }
+  .phase-count {
+    background: var(--surface2);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .phase-items { padding: 6px 8px 8px; }
+
+  .item-row {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    align-items: start;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .item-row:hover { background: var(--surface2); }
+  .item-row.expanded { background: var(--surface2); }
+
+  .item-id { font-size: 10px; font-weight: 700; color: var(--muted); padding-top: 2px; }
+  .item-text { font-size: 13px; line-height: 1.4; }
+  .item-notes { font-size: 11px; color: var(--muted); margin-top: 3px; display: none; line-height: 1.5; }
+  .item-row.expanded .item-notes { display: block; }
+
+  .size-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+  .size-xs { background: #1a2e22; color: #4ade80; }
+  .size-s  { background: #1a2a3e; color: #60a5fa; }
+  .size-m  { background: #2a2416; color: #fbbf24; }
+  .size-l  { background: #2a1f16; color: #fb923c; }
+  .size-xl { background: #2a1616; color: #f87171; }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div style="display:flex;align-items:center;gap:12px">
+      <h1>Nexus — Remaining Work</h1>
+      <span class="tag">ROADMAP</span>
+    </div>
+    <div class="header-sub">Phases C – H &nbsp;·&nbsp; Post-launch differentiation &amp; ecosystem</div>
+  </div>
+  <div style="font-size:12px;color:var(--muted);text-align:right;padding-top:6px">
+    June 2026<br>
+    <span style="color:var(--green)">●</span> Phases A–B, E complete
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="progress-section">
+  <div class="progress-stats">
+    <div class="stat"><span class="stat-num done">31</span><span class="stat-label">Done</span></div>
+    <div class="stat"><span class="stat-num remaining">37</span><span class="stat-label">Remaining</span></div>
+    <div class="stat"><span class="stat-num">68</span><span class="stat-label">Total</span></div>
+  </div>
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" id="progressBar"></div>
+  </div>
+  <div class="progress-label">46% complete &nbsp;·&nbsp; click any item to expand details</div>
+</div>
+
+<!-- Charts -->
+<div class="charts-row">
+  <div class="chart-card">
+    <h2>Items by Phase</h2>
+    <div class="bar-chart" id="phaseChart"></div>
+  </div>
+  <div class="chart-card">
+    <h2>Items by Size</h2>
+    <div class="donut-wrap">
+      <canvas id="donut" width="120" height="120"></canvas>
+      <div class="donut-legend" id="donutLegend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="timeline-card">
+  <h2>Effort Timeline (rough)</h2>
+  <div class="timeline" id="timeline"></div>
+</div>
+
+<!-- Phase cards -->
+<div class="phases" id="phaseCards"></div>
+
+<div class="footer">
+  Nexus Agentic Platform &nbsp;·&nbsp;
+  Size guide: XS &lt; 1 day &nbsp;·&nbsp; S = 1–3 days &nbsp;·&nbsp; M = 3–7 days &nbsp;·&nbsp; L = 1–2 weeks &nbsp;·&nbsp; XL = 2–4 weeks
+</div>
+
+<script>
+const PHASES = [
+  {
+    id: 'C', label: 'Differentiation', color: '#6366f1', timeline: '1–2 months',
+    items: [
+      { id: 'C1', text: 'Human-in-the-loop UI', size: 'M', notes: 'Web interface for WAITING_FOR_HUMAN agents. FastAPI SSE + vanilla HTML/JS. Pause/resume logic already in AgentRunner — just needs a UI.' },
+      { id: 'C2', text: 'Time-travel debugging', size: 'M', notes: 'nexus replay <session-id> — step through any past run from EventLog. Unique vs all competitors. EventLog already built in Phase 9.' },
+      { id: 'C3', text: 'Execution trace viewer', size: 'L', notes: 'Live web UI showing active graph node, memory reads/writes, tool calls, and accumulating cost as agent runs. Connects to existing OTEL + EventLog.' },
+      { id: 'C4', text: 'Webhook trigger', size: 'M', notes: 'POST /agents/{id}/run to trigger agents from Zapier, GitHub, Slack, etc. Builds on the B3 REST server.' },
+      { id: 'C5', text: 'Scheduled agents', size: 'M', notes: 'nexus schedule agent.py --cron "0 9 * * *" via Dapr Jobs API. Daily reports, monitoring agents, pipelines.' },
+      { id: 'C6', text: 'Visual agent builder', size: 'XL', notes: 'ReactFlow drag-and-drop → generates nexus_graph.yaml. Biggest adoption unlock. Needs 4–6 sub-sessions.' },
+    ]
+  },
+  {
+    id: 'D', label: 'Ecosystem & Monetization', color: '#8b5cf6', timeline: '2–3 months',
+    items: [
+      { id: 'D1',  text: 'Google Gemini client',       size: 'S',  notes: 'core/models/gemini.py — third most-used LLM provider.' },
+      { id: 'D2',  text: 'Ollama client',               size: 'S',  notes: 'Local models, zero API cost, self-hosted enterprise.' },
+      { id: 'D3',  text: 'Agent handoffs',              size: 'S',  notes: 'Swarm-style mid-conversation hand-off between agents.' },
+      { id: 'D4',  text: 'Streaming eval assertions',   size: 'M',  notes: 'First-token latency, streaming quality — covers the A2 streaming path.' },
+      { id: 'D5',  text: 'Grafana dashboard template',  size: 'S',  notes: 'Pre-built JSON dashboard for Nexus Prometheus metrics, one-click import.' },
+      { id: 'D6',  text: 'Agent state snapshots',       size: 'S',  notes: 'Export/import full agent state as JSON for debugging + migration.' },
+      { id: 'D7',  text: 'Cost alerts',                 size: 'S',  notes: 'Webhook/email/Slack when spend crosses threshold. CostTracker + pub/sub already exist.' },
+      { id: 'D8',  text: 'Prompt playground CLI',       size: 'S',  notes: 'nexus playground — interactive test prompts, shows tokens/cost/latency.' },
+      { id: 'D9',  text: 'Memory inspector UI',         size: 'M',  notes: 'Visual browser for episodic + semantic memory, edit trust scores, inspect provenance.' },
+      { id: 'D10', text: 'Eval dashboard',              size: 'M',  notes: 'Web UI for eval history — pass rate trends, regression alerts, prompt version comparison.' },
+      { id: 'D11', text: 'Vector DB adapters',          size: 'M',  notes: 'Pinecone, Weaviate, Qdrant as alternatives to pgvector.' },
+      { id: 'D12', text: 'A2A protocol',                size: 'L',  notes: 'Agent-to-Agent: Nexus agents callable from LangGraph, CrewAI, AutoGen and vice versa.' },
+      { id: 'D13', text: 'Agent template gallery',      size: 'L',  notes: 'nexus hub pull research-agent — community-shared definitions, needs a registry backend.' },
+      { id: 'D14', text: 'Multi-tenancy',               size: 'M',  notes: 'Isolate state/memory/billing per tenant; required before any SaaS offering.' },
+      { id: 'D15', text: 'Nexus Cloud SaaS',            size: 'XL', notes: 'Hosted platform + Stripe billing. CostTracker + EventLog = billing infra ~80% done.' },
+    ]
+  },
+  {
+    id: 'E', label: 'Advanced Orchestration ✓', color: '#06b6d4', timeline: 'Complete',
+    items: [
+      { id: 'E1', text: 'Agent debate & ensemble ✓',        size: 'M', notes: 'Implemented: DebateOrchestrator with heterogeneous panels, sycophancy resistance, adaptive routing. ADR-012.' },
+      { id: 'E2', text: 'Uncertainty quantification ✓',     size: 'M', notes: 'Implemented: UncertaintyMonitor dual-process (P(True) + semantic entropy), SAUP propagation, 3-tier escalation. ADR-013.' },
+      { id: 'E3', text: 'Long-horizon planning ✓',          size: 'L', notes: 'Implemented: PlanningRunner with partial replan, adaptive engagement, FLARE lookahead. ADR-014.' },
+      { id: 'E4', text: 'Market-based task allocation ✓',   size: 'M', notes: 'Implemented: TaskMarket, AgentBidder, MarketOrchestrator. Sealed-bid auction with capability scoring. ADR-015 (interim).' },
+      { id: 'E5', text: 'Artifact-centric collaboration ✓', size: 'M', notes: 'Implemented: ArtifactStore, ArtifactCrew, ArtifactCollaborator, MESI ownership, wave execution. ADR-015.' },
+    ]
+  },
+  {
+    id: 'F', label: 'Memory & Learning', color: '#22c55e', timeline: '2–3 months',
+    items: [
+      { id: 'F1', text: 'Agent self-improvement (Reflexion)', size: 'L',  notes: 'Agents reflect on failures and update their own system prompts. Long-term differentiator.' },
+      { id: 'F2', text: 'Persistent user modeling',           size: 'M',  notes: 'Per-user profile: expertise, preferences, past decisions. Agent adapts style per individual.' },
+      { id: 'F3', text: 'Hierarchical memory',                size: 'L',  notes: '4th memory layer — abstract patterns from millions of episodes. Needed at scale.' },
+      { id: 'F4', text: 'Causal reasoning layer',             size: 'XL', notes: "Pearl's do-calculus on agent traces. Research-grade, 2026+." },
+    ]
+  },
+  {
+    id: 'G', label: 'Safety & Verification', color: '#ef4444', timeline: '1–2 months',
+    items: [
+      { id: 'G1', text: 'Adversarial red-teaming',       size: 'M',  notes: 'Attacker agent finds inputs that break your main agent. No competitor has this. Highest G priority.' },
+      { id: 'G2', text: 'Multi-modal agent actions',     size: 'XL', notes: 'Vision + computer use (click/type on screen). 2026+.' },
+      { id: 'G3', text: 'Formal policy verification',    size: 'XL', notes: 'TLA+ proofs of agent invariants. Required for regulated industries. 2027+.' },
+    ]
+  },
+  {
+    id: 'H', label: 'Platform & Ecosystem', color: '#f97316', timeline: '3+ months',
+    items: [
+      { id: 'H1', text: 'Document processing tools',       size: 'M', notes: 'PDF/Word/Excel parsing added to B1 tool library.' },
+      { id: 'H2', text: 'Code analysis tools',             size: 'M', notes: 'AST parsing, linting, static analysis for code agents.' },
+      { id: 'H3', text: 'Cohere client',                   size: 'S', notes: 'core/models/cohere.py — popular in enterprise RAG.' },
+      { id: 'H4', text: 'Embedding service improvements',  size: 'M', notes: 'OpenAI + Cohere + Ollama embeddings, configurable per memory type.' },
+      { id: 'H5', text: 'TypeScript / JS SDK',             size: 'L', notes: '@nexus-ai/client npm package wrapping the B3/B4 REST API.' },
+      { id: 'H6', text: 'Plugin system',                   size: 'M', notes: 'Community extensions via lifecycle hooks without PRs to core.' },
+      { id: 'H7', text: 'Agent versioning',                size: 'M', notes: 'Version/rollback agent definitions, A/B test prompts in production.' },
+      { id: 'H8', text: 'RAG pipeline template',           size: 'M', notes: 'Complete RAG demo in demos/rag/ — full pgvector stack.' },
+      { id: 'H9', text: 'Real-LLM integration tests',      size: 'S', notes: 'Optional CI job against real Claude/GPT-4, gated by env var.' },
+    ]
+  },
+];
+
+const SIZE_CFG = {
+  XS: { color: '#4ade80', days: 0.5,  label: '<1d'   },
+  S:  { color: '#60a5fa', days: 2,    label: '1–3d'  },
+  M:  { color: '#fbbf24', days: 5,    label: '3–7d'  },
+  L:  { color: '#fb923c', days: 10,   label: '1–2w'  },
+  XL: { color: '#f87171', days: 21,   label: '2–4w'  },
+};
+
+// Animate progress bar
+window.addEventListener('load', () => {
+  setTimeout(() => { document.getElementById('progressBar').style.width = '46%'; }, 200);
+});
+
+// Phase bar chart
+function buildPhaseChart() {
+  const el = document.getElementById('phaseChart');
+  const max = Math.max(...PHASES.map(p => p.items.length));
+  PHASES.forEach(p => {
+    const pct = (p.items.length / max) * 100;
+    el.insertAdjacentHTML('beforeend', `
+      <div class="bar-row">
+        <span class="bar-label" style="color:${p.color}">Phase ${p.id}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${p.color}"></div></div>
+        <span class="bar-val" style="color:${p.color}">${p.items.length}</span>
+      </div>
+    `);
+  });
+}
+
+// Donut chart
+function buildDonut() {
+  const canvas = document.getElementById('donut');
+  const ctx = canvas.getContext('2d');
+  const counts = {};
+  PHASES.forEach(p => p.items.forEach(i => { counts[i.size] = (counts[i.size]||0)+1; }));
+  const order = ['XS','S','M','L','XL'];
+  const data = order.filter(k => counts[k]).map(k => ({ size: k, count: counts[k], ...SIZE_CFG[k] }));
+  const total = data.reduce((s, d) => s + d.count, 0);
+  const cx = 60, cy = 60, r = 50, ir = 28;
+  let a = -Math.PI / 2;
+  data.forEach(d => {
+    const sweep = (d.count / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a, a + sweep);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.globalAlpha = 0.9;
+    ctx.fill();
+    a += sweep;
+  });
+  ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, ir, 0, 2*Math.PI);
+  ctx.fillStyle = '#1a1d27'; ctx.fill();
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 18px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('37', cx, cy - 6);
+  ctx.fillStyle = '#8892a4';
+  ctx.font = '10px Inter, system-ui, sans-serif';
+  ctx.fillText('items', cx, cy + 9);
+
+  const legend = document.getElementById('donutLegend');
+  data.forEach(d => {
+    legend.insertAdjacentHTML('beforeend', `
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:${d.color}"></span>
+        <span style="color:var(--muted);width:18px">${d.size}</span>
+        <span style="font-weight:600">${d.count}</span>
+        <span style="color:var(--muted);font-size:10px">${d.label}</span>
+      </div>
+    `);
+  });
+}
+
+// Timeline
+function buildTimeline() {
+  const tl = document.getElementById('timeline');
+  const config = [
+    { label:'C',  sub:'Differentiation',       dur:'1–2 mo', color:'#6366f1', flex:1.5 },
+    { label:'D',  sub:'Ecosystem',             dur:'2–3 mo', color:'#8b5cf6', flex:2.5 },
+    { label:'E',  sub:'Orchestration',         dur:'2–3 mo', color:'#06b6d4', flex:2.5 },
+    { label:'F',  sub:'Memory & Learning',     dur:'2–3 mo', color:'#22c55e', flex:2.5 },
+    { label:'G',  sub:'Safety',                dur:'1–2 mo', color:'#ef4444', flex:1.5 },
+    { label:'H',  sub:'Platform',              dur:'3+ mo',  color:'#f97316', flex:3   },
+  ];
+  config.forEach(c => {
+    const col = document.createElement('div');
+    col.className = 'tl-phase';
+    col.style.flex = c.flex;
+    col.innerHTML = `
+      <div class="tl-bar" style="background:${c.color}">Phase ${c.label}</div>
+      <div class="tl-label">${c.sub}</div>
+      <div class="tl-sub">${c.dur}</div>
+    `;
+    tl.appendChild(col);
+  });
+}
+
+// Phase cards
+function buildPhaseCards() {
+  const container = document.getElementById('phaseCards');
+  PHASES.forEach(phase => {
+    const card = document.createElement('div');
+    card.className = 'phase-card';
+    card.innerHTML = `
+      <div class="phase-header">
+        <div class="phase-dot" style="background:${phase.color}"></div>
+        <div class="phase-title">Phase ${phase.id} — ${phase.label}</div>
+        <div class="phase-meta">${phase.timeline}</div>
+        <div class="phase-count">${phase.items.length}</div>
+      </div>
+      <div class="phase-items"></div>
+    `;
+    const itemsEl = card.querySelector('.phase-items');
+    phase.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="item-id">${item.id}</div>
+        <div>
+          <div class="item-text">${item.text}</div>
+          <div class="item-notes">${item.notes}</div>
+        </div>
+        <div class="size-badge size-${item.size.toLowerCase()}">${item.size}</div>
+      `;
+      row.addEventListener('click', () => row.classList.toggle('expanded'));
+      itemsEl.appendChild(row);
+    });
+    container.appendChild(card);
+  });
+}
+
+buildPhaseChart();
+buildDonut();
+buildTimeline();
+buildPhaseCards();
+</script>
+</body>
+</html>
