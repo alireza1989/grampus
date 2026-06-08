@@ -126,6 +126,127 @@ message.metadata["debate_routing"]     # "debate" | "single_agent"
 
 ---
 
+## Uncertainty Quantification
+
+### UncertaintyMonitor
+
+Session-level uncertainty tracker implementing Dual-Process AUQ. Attach to `AgentRunner` via `uncertainty_monitor=monitor`.
+
+```python
+from nexus.orchestration import UncertaintyMonitor, UncertaintyPolicy, UncertaintyEstimator
+
+policy = UncertaintyPolicy(
+    low_threshold=0.80,
+    medium_threshold=0.60,
+    high_threshold=0.40,
+    enable_p_true=True,
+    enable_semantic_sampling=False,
+    irreversible_tool_names=["send_email", "delete", "deploy"],
+    inject_reflection_on_high=True,
+)
+monitor = UncertaintyMonitor(policy=policy)
+runner = AgentRunner(client, executor, uncertainty_monitor=monitor)
+```
+
+::: nexus.orchestration.uncertainty.monitor.UncertaintyMonitor
+    options:
+      show_source: false
+      members: [initialize, observe_llm_response, observe_tool_call, get_belief_state, summary_metadata, reset]
+
+### UncertaintyPolicy
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `low_threshold` | `float` | `0.80` | Confidence floor for LOW → PROCEED |
+| `medium_threshold` | `float` | `0.60` | Floor for MEDIUM → PROCEED_WITH_LOG |
+| `high_threshold` | `float` | `0.40` | Floor for HIGH → PAUSE_FOR_HUMAN |
+| `enable_p_true` | `bool` | `True` | Run P(True) follow-up call |
+| `enable_semantic_sampling` | `bool` | `False` | Enable adaptive semantic entropy slow path |
+| `irreversible_tool_names` | `list[str]` | `[]` | Tool name substrings triggering PAUSE at MEDIUM |
+| `inject_reflection_on_high` | `bool` | `True` | Inject System-2 reflection before PAUSE |
+
+### UncertaintyEstimator
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `verbalized_weight` | `float` | `0.4` | Fusion weight for verbalized signal |
+| `p_true_weight` | `float` | `0.6` | Fusion weight for P(True) signal |
+| `verbalized_calibration_bias` | `float` | `0.25` | ECE correction for verbalized (documented ECE ≥ 0.377) |
+| `p_true_calibration_bias` | `float` | `0.10` | ECE correction for P(True) |
+| `min_samples` | `int` | `2` | Adaptive entropy: start sample count |
+| `max_samples` | `int` | `5` | Adaptive entropy: extend on disagreement |
+| `early_stop_jaccard` | `float` | `0.60` | First-pair agreement threshold for early stop |
+| `semantic_trigger_low` | `float` | `0.50` | Lower bound of sampling trigger zone |
+| `semantic_trigger_high` | `float` | `0.72` | Upper bound of sampling trigger zone |
+
+### UncertaintyLevel
+
+```python
+from nexus.orchestration import UncertaintyLevel
+
+UncertaintyLevel.LOW       # ≥ low_threshold
+UncertaintyLevel.MEDIUM    # ≥ medium_threshold
+UncertaintyLevel.HIGH      # ≥ high_threshold
+UncertaintyLevel.CRITICAL  # < high_threshold
+```
+
+### UncertaintyAction
+
+```python
+from nexus.orchestration import UncertaintyAction
+
+UncertaintyAction.PROCEED            # run continues
+UncertaintyAction.PROCEED_WITH_LOG   # run continues; warning logged
+UncertaintyAction.PAUSE_FOR_HUMAN    # status=WAITING_FOR_HUMAN
+UncertaintyAction.ABORT              # UncertaintyError raised
+```
+
+### StepUncertainty
+
+Returned by `observe_llm_response()` and `observe_tool_call()`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `step_id` | `str` | Unique step identifier |
+| `step_type` | `str` | `"llm_call"`, `"tool_call"`, `"memory_read"`, `"decision"` |
+| `verbalized_confidence` | `float` | Raw extracted confidence (before calibration) |
+| `p_true_confidence` | `float` | P(True) result; `-1.0` when not run |
+| `fused_confidence` | `float` | Calibrated weighted fusion |
+| `propagated_confidence` | `float` | After SAUP propagation through prior steps |
+| `level` | `UncertaintyLevel` | Classified tier |
+| `action` | `UncertaintyAction` | Control action taken |
+| `samples_used` | `int` | Semantic entropy samples drawn (0 = not run) |
+| `reflection_injected` | `bool` | Whether System-2 reflection was injected |
+
+### uncertainty_guard_node
+
+Graph node factory for explicit uncertainty checkpoints:
+
+```python
+from nexus.orchestration import uncertainty_guard_node, Graph, human_node
+
+handler = uncertainty_guard_node(
+    monitor,
+    step_type="decision",          # SAUP weight lookup
+    escalate_node="human_review",  # sets metadata["uncertainty_escalate"]=True on PAUSE
+)
+
+async def route(state):
+    return "human_review" if state.metadata.get("uncertainty_escalate") else "continue"
+
+graph = (
+    Graph(graph_id="safe-qa")
+    .add_node("llm", llm_handler, entry=True)
+    .add_node("guard", handler)
+    .add_conditional_edge("guard", route, {"human_review": "human_review", "continue": "end"})
+    .add_node("human_review", human_node("Low confidence — please review."))
+)
+```
+
+See the [Uncertainty Quantification guide](../guides/uncertainty.md) for full usage and research citations.
+
+---
+
 ## AgentRunner
 
 The main agent execution loop implementing the ReAct (Reason+Act) pattern.

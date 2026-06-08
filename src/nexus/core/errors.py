@@ -94,3 +94,7 @@ class DaprJobsError(DaprError):
 
 class SnapshotError(NexusError):
     """Raised when a snapshot export, import, or restore operation fails."""
+
+
+class UncertaintyError(NexusError):
+    """Raised when agent uncertainty reaches an unrecoverable CRITICAL level."""

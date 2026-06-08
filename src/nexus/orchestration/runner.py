@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from nexus.core.errors import OrchestrationError
+from nexus.core.errors import OrchestrationError, UncertaintyError
 from nexus.core.logging import get_logger
 from nexus.core.types import (
     AgentDefinition,
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
     from nexus.observability.metrics import NexusMetrics
     from nexus.orchestration.cost_tracker import CostSummary, CostTracker
+    from nexus.orchestration.uncertainty.monitor import UncertaintyMonitor
     from nexus.tools.executor import ToolExecutor
 
 _log = get_logger(__name__)
@@ -75,6 +76,7 @@ class AgentRunner:
         state_store: Any | None = None,
         handoff_executor: HandoffExecutor | None = None,
         nexus_metrics: NexusMetrics | None = None,
+        uncertainty_monitor: UncertaintyMonitor | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -84,6 +86,7 @@ class AgentRunner:
         self._state_store = state_store
         self._handoff_executor = handoff_executor
         self._metrics = nexus_metrics
+        self._uncertainty_monitor = uncertainty_monitor
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -132,6 +135,9 @@ class AgentRunner:
             {"input": user_input[:500], "model": agent_def.model, "step": state.current_step},
         )
         self._publish_trace(session_id, _evt)
+
+        if self._uncertainty_monitor:
+            self._uncertainty_monitor.initialize(session_id=session_id, agent_id=agent_def.name)
 
         if self._config.enable_memory and self._memory_manager:
             await self._recall_context(user_input, state)
@@ -199,7 +205,70 @@ class AgentRunner:
                     )
                 )
 
+                if self._uncertainty_monitor:
+                    _unc_step, _unc_action = await self._uncertainty_monitor.observe_llm_response(
+                        response_text=response.content or "",
+                        step_id=f"llm_{steps}",
+                        step_type="llm_call",
+                        prompt_messages=list(state.messages[:-1]),
+                        model_client=self._model_client,
+                        model_id=agent_def.model,
+                    )
+                    if _unc_action.value == "pause_for_human":
+                        if self._uncertainty_monitor._policy.inject_reflection_on_high:
+                            state.messages.append(
+                                self._uncertainty_monitor.get_reflection_message()
+                            )
+                        state.status = AgentStatus.WAITING_FOR_HUMAN
+                        state.metadata["uncertainty"] = self._uncertainty_monitor.summary_metadata()
+                        hit_limit = False
+                        break
+                    elif _unc_action.value == "abort":
+                        raise UncertaintyError(
+                            f"Agent uncertainty reached CRITICAL level at step {steps}",
+                            code="UNCERTAINTY_CRITICAL",
+                            hint=(
+                                "Reduce task complexity, add more context, or lower "
+                                "the abort threshold in UncertaintyPolicy."
+                            ),
+                        )
+                    elif _unc_action.value == "proceed_with_log":
+                        _log.warning(
+                            "uncertainty_medium",
+                            step=steps,
+                            propagated_confidence=_unc_step.propagated_confidence,
+                            level=str(_unc_step.level),
+                        )
+
                 if response.tool_calls:
+                    if self._uncertainty_monitor:
+                        _tool_paused = False
+                        for _tc in response.tool_calls:
+                            _, _tool_unc_action = await self._uncertainty_monitor.observe_tool_call(
+                                tool_name=_tc.name,
+                                step_id=f"tool_{steps}_{_tc.name}",
+                            )
+                            if _tool_unc_action.value == "pause_for_human":
+                                state.status = AgentStatus.WAITING_FOR_HUMAN
+                                state.metadata["uncertainty"] = (
+                                    self._uncertainty_monitor.summary_metadata()
+                                )
+                                state.messages.append(
+                                    Message(
+                                        role=Role.SYSTEM,
+                                        content=(
+                                            f"Execution paused: uncertain about calling "
+                                            f"'{_tc.name}' (irreversible action). "
+                                            "Awaiting human confirmation."
+                                        ),
+                                    )
+                                )
+                                hit_limit = False
+                                _tool_paused = True
+                                break
+                        if _tool_paused:
+                            break
+
                     results = await self._execute_tool_calls(
                         response.tool_calls,
                         state,

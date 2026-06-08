@@ -204,3 +204,28 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 - Concurrent debaters within a round mean latency is bounded by the slowest debater, not the sum — no worse than a single LLM call per round
 - Cost scales as `num_debaters × num_rounds` but adaptive routing mitigates this for easy questions
 - The convergence detector uses Jaccard word-overlap clustering (no ML model, no embedding calls) — fast and deterministic
+
+---
+
+## ADR-013: Dual-Process Uncertainty Quantification as a First-Class Runner Feature
+
+**Status:** Accepted
+
+**Context:** Agents produce unreliable outputs at unknown rates. Single-call verbalized confidence (asking the model to write `"confidence": 0.8`) has a documented ECE of 0.377+ even on frontier models (arXiv 2412.14737, KDD 2025 survey) — aligned models cluster at 90–100% confidence regardless of factual accuracy. Existing frameworks either ignore this or apply per-call thresholds that do not account for how uncertainty accumulates across sequential steps. A grounding error in step 1 biases all downstream reasoning (the "Spiral of Hallucination"), so per-step overconfidence checking is insufficient. There is also no standard mechanism for agents to escalate irreversible actions (send_email, delete, deploy) to humans when confidence is too low.
+
+**Decision:** Implement `UncertaintyMonitor` as an optional hook in `AgentRunner`, not as a separate layer. Four research findings are baked directly into the implementation:
+
+1. **Dual-process estimation** (arXiv 2601.15703, Jan 2026) — System 1 (fast): P(True) self-evaluation fused with verbalized confidence, both calibrated. System 2 (slow, opt-in): adaptive semantic entropy sampling when fused confidence is in the uncertain middle zone.
+2. **P(True) as primary fast signal** (Kadavath et al. 2022) — A single follow-up call asking "Is your answer correct?" achieves ECE ≈ 0.10 on frontier models without logit access. Verbalized confidence (weight 0.4) remains a weak supporting signal alongside P(True) (weight 0.6).
+3. **Adaptive semantic entropy** (arXiv 2504.03579, 2025) — Start with 2 samples; early-stop if Jaccard ≥ 0.60 (saves ~47% cost); extend to `max_samples` on disagreement. Pessimistic fusion `min(fast, entropy_conf)` prevents over-optimism.
+4. **SAUP propagation** (arXiv 2412.01033, ACL 2025 pp. 6064–6073) — Per-step situational weights (decision=0.70, llm=0.55, tool=0.45, memory_read=0.35) ensure a confident step cannot erase uncertain history. 20% AUROC improvement over single-step UQ.
+
+The three-tier escalation ladder (Zylos Research, April 2026) maps propagated confidence → action: PROCEED → PROCEED_WITH_LOG → PAUSE_FOR_HUMAN → ABORT. Irreversible tool names trigger PAUSE at MEDIUM uncertainty. A System-2 reflection prompt is injected before PAUSE so the next LLM call sees explicit uncertainty acknowledgment.
+
+**Consequences:**
+- Zero new required dependencies — stdlib `math`, `json`, `re`, `asyncio` plus existing Pydantic and OTEL
+- `uncertainty_monitor=None` (the default) means zero overhead for agents that don't need UQ
+- Two hooks in the runner loop: post-LLM (checks response confidence) and pre-tool (checks before irreversible actions); both break the loop cleanly with `hit_limit = False`
+- `UncertaintyError` (code `UNCERTAINTY_CRITICAL`) gives callers a machine-readable signal on ABORT
+- `uncertainty_guard_node()` provides an explicit graph checkpoint between nodes — composable with the existing `debate_node()` and `human_node()` primitives
+- OTEL spans (`uncertainty.estimate`, `uncertainty.semantic`, `uncertainty.escalate`) are emitted per step when a tracer is provided, enabling confidence dashboards alongside cost and latency metrics

@@ -162,6 +162,14 @@ def _last_assistant_tool_calls(state: AgentState) -> list[Any]:
     return []
 
 
+def _last_assistant_content(state: AgentState) -> str:
+    """Return content of the last ASSISTANT message, or empty string."""
+    for msg in reversed(state.messages):
+        if msg.role == Role.ASSISTANT and msg.content is not None:
+            return msg.content
+    return ""
+
+
 def _last_user_message(state: AgentState) -> str:
     """Return content of the last USER message in state.
 
@@ -172,6 +180,47 @@ def _last_user_message(state: AgentState) -> str:
         if msg.role == Role.USER and msg.content is not None:
             return msg.content
     raise ValueError("No USER message found in agent state")
+
+
+def uncertainty_guard_node(
+    monitor: Any,
+    *,
+    step_type: str = "decision",
+    escalate_node: str | None = None,
+) -> NodeHandler:
+    """Return a handler that evaluates uncertainty and optionally escalates.
+
+    Reads the last assistant message content, passes it to
+    monitor.observe_llm_response(), updates state.metadata["uncertainty"],
+    and sets WAITING_FOR_HUMAN on escalation. Use as an explicit uncertainty
+    checkpoint between graph nodes.
+
+    Args:
+        monitor: UncertaintyMonitor (duck-typed to avoid circular import).
+        step_type: Step category passed to the monitor (default "decision").
+        escalate_node: When set, writes True to metadata["uncertainty_escalate"]
+            so a conditional_edge can route to a human_node.
+    """
+
+    async def handler(state: AgentState) -> AgentState:
+        content = _last_assistant_content(state)
+        from nexus.orchestration.uncertainty.types import UncertaintyAction
+
+        step_unc, action = await monitor.observe_llm_response(
+            response_text=content,
+            step_id=f"guard_{state.current_step}",
+            step_type=step_type,
+        )
+        _ = step_unc
+        new_state = state.model_copy(deep=True)
+        new_state.metadata["uncertainty"] = monitor.summary_metadata()
+        if action in (UncertaintyAction.PAUSE_FOR_HUMAN, UncertaintyAction.ABORT):
+            new_state.status = AgentStatus.WAITING_FOR_HUMAN
+            if escalate_node:
+                new_state.metadata["uncertainty_escalate"] = True
+        return new_state
+
+    return handler
 
 
 def debate_node(

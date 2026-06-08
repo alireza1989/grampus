@@ -27,7 +27,8 @@ NexusError
 │   ├── ToolValidationError
 │   └── ToolTimeoutError
 ├── OrchestrationError
-│   └── BudgetExceededError
+│   ├── BudgetExceededError
+│   └── UncertaintyError
 ├── SafetyError
 ├── ModelError
 └── DaprError
@@ -228,6 +229,37 @@ from nexus.core.errors import MemorySecurityError
 ```
 
 **How to handle:** Increase the budget, reduce tool calls, or use a cheaper model tier.
+
+---
+
+## UncertaintyError
+
+**Code:** `UNCERTAINTY_CRITICAL`
+
+**Raised when:** An `UncertaintyMonitor` is attached to `AgentRunner` and the propagated confidence falls below the `high_threshold` configured in `UncertaintyPolicy` (default 0.40), triggering an ABORT action.
+
+```python
+from nexus.core.errors import UncertaintyError
+from nexus.orchestration import AgentRunner, UncertaintyMonitor, UncertaintyPolicy
+
+policy = UncertaintyPolicy(high_threshold=0.40)
+monitor = UncertaintyMonitor(policy=policy)
+runner = AgentRunner(client, executor, uncertainty_monitor=monitor)
+
+try:
+    result = await runner.run(agent_def, task, session_id="s1")
+except UncertaintyError as e:
+    print(e.code)   # "UNCERTAINTY_CRITICAL"
+    print(e.hint)   # actionable guidance
+```
+
+**How to handle:**
+- Lower `high_threshold` to be more tolerant of uncertain steps.
+- Add more context to the system prompt to ground the agent.
+- Switch to `PAUSE_FOR_HUMAN` instead of ABORT by raising `high_threshold` above 0.40 (so CRITICAL is never reached).
+- Enable `enable_p_true=True` and `enable_semantic_sampling=True` for a better-calibrated signal before escalating.
+
+See the [Uncertainty Quantification guide](../guides/uncertainty.md) for full configuration details.
 
 ---
 

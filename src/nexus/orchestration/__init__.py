@@ -28,10 +28,23 @@ from nexus.orchestration.nodes import (
     llm_node,
     subgraph_node,
     tool_node,
+    uncertainty_guard_node,
 )
 from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from nexus.orchestration.uncertainty import (
+    AgentBeliefState,
+    StepUncertainty,
+    UncertaintyAction,
+    UncertaintyEstimator,
+    UncertaintyLevel,
+    UncertaintyMonitor,
+    UncertaintyPolicy,
+    UncertaintyPropagator,
+    UncertaintySource,
+)
 
 __all__ = [
+    "AgentBeliefState",
     "AgentRunner",
     "AggregationStrategy",
     "Crew",
@@ -59,10 +72,19 @@ __all__ = [
     "RoutingDecision",
     "RoutingRule",
     "RunnerConfig",
+    "StepUncertainty",
+    "UncertaintyAction",
+    "UncertaintyEstimator",
+    "UncertaintyLevel",
+    "UncertaintyMonitor",
+    "UncertaintyPolicy",
+    "UncertaintyPropagator",
+    "UncertaintySource",
     "conditional_node",
     "debate_node",
     "human_node",
     "llm_node",
     "subgraph_node",
     "tool_node",
+    "uncertainty_guard_node",
 ]
