@@ -75,6 +75,7 @@ graph TB
 | **Graph Engine** | Multi-node workflows with conditional branching and Dapr checkpoints |
 | **Long-Horizon Planning** | Structured SubGoal DAG with parallel waves, FLARE lookahead, retry/fallback control flow, partial replanning, and postcondition verification. Simple tasks skip planning automatically |
 | **Multi-Agent Crews** | Sequential, parallel, and hierarchical crew patterns |
+| **Market-Based Allocation** | Dynamic worker selection via capability-first filtering, calibration-discounted bid scoring, and UCB reputation tracking. `MarketCrew` extends `Crew` with `use_market=True` — best-fit agent wins each task automatically |
 | **Multi-Agent Debate** | Panel of heterogeneous models debate the same question; adaptive early-stop, sycophancy-resistant prompting, three aggregation strategies, and `escalate_to_human` for low-confidence answers |
 | **Uncertainty Quantification** | Per-step confidence tracking with P(True) + verbalized fusion, adaptive semantic entropy, SAUP propagation across steps, and three-tier escalation (PROCEED → LOG → PAUSE → ABORT). Irreversible tool calls blocked at MEDIUM confidence |
 | **Agent Handoffs** | Runtime agent-to-agent delegation with A2A protocol discovery and injection-sanitized context |

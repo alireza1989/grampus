@@ -1,5 +1,292 @@
 # Orchestration API Reference
 
+## Market-Based Allocation
+
+### MarketAllocator
+
+End-to-end allocation pipeline: capability filter → bid solicitation → scoring → award.
+
+```python
+from nexus.orchestration.market import (
+    MarketAllocator, CapabilityRegistry, TaskBoard,
+    BidScorer, ReputationTracker,
+)
+
+registry   = CapabilityRegistry(max_candidates=5)
+board      = TaskBoard()
+reputation = ReputationTracker()
+scorer     = BidScorer(reputation)
+
+allocator = MarketAllocator(
+    registry=registry,
+    board=board,
+    scorer=scorer,
+    reputation=reputation,
+    model_client=client,   # any Nexus ModelClient; used for bid solicitation
+    tracer=None,           # optional NexusTracer; emits market.allocate / market.award spans
+)
+
+result = await allocator.allocate(spec)          # AllocationResult
+await allocator.report_outcome(outcome)          # updates board + reputation
+```
+
+::: nexus.orchestration.market.allocator.MarketAllocator
+    options:
+      show_source: false
+      members: [allocate, report_outcome]
+
+### CapabilityRegistry
+
+Stores worker capability profiles with capability-first filtering (COALESCE, arXiv 2506.01900).
+
+```python
+from nexus.orchestration.market import CapabilityRegistry, CapabilityProfile, AgentTier
+
+registry = CapabilityRegistry(max_candidates=5)   # default 5
+
+profile = CapabilityProfile(
+    agent_id="researcher",
+    agent_name="Web Researcher",
+    skill_tags=["web_search", "summarize"],
+    model_tier=AgentTier.BALANCED,
+    cost_per_step_usd=0.002,
+    max_steps=10,
+)
+await registry.register(profile)
+await registry.deregister("researcher")
+
+capable = registry.filter_capable(
+    required_skills=["web_search"],
+    preferred_skills=["summarize"],
+)   # → list[CapabilityProfile], ranked by preferred matches, capped at max_candidates
+```
+
+::: nexus.orchestration.market.registry.CapabilityRegistry
+    options:
+      show_source: false
+      members: [register, deregister, filter_capable, load_all, list_agents]
+
+### TaskBoard
+
+Durable task and bid store. Backed by Dapr state when a `state_store` is provided.
+
+```python
+from nexus.orchestration.market import TaskBoard, TaskSpec, AllocationStatus
+
+board = TaskBoard(state_store=None)   # in-memory; pass DaprStateStore for persistence
+
+task_id = await board.post_task(spec)
+await board.submit_bid(bid)
+bids    = await board.get_bids_for_task(task_id)
+await board.update_task_status(task_id, AllocationStatus.ALLOCATED)
+await board.mark_outcome(outcome)    # → COMPLETED or FAILED
+```
+
+### ReputationTracker
+
+UCB-based per-agent reputation (DRF, arXiv 2509.05764). Persists to Dapr state.
+
+```python
+from nexus.orchestration.market import ReputationTracker, TaskOutcome
+
+tracker = ReputationTracker(state_store=None)
+
+record       = await tracker.get("agent-id")           # ReputationRecord
+record       = await tracker.update(outcome)            # → updated ReputationRecord
+cal_factor   = await tracker.calibration_factor("agent-id")   # float
+ucb          = await tracker.ucb_bonus("agent-id")     # float; decays with history
+tracker.record_self_report("agent-id", 0.85)           # feed bid data for calibration
+```
+
+UCB formula: `sqrt(2 × ln(max(2, N)) / max(1, n_i))`  
+New agents always receive a positive exploration bonus.
+
+### BidScorer
+
+Composite scoring with calibration discount.
+
+```python
+from nexus.orchestration.market import BidScorer, ReputationTracker
+
+scorer = BidScorer(
+    reputation_tracker=ReputationTracker(),
+    alpha=0.35,   # reputation weight
+    beta=0.45,    # calibrated success weight
+    gamma=0.20,   # cost efficiency weight
+    # alpha + beta + gamma must equal 1.0 (ValueError on mismatch)
+)
+
+score  = await scorer.score(bid, task_spec)       # BidScore
+scores = await scorer.score_all(bids, task_spec)  # list[BidScore], sorted desc
+```
+
+Formula:
+```
+calibrated_success = clamp(raw_prob × calibration_factor, 0, 1)
+cost_score         = 1 / (1 + estimated_cost / budget)
+composite          = α×reputation + β×calibrated_success + γ×cost_score
+final_score        = composite + ucb_bonus
+```
+
+Bids with `calibrated_success < min_success_threshold` receive `final_score = -1.0` (moral hazard guard).
+
+### MarketCrew
+
+`Crew` subclass with opt-in market allocation.
+
+```python
+from nexus.orchestration.market import MarketCrew
+
+crew = MarketCrew(
+    members=members,
+    session_id="session-1",
+    pattern=CrewPattern.SEQUENTIAL,    # used when use_market=False
+    allocator=allocator,               # required when use_market=True
+    use_market=True,                   # default False — zero overhead when off
+)
+
+# Market path: post → allocate → run → report
+result = await crew.run_task_with_market(
+    task_description="Summarise the latest AI papers.",
+    required_skills=["web_search"],
+    preferred_skills=["summarize"],
+    budget_usd=0.05,
+)
+
+# Standard path (use_market=False): identical to Crew.run()
+result = await crew.run(initial_input="Summarise the latest AI papers.")
+```
+
+::: nexus.orchestration.market.crew.MarketCrew
+    options:
+      show_source: false
+      members: [run_task_with_market]
+
+### market_node
+
+Graph node factory that runs market allocation as a graph step.
+
+```python
+from nexus.orchestration.nodes import market_node
+
+handler = market_node(
+    allocator=allocator,
+    required_skills=["web_search"],
+    budget_usd=0.05,
+    node_name="market_allocate",   # used in log messages
+)
+```
+
+**Reads from state:**
+- `state.metadata["task_description"]` — task description string
+
+**Writes to state:**
+- `state.metadata["market_winner"]` — winning `agent_id` string (or `None`)
+- `state.metadata["market_result"]` — serialized `AllocationResult` dict
+- `state.status = AgentStatus.FAILED` when allocation is REJECTED
+
+### Types
+
+#### CapabilityProfile
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `agent_id` | `str` | required | Unique identifier |
+| `agent_name` | `str` | required | Human-readable name |
+| `skill_tags` | `list[str]` | required | Capability labels used for filtering |
+| `model_tier` | `AgentTier` | `BALANCED` | `fast` / `balanced` / `powerful` |
+| `cost_per_step_usd` | `float` | `0.0` | Self-reported step cost (used in fallback bid) |
+| `max_steps` | `int` | `20` | Maximum steps the agent will attempt |
+| `latency_sla_ms` | `int \| None` | `None` | Optional latency SLA commitment |
+
+#### TaskSpec
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `task_id` | `str` | required | Unique task identifier |
+| `description` | `str` | required | Natural language task description |
+| `required_skills` | `list[str]` | required | Must-have skills (hard filter) |
+| `preferred_skills` | `list[str]` | `[]` | Skills used for ranking (soft filter) |
+| `budget_usd` | `float \| None` | `None` | Hard cost cap; `None` = unlimited |
+| `min_success_threshold` | `float` | `0.5` | Minimum calibrated probability to accept a bid |
+| `deadline_ms` | `int \| None` | `None` | Optional wall-clock budget in milliseconds |
+| `allow_partial` | `bool` | `False` | Whether PARTIAL outcome counts as success |
+
+#### Bid
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `bid_id` | `str` | Unique bid ID (auto-generated UUID) |
+| `task_id` | `str` | Task this bid is for |
+| `agent_id` | `str` | Bidding agent |
+| `self_reported_success_prob` | `float` | Agent's own estimate (0–1); will be discounted |
+| `estimated_cost_usd` | `float` | Self-reported cost |
+| `estimated_steps` | `int` | Estimated number of steps |
+| `rationale` | `str` | One-sentence explanation (from bid solicitation prompt) |
+
+#### BidScore
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `raw_success_prob` | `float` | Self-reported, before calibration |
+| `calibrated_success_prob` | `float` | After `calibration_factor` discount |
+| `reputation_score` | `float` | `success_rate` from ReputationTracker (0.5 for new agents) |
+| `cost_score` | `float` | `1 / (1 + normalized_cost)` |
+| `composite` | `float` | Weighted blend |
+| `ucb_bonus` | `float` | UCB1 exploration bonus |
+| `final_score` | `float` | `composite + ucb_bonus`; `-1.0` when below threshold |
+
+#### AllocationResult
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_id` | `str` | The allocated task |
+| `status` | `AllocationStatus` | `ALLOCATED`, `REJECTED`, `BIDDING`, etc. |
+| `winning_agent_id` | `str \| None` | Agent that won (None when REJECTED) |
+| `winning_bid` | `Bid \| None` | The winning Bid |
+| `winning_score` | `BidScore \| None` | The winning BidScore |
+| `all_scores` | `list[BidScore]` | All computed scores, sorted descending |
+| `capability_filtered_out` | `list[str]` | Agent IDs filtered before bid solicitation |
+| `reject_reason` | `str \| None` | Human-readable reason when REJECTED |
+
+#### AllocationStatus
+
+```python
+from nexus.orchestration.market import AllocationStatus
+
+AllocationStatus.PENDING    # task posted, no bids yet
+AllocationStatus.BIDDING    # bid solicitation in progress
+AllocationStatus.ALLOCATED  # winner selected
+AllocationStatus.REJECTED   # no capable bidders or all below threshold
+AllocationStatus.COMPLETED  # task finished successfully
+AllocationStatus.FAILED     # task execution failed
+```
+
+#### ReputationRecord
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `total_tasks` | `int` | `0` | Tasks completed (success or failure) |
+| `successful_tasks` | `int` | `0` | Successful completions |
+| `success_rate` | `float` | `0.0` | `successful / total` |
+| `cost_accuracy` | `float` | `1.0` | EMA of `actual_cost / estimated_cost`; 1.0 = perfect |
+| `calibration_factor` | `float` | `1.0` | EMA multiplier for future bid discounting |
+| `ucb_confidence` | `float` | `1.0` | Current UCB exploration bonus |
+
+#### TaskOutcome
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_id` | `str` | The completed task |
+| `agent_id` | `str` | The agent that executed it |
+| `actual_success` | `bool` | Whether it succeeded |
+| `actual_cost_usd` | `float` | Actual cost incurred |
+| `actual_steps` | `int` | Actual steps taken |
+
+See the [Market-Based Allocation guide](../guides/market-based-allocation.md) for full usage and research citations.
+
+---
+
 ## Long-Horizon Planning
 
 ### PlanningRunner

@@ -30,6 +30,7 @@ NexusError
 │   ├── BudgetExceededError
 │   └── UncertaintyError
 ├── PlanningError
+├── MarketAllocationError
 ├── SafetyError
 ├── ModelError
 └── DaprError
@@ -291,6 +292,37 @@ except PlanningError as e:
 | `NO_SUBGOALS` | Planner returned an empty subgoals list | Provide a more specific task description |
 
 See the [Long-Horizon Planning guide](../guides/long-horizon-planning.md) for full usage details.
+
+---
+
+## MarketAllocationError
+
+**Code:** `MARKET_ALLOCATION_REJECTED`, `MARKET_WINNER_NOT_MEMBER`, `MARKET_NO_MEMBERS`
+
+**Raised when:** Market-based task allocation fails — no capable agents were registered for the required skills, all bids were below the `min_success_threshold` after calibration discounting, or the winning agent is not a member of the crew.
+
+```python
+from nexus.core.errors import MarketAllocationError
+from nexus.orchestration.market import MarketCrew
+
+try:
+    result = await crew.run_task_with_market(
+        task_description="...",
+        required_skills=["rare_skill"],
+    )
+except MarketAllocationError as e:
+    print(f"Allocation failed: {e}")
+    print(f"Code:    {e.code}")     # one of the codes above
+    print(f"Details: {e.details}")  # includes task_id, status
+```
+
+| Code | Cause | How to handle |
+|------|-------|---------------|
+| `MARKET_ALLOCATION_REJECTED` | No capable agents, or all calibrated bids below `min_success_threshold` | Register more agents with the required skills, lower `min_success_threshold`, or add more capable workers to the crew |
+| `MARKET_WINNER_NOT_MEMBER` | The agent that won bidding is registered in `CapabilityRegistry` but not in the `MarketCrew.members` list | Ensure every registered worker also has a matching `CrewMember` in the crew |
+| `MARKET_NO_MEMBERS` | `MarketCrew` was constructed with an empty member list | Pass at least one `CrewMember` |
+
+See the [Market-Based Allocation guide](../guides/market-based-allocation.md) for full configuration details.
 
 ---
 
