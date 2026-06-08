@@ -23,7 +23,7 @@ graph TB
     end
 
     subgraph "Layer 5 — Orchestration"
-        Orch["AgentRunner · Graph · Crew · ModelRouter · CostTracker"]
+        Orch["AgentRunner · Graph · Crew · Debate · ModelRouter · CostTracker"]
     end
 
     subgraph "Layer 4 — Tools"
@@ -130,10 +130,11 @@ The agent loop and multi-agent coordination:
 
 - **AgentRunner** — ReAct loop (Observe→Think→Act). Integrates memory recall, tool execution, safety checks, cost tracking, state persistence
 - **Graph** — DAG-based workflow engine with conditional edges, parallel branches, Dapr checkpoints
-- **Pre-built nodes** — `LLMNode`, `ToolNode`, `ConditionalNode`, `HumanNode`, `SubgraphNode`
+- **Pre-built nodes** — `LLMNode`, `ToolNode`, `ConditionalNode`, `HumanNode`, `SubgraphNode`, `debate_node`
 - **ModelRouter** — route steps to cheapest capable model by tier (fast/balanced/powerful)
 - **CostTracker** — per-model/agent/session/step cost tracking with budget enforcement
 - **Crew** — sequential, parallel, and hierarchical multi-agent patterns
+- **DebateOrchestrator** — multi-agent debate over a single question: concurrent per-round `asyncio.gather`, Jaccard-similarity convergence detection, adaptive routing (skip when confident), sycophancy-resistant round-2+ prompts, three aggregation strategies (majority vote, weighted vote, judge model), and `escalate_to_human` for low-convergence answers
 
 ### Layer 6 — Safety
 

@@ -81,6 +81,48 @@ Key properties:
 
 ---
 
+## Multi-agent debate
+
+For high-stakes questions — legal analysis, medical triage, financial decisions — you can run the same question past a panel of LLMs and let them argue. `DebateOrchestrator` manages the rounds, detects convergence, and aggregates the result.
+
+```mermaid
+sequenceDiagram
+    participant Q as Question
+    participant D0 as Debater 0
+    participant D1 as Debater 1
+    participant D2 as Devil's advocate
+    participant Agg as Aggregator
+
+    Note over D0,D2: Round 1 — independent answers (concurrent)
+    Q->>D0: Think independently
+    Q->>D1: Think independently
+    Q->>D2: Think independently (skeptical)
+    D0-->>Q: Answer A, confidence 0.80
+    D1-->>Q: Answer A, confidence 0.72
+    D2-->>Q: Answer B, confidence 0.65
+
+    Note over D0,D2: Round 2 — critique peers (concurrent)
+    Q->>D0: Restate yours. Evaluate peers. Change only if logically compelled.
+    Q->>D1: same
+    Q->>D2: same
+    D0-->>Q: Still A, confidence 0.85
+    D1-->>Q: Switched to A, confidence 0.80
+    D2-->>Q: Still B, confidence 0.60
+
+    Agg-->>Q: Final: A (2/3 ≈ 0.67 ≥ threshold 0.5)
+```
+
+Key design decisions:
+
+- **Heterogeneous models** beat same-model temperature diversity (M3MAD-Bench, ICLR 2025). Run `haiku + sonnet + sonnet-with-devil's-advocate` rather than three sonnets.
+- **Sycophancy resistance** — round 2+ prompts require debaters to restate their prior answer before critiquing peers, and to justify any change with specific evidence (ACL 2025).
+- **Adaptive routing** — when a single fast model reports high confidence (≥ 0.85 by default), the full debate is skipped. This eliminates ~40% of unnecessary calls with no quality loss.
+- **Escalation** — when the panel still disagrees after all rounds, `escalate_to_human=True` is set on the result. Your graph can route this to a `human_node` for review.
+
+The `debate_node()` factory wires a `DebateOrchestrator` into the graph engine, so escalation routing looks the same as any other conditional edge.
+
+---
+
 ## The safety layer
 
 Every piece of text that flows through an agent — user input, tool results, LLM outputs, memory writes — passes through the `SafetyPipeline`:

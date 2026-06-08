@@ -2,6 +2,16 @@
 
 from nexus.orchestration.cost_tracker import CostEvent, CostSummary, CostTracker
 from nexus.orchestration.crew import Crew, CrewMember, CrewPattern, CrewResult
+from nexus.orchestration.debate import (
+    AggregationStrategy,
+    DebateConfig,
+    DebateOrchestrator,
+    DebaterConfig,
+    DebateResult,
+    DebateRound,
+    DebaterPosition,
+    RoutingDecision,
+)
 from nexus.orchestration.graph import (
     EdgeCondition,
     Graph,
@@ -13,6 +23,7 @@ from nexus.orchestration.graph import (
 from nexus.orchestration.model_router import ModelRouter, ModelSpec, ModelTier, RoutingRule
 from nexus.orchestration.nodes import (
     conditional_node,
+    debate_node,
     human_node,
     llm_node,
     subgraph_node,
@@ -22,6 +33,7 @@ from nexus.orchestration.runner import AgentRunner, RunnerConfig
 
 __all__ = [
     "AgentRunner",
+    "AggregationStrategy",
     "Crew",
     "CrewMember",
     "CrewPattern",
@@ -29,6 +41,12 @@ __all__ = [
     "CostEvent",
     "CostSummary",
     "CostTracker",
+    "DebateConfig",
+    "DebateOrchestrator",
+    "DebaterConfig",
+    "DebateResult",
+    "DebaterPosition",
+    "DebateRound",
     "EdgeCondition",
     "Graph",
     "GraphCheckpoint",
@@ -38,9 +56,11 @@ __all__ = [
     "ModelSpec",
     "ModelTier",
     "NodeHandler",
+    "RoutingDecision",
     "RoutingRule",
     "RunnerConfig",
     "conditional_node",
+    "debate_node",
     "human_node",
     "llm_node",
     "subgraph_node",

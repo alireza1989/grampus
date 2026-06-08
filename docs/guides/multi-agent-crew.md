@@ -285,3 +285,4 @@ except OrchestrationError as e:
 - **[Memory guide →](memory.md)** — Add shared episodic memory across crew members
 - **[Evaluation guide →](evaluation.md)** — Write eval cases to test crew output quality
 - **[Orchestration API →](../reference/orchestration-api.md)** — Full `Crew` and `CrewMember` reference
+- **[Multi-Agent Debate →](multi-agent-debate.md)** — When you need a confidence score instead of a pipeline: run the same question past a panel of LLMs and let them argue toward consensus

@@ -182,3 +182,25 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 - HTMX has limits on complex client-side interactivity — sufficient for developer dashboards, not for visual graph editors (see exception above)
 - Static assets (CSS, minimal JS helpers) live in `src/nexus/server/ui/static/` and are served by FastAPI's `StaticFiles` mount
 - Jinja2 templates live in `src/nexus/server/ui/templates/` with a `base.html` that all pages extend
+
+---
+
+## ADR-012: Multi-Agent Debate as a First-Class Orchestration Primitive
+
+**Status:** Accepted
+
+**Context:** High-stakes agent tasks (legal analysis, medical triage, financial decisions) cannot rely on a single LLM call because (a) individual models hallucinate on specialised questions and (b) there is no confidence signal that a single model can reliably self-report. Two prior approaches exist: prompt-level self-consistency (same model, multiple samples) and multi-agent crews (different agents, different roles). Self-consistency degrades on hard questions because sampling diversity is bounded by a single model's knowledge. Crews require pre-defined pipelines and do not provide a convergence signal. Research (Du et al. ICML 2024; M3MAD-Bench ICLR 2025) demonstrates that heterogeneous models arguing toward a shared answer reach substantially higher accuracy than either alternative.
+
+**Decision:** Implement `DebateOrchestrator` as a standalone orchestration primitive in `src/nexus/orchestration/debate/`. It operates on a single question rather than a task pipeline, runs all debaters concurrently per round via `asyncio.gather`, and integrates with the existing `Graph` engine via `debate_node()`. Four specific research findings are baked into the design:
+
+1. **Heterogeneous panels** — `DebaterConfig.model_id` allows mixing model families, not just temperatures. The aggregator uses `debater.weight` to handle unequal capability.
+2. **Sycophancy resistance** — Round 2+ prompts require debaters to restate their prior answer verbatim before evaluating peers, and to cite specific logical evidence for any position change (ACL 2025 CONSENSAGENT).
+3. **Adaptive routing** — If a fast routing model reports confidence ≥ threshold, the full debate is bypassed. This eliminates ~40% of unnecessary calls with no quality loss (arXiv 2504.05047).
+4. **Act-vs-escalate** — When the final convergence score is below `escalate_threshold`, the result sets `escalate_to_human=True` rather than silently returning a low-confidence answer ("From Debate to Decision", April 2026).
+
+**Consequences:**
+- Zero new runtime dependencies — stdlib `json`, `asyncio`, `re`, `time` plus existing Pydantic and OTEL
+- `debate_node()` integrates cleanly with the existing `Graph` conditional-edge API; human escalation uses the existing `human_node`
+- Concurrent debaters within a round mean latency is bounded by the slowest debater, not the sum — no worse than a single LLM call per round
+- Cost scales as `num_debaters × num_rounds` but adaptive routing mitigates this for easy questions
+- The convergence detector uses Jaccard word-overlap clustering (no ML model, no embedding calls) — fast and deterministic

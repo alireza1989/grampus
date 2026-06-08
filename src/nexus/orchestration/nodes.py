@@ -160,3 +160,60 @@ def _last_assistant_tool_calls(state: AgentState) -> list[Any]:
         if msg.role == Role.ASSISTANT:
             return list(msg.tool_calls)
     return []
+
+
+def _last_user_message(state: AgentState) -> str:
+    """Return content of the last USER message in state.
+
+    Raises:
+        ValueError: If no USER message is found.
+    """
+    for msg in reversed(state.messages):
+        if msg.role == Role.USER and msg.content is not None:
+            return msg.content
+    raise ValueError("No USER message found in agent state")
+
+
+def debate_node(
+    orchestrator: Any,
+    *,
+    question_extractor: Callable[[AgentState], str] | None = None,
+    on_escalate: str | None = None,
+) -> NodeHandler:
+    """Return a handler that runs multi-agent debate and injects the result into state.
+
+    Args:
+        orchestrator: A DebateOrchestrator (duck-typed to avoid circular import).
+        question_extractor: Extracts the debate question from AgentState.
+            Defaults to the content of the last USER message.
+        on_escalate: When set, writes ``True`` to ``state.metadata["debate_escalate"]``
+            if the result has escalate_to_human=True, enabling conditional graph routing.
+    """
+
+    async def handler(state: AgentState) -> AgentState:
+        question = question_extractor(state) if question_extractor else _last_user_message(state)
+        result = await orchestrator.run(question)
+        new_state = state.model_copy(deep=True)
+        new_state.messages.append(
+            Message(
+                role=Role.ASSISTANT,
+                content=result.final_answer,
+                metadata={
+                    "debate_result": result.model_dump(),
+                    "debate_confidence": result.confidence,
+                    "debate_escalate": result.escalate_to_human,
+                    "debate_rounds": result.total_rounds_run,
+                    "debate_routing": result.routing_decision,
+                },
+            )
+        )
+        if result.total_token_usage:
+            new_state.total_token_usage = _accumulate_usage(
+                new_state.total_token_usage, result.total_token_usage
+            )
+        if on_escalate and result.escalate_to_human:
+            new_state.metadata["debate_escalate"] = True
+        new_state.status = AgentStatus.RUNNING
+        return new_state
+
+    return handler
