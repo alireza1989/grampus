@@ -285,3 +285,25 @@ An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate 
 - Circular dependencies in section DAGs are detected at wave-build time via Kahn's algorithm with `ArtifactConflictError(code="CIRCULAR_DEPENDENCY")`
 - Content type validation is strict: JSON sections must pass `required_fields` check; TEXT/MARKDOWN accept any string; CODE sections accept any string
 - `ArtifactConflictError` and `ArtifactSectionNotFoundError` are top-level peers of `OrchestrationError` in the error hierarchy
+
+---
+
+## ADR-016: Dual-Tier Agent Self-Improvement as a First-Class Runner Feature
+
+**Status:** Accepted
+
+**Context:** Agents repeat mistakes across sessions because each run starts from the same static system prompt with no memory of past failures. Reflexion (NeurIPS 2023) demonstrated that verbal self-reflection stored in persistent memory enables agents to improve without weight updates. The 2025 SAGE framework (arXiv 2512.17102) extended this by showing that extracting validated reusable skills from *successes* produces compounding improvement (+8.9% goal completion, 26% fewer steps). ME-ICPO (arXiv 2603.01335, March 2026) established a theoretical grounding for self-reflection as in-context policy optimization. No competitor framework has shipped both failure reflection and success skill extraction as built-in primitives.
+
+**Decision:** Implement `ReflexionEngine` and `SkillLibrary` in `src/nexus/memory/reflexion/` as optional hooks in `AgentRunner`. Three integration points: (1) post-failure hook generates and stores a verbal reflection, (2) post-success hook attempts skill extraction, (3) pre-LLM-call hook retrieves and injects relevant reflections + skills. The `PromptOptimizer` completes the loop by automatically proposing and evaluating system prompt mutations when an `EvalSuite` is available.
+
+**Key design choices:**
+1. **Both hooks are opt-in and suppressed** (`reflexion_engine=None` by default; all hooks wrapped in `contextlib.suppress(Exception)`) — self-improvement never crashes the core execution path.
+2. **Skill lifecycle** (SAGE): new skills start unvalidated; promote to validated after ≥3 successful uses; demote below success_rate=0.4 after ≥5 uses; delete below 0.2.
+3. **Quality confidence for reflections** (ME-ICPO): a second LLM call rates reflection quality on 0–1; low-quality reflections (< 0.3) are stored but not surfaced, preventing low-signal noise from polluting context.
+4. **ProceduralMemory reuse**: skills and reflections are stored as `Procedure` records with `procedure_type=SKILL/REFLECTION` — no new Dapr key namespace, no new storage infrastructure.
+
+**Consequences:**
+- Zero new required dependencies — stdlib only plus existing Pydantic, Dapr, OTEL
+- `AgentRunner` with `reflexion_engine=None, skill_library=None` (the defaults) is behaviorally identical to the pre-F1 runner
+- `PromptOptimizer.optimize()` calls EvalSuite N+1 times (1 baseline + N candidates) — only use on non-production agents or with fast/cheap model configs
+- `SkillLibrary.run_sequential()` enables SAGE-style batch improvement where skills from earlier tasks in a sequence accelerate later tasks

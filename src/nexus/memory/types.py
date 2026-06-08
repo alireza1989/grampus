@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
+
+
+class ProcedureType(StrEnum):
+    """Discriminator for Procedure records."""
+
+    WORKFLOW = "workflow"
+    SKILL = "skill"
+    REFLECTION = "reflection"
 
 
 class ProcedureStep(BaseModel):
@@ -30,6 +39,9 @@ class Procedure(BaseModel):
     last_used: datetime | None = None
     agent_id: str
     embedding: list[float] | None = None
+    procedure_type: ProcedureType = ProcedureType.WORKFLOW
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class EpisodicRecord(BaseModel):

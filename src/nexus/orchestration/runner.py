@@ -34,6 +34,8 @@ from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
+    from nexus.memory.reflexion.engine import ReflexionEngine
+    from nexus.memory.reflexion.skill_library import SkillLibrary
     from nexus.observability.metrics import NexusMetrics
     from nexus.orchestration.cost_tracker import CostSummary, CostTracker
     from nexus.orchestration.uncertainty.monitor import UncertaintyMonitor
@@ -77,6 +79,8 @@ class AgentRunner:
         handoff_executor: HandoffExecutor | None = None,
         nexus_metrics: NexusMetrics | None = None,
         uncertainty_monitor: UncertaintyMonitor | None = None,
+        reflexion_engine: ReflexionEngine | None = None,
+        skill_library: SkillLibrary | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -87,6 +91,8 @@ class AgentRunner:
         self._handoff_executor = handoff_executor
         self._metrics = nexus_metrics
         self._uncertainty_monitor = uncertainty_monitor
+        self._reflexion_engine = reflexion_engine
+        self._skill_library = skill_library
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -287,6 +293,12 @@ class AgentRunner:
         except Exception as exc:
             if self._metrics:
                 self._metrics.record_error(error_type=type(exc).__name__)
+            # F1 Tier 1: generate reflection from failure
+            if self._reflexion_engine:
+                with contextlib.suppress(Exception):
+                    await self._reflexion_engine.observe_failure(
+                        agent_def, user_input, exc, state, self._model_client
+                    )
             raise
 
         if hit_limit:
@@ -318,6 +330,13 @@ class AgentRunner:
             steps_taken=steps,
             status=state.status,
         )
+
+        # F1 Tier 2: extract skill from successful run
+        if self._skill_library and state.status == AgentStatus.COMPLETED:
+            with contextlib.suppress(Exception):
+                await self._skill_library.observe_success(
+                    agent_def, user_input, result, self._model_client
+                )
 
         _evt = await event_log.append(
             EventType.AGENT_COMPLETED,
@@ -574,8 +593,33 @@ class AgentRunner:
             query, top_k=self._config.memory_top_k
         )
         context = _format_recall(result)
+
+        # F1: prepend self-improvement context
+        self_improvement_context = await self._build_self_improvement_context(query)
+        if self_improvement_context:
+            context = self_improvement_context + ("\n\n" + context if context else "")
+
         if context:
             state.messages.append(Message(role=Role.SYSTEM, content=context))
+
+    async def _build_self_improvement_context(self, query: str) -> str:
+        """Fetch relevant reflections and skills for this task."""
+        parts: list[str] = []
+        if self._reflexion_engine:
+            with contextlib.suppress(Exception):
+                reflections = await self._reflexion_engine.get_relevant_reflections(
+                    query, self._model_client
+                )
+                formatted = self._reflexion_engine.format_as_context(reflections)
+                if formatted:
+                    parts.append(formatted)
+        if self._skill_library:
+            with contextlib.suppress(Exception):
+                skills = await self._skill_library.get_approach_hints(query, self._model_client)
+                formatted = self._skill_library.format_hints_as_context(skills)
+                if formatted:
+                    parts.append(formatted)
+        return "\n\n".join(parts)
 
     async def _execute_tool_calls(
         self,
