@@ -106,3 +106,7 @@ class PlanningError(NexusError):
     Codes: CIRCULAR_DEPENDENCY, MAX_REPLANS_EXCEEDED, REPLAN_PARSE_FAILED,
     PLAN_PARSE_FAILED, NO_SUBGOALS.
     """
+
+
+class MarketAllocationError(NexusError):
+    """Raised when market allocation fails (no capable bidders, all bids below threshold, etc.)."""

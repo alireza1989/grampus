@@ -275,6 +275,51 @@ def planning_node(
     return handler
 
 
+def market_node(
+    allocator: Any,
+    required_skills: list[str],
+    budget_usd: float | None = None,
+    node_name: str = "market_allocate",
+) -> NodeHandler:
+    """Return a handler that runs market allocation for the current task.
+
+    Reads task description from state.metadata["task_description"].
+    Writes winning_agent_id to state.metadata["market_winner"].
+    Writes AllocationResult to state.metadata["market_result"].
+    Sets state.status = AgentStatus.FAILED when allocation is REJECTED.
+
+    Args:
+        allocator: MarketAllocator (duck-typed to avoid circular import).
+        required_skills: Skill tags required for capability filtering.
+        budget_usd: Hard cost cap for the task, or None for unlimited.
+        node_name: Descriptive label used in log messages.
+    """
+    import uuid
+
+    async def handler(state: AgentState) -> AgentState:
+        from nexus.orchestration.market.types import AllocationStatus, TaskSpec
+
+        task_description = str(state.metadata.get("task_description", ""))
+        spec = TaskSpec(
+            task_id=str(uuid.uuid4()),
+            description=task_description,
+            required_skills=required_skills,
+            budget_usd=budget_usd,
+        )
+        result = await allocator.allocate(spec)
+        new_state = state.model_copy(deep=True)
+        new_state.metadata["market_result"] = result.model_dump()
+        if result.status == AllocationStatus.ALLOCATED:
+            new_state.metadata["market_winner"] = result.winning_agent_id
+        else:
+            new_state.status = AgentStatus.FAILED
+            new_state.metadata["market_winner"] = None
+        _log.debug(node_name, task_id=spec.task_id, status=result.status)
+        return new_state
+
+    return handler
+
+
 def debate_node(
     orchestrator: Any,
     *,
