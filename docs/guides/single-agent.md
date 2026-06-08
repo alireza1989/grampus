@@ -189,6 +189,8 @@ def create_runner() -> AgentRunner:
         tool_executor=executor,
         memory_manager=memory,
         config=config,
+        # Optional: pass a UserMemoryAdapter to enable per-user personalization.
+        # user_memory_adapter=adapter,
     )
 
 
@@ -215,7 +217,8 @@ async def main() -> None:
     question = "What are the latest developments in agentic AI frameworks?"
     print(f"Question: {question}\n")
 
-    result = await runner.run(agent, question, session_id="research-session-1")
+    # Pass user_id to enable user modeling (optional — omit for anonymous sessions)
+    result = await runner.run(agent, question, session_id="research-session-1", user_id="alice")
 
     print(f"Answer:\n{result.output}\n")
     print(f"Tool calls made: {result.tool_calls_made}")
@@ -224,7 +227,7 @@ async def main() -> None:
 
     # Second run in same session — agent recalls previous research
     followup = "How does Nexus compare to what you found?"
-    result2 = await runner.run(agent, followup, session_id="research-session-1")
+    result2 = await runner.run(agent, followup, session_id="research-session-1", user_id="alice")
     print(f"\nFollowup answer:\n{result2.output}")
 
 
@@ -247,6 +250,7 @@ nexus run research_agent.py --input "What are the latest developments in agentic
 - A `ToolRegistry` with a `web_search` tool registered via decorator
 - A `ToolExecutor` that validates arguments, applies timeouts and retries
 - A `MemoryManager` with all four memory types — new research stored in episodic memory, facts extracted to semantic memory
+- Optional `user_id` on every `run()` call to activate the user modeling tier — agent adapts to each individual's expertise and preferences across sessions (see [User Modeling Guide](user_modeling.md))
 - A `SafetyPipeline` that detects injection in web search results and redacts PII
 - An `AgentRunner` wiring everything together into a ReAct loop with a $0.10 cost cap
 

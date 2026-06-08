@@ -2,14 +2,15 @@
 
 ## What you'll learn
 
-- Why Nexus has four distinct memory types and when to use each
+- Why Nexus has five distinct memory types and when to use each
 - How to configure working memory, episodic retrieval, and semantic consolidation
 - How to use the `MemoryManager` unified interface
 - How memory security (provenance, trust, injection defense) works
+- How the user memory tier gives agents a persistent model of each individual
 
 ---
 
-## Why four memory types?
+## Why five memory types?
 
 Each type serves a different timescale and purpose:
 
@@ -19,6 +20,9 @@ Each type serves a different timescale and purpose:
 | **Episodic** | Cross-session | Events: what happened, when, to whom | PostgreSQL + pgvector |
 | **Semantic** | Persistent | Facts: subject–predicate–object triples | PostgreSQL + pgvector |
 | **Procedural** | Persistent | Workflows: how to do recurring tasks | PostgreSQL |
+| **User** | Persistent per-user | Expertise, preferences, decisions, constraints | PostgreSQL + pgvector |
+
+The first four are scoped to an *agent*. User memory is scoped to a *user* and is shared across all agents that use the same `UserMemoryStore`. See [User Modeling Guide](user_modeling.md) for full details.
 
 ---
 
