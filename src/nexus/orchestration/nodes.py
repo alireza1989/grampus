@@ -275,6 +275,89 @@ def planning_node(
     return handler
 
 
+def artifact_node(
+    store: Any,
+    collaborator: Any,
+    section_id: str,
+    node_name: str = "artifact_edit",
+) -> NodeHandler:
+    """Return a handler for artifact-centric single-section editing.
+
+    Reads from state.metadata:
+    - "artifact_id" — which artifact to edit
+    - "artifact_task" — overall task description
+
+    Writes to state.metadata:
+    - "artifact_result" — ArtifactEditResult dict
+
+    Full lifecycle: claim → scoped_context → LLM (via state messages) → write → release.
+    Sets state.status = AgentStatus.FAILED on write failure.
+
+    Args:
+        store: ArtifactStore (duck-typed to avoid circular import).
+        collaborator: ArtifactCollaborator bound to the editing agent.
+        section_id: Section this node is responsible for.
+        node_name: Descriptive label for log messages.
+    """
+
+    async def handler(state: AgentState) -> AgentState:
+        artifact_id = str(state.metadata.get("artifact_id", ""))
+        task_description = str(state.metadata.get("artifact_task", ""))
+
+        if not artifact_id:
+            _log.warning(f"{node_name}.missing_artifact_id")
+            new_state = state.model_copy(deep=True)
+            new_state.status = AgentStatus.FAILED
+            return new_state
+
+        claimed = await collaborator.claim_section(artifact_id, section_id)
+        if not claimed:
+            _log.warning(f"{node_name}.claim_failed", section_id=section_id)
+            new_state = state.model_copy(deep=True)
+            new_state.status = AgentStatus.FAILED
+            return new_state
+
+        try:
+            scoped = await collaborator.get_scoped_context(artifact_id, section_id)
+
+            content_lines = [
+                f"Overall artifact goal: {task_description}",
+                f"Section: {scoped.section_schema.section_id}",
+                f"Description: {scoped.section_schema.description}",
+            ]
+            if scoped.completed_dependencies:
+                content_lines.append("Completed dependencies:")
+                for dep_id, summary in scoped.completed_dependencies.items():
+                    content_lines.append(f"  - {dep_id}: {summary}")
+            section_content = _last_assistant_content(state) or "\n".join(content_lines)
+
+            write_result = await collaborator.write_section(
+                artifact_id, section_id, section_content
+            )
+
+            new_state = state.model_copy(deep=True)
+            new_state.metadata["artifact_result"] = write_result.model_dump()
+
+            if write_result.success:
+                await collaborator.release_section(artifact_id, section_id, mark_complete=True)
+                new_state.status = AgentStatus.RUNNING
+            else:
+                await collaborator.release_section(artifact_id, section_id, mark_complete=False)
+                new_state.status = AgentStatus.FAILED
+
+            _log.debug(node_name, section_id=section_id, success=write_result.success)
+            return new_state
+
+        except Exception as exc:
+            _log.warning(f"{node_name}.exception", section_id=section_id, exc=str(exc))
+            await collaborator.release_section(artifact_id, section_id, mark_complete=False)
+            new_state = state.model_copy(deep=True)
+            new_state.status = AgentStatus.FAILED
+            return new_state
+
+    return handler
+
+
 def market_node(
     allocator: Any,
     required_skills: list[str],

@@ -110,3 +110,12 @@ class PlanningError(NexusError):
 
 class MarketAllocationError(NexusError):
     """Raised when market allocation fails (no capable bidders, all bids below threshold, etc.)."""
+
+
+class ArtifactConflictError(NexusError):
+    """Raised when an artifact operation fails: ownership conflict, schema validation,
+    version mismatch, or circular dependency in section DAG."""
+
+
+class ArtifactSectionNotFoundError(NexusError):
+    """Raised when accessing a section_id not defined in the artifact's schema."""

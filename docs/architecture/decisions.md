@@ -255,3 +255,33 @@ An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate 
 - `planning_node()` integrates cleanly with the existing `Graph` conditional-edge API; failure escalation uses the existing `human_node` pattern
 - Zero new required dependencies — stdlib `asyncio`, `json`, `re`, `collections` plus existing Pydantic and structlog
 - `PlanningError` is a top-level peer of `OrchestrationError`, not a subclass, because planning failures are structurally different from runner failures (they occur before execution begins or during plan maintenance, not during the ReAct loop)
+
+---
+
+## ADR-015: Artifact-Centric Collaboration as a First-Class Orchestration Pattern
+
+**Status:** Accepted
+
+**Context:** Multi-agent workflows that pass text strings between agents cannot enforce structure, detect conflicts, or guarantee consistency. Agents working on the same document or codebase independently create silently incompatible outputs. The Specification Gap paper (arXiv 2603.24284, March 2026) showed that implicit shared specifications reduce two-agent integration accuracy by 25–39 percentage points. STORM (arXiv 2605.20563, May 2026) showed that post-hoc conflict resolution is worse than write-time detection by 18.7 points on Commit0-Lite. Existing frameworks have no native artifact primitive — they pass strings or serialize to JSON ad hoc.
+
+**Decision:** Implement `ArtifactStore`, `SectionLockManager`, `ArtifactCollaborator`, and `ArtifactCrew` in `src/nexus/orchestration/artifact/`. Key design choices:
+
+1. **Schema-first** (Specification Gap): every artifact section has an explicit `SectionSchema` with description, content_type, and required_fields before any agent is assigned. Implicit specs are rejected at artifact creation time.
+
+2. **MESI-inspired ownership states** (Token Coherence, arXiv 2603.15183): UNOWNED → CLAIMED → REVIEWING → MERGED. Prevents any silent writes and converts synchronization cost from O(n×S×|D|) to O((n+W)×|D|).
+
+3. **Write-time conflict detection** (STORM): schema validation + dependency version check runs inside `ArtifactStore.write_section()` before persisting. Conflicts surface at write time, not post-hoc merge.
+
+4. **TODO-claim via Dapr distributed lock** (CodeCRDT, arXiv 2510.18893): atomic, at-most-one-winner section claiming reuses the existing Phase 2 lock primitive.
+
+5. **Scoped per-agent context** (CAID, arXiv 2603.21489): each agent receives only the artifact schema + its assigned section + one-line summaries of completed dependencies. Full artifact history is never passed, preventing error propagation across sections.
+
+6. **Wave-based parallel execution**: sections within the same topological wave execute concurrently via `asyncio.gather`. Integration checks run between waves.
+
+**Consequences:**
+- Zero new required dependencies — Dapr lock already in Phase 2; all else is stdlib + existing Pydantic
+- `ArtifactCrew(agents=[...])` is the primary API; `artifact_node()` enables single-section graph integration
+- `Artifact.schema` is immutable after creation; sections are mutable only through the claim/write/release lifecycle
+- Circular dependencies in section DAGs are detected at wave-build time via Kahn's algorithm with `ArtifactConflictError(code="CIRCULAR_DEPENDENCY")`
+- Content type validation is strict: JSON sections must pass `required_fields` check; TEXT/MARKDOWN accept any string; CODE sections accept any string
+- `ArtifactConflictError` and `ArtifactSectionNotFoundError` are top-level peers of `OrchestrationError` in the error hierarchy
