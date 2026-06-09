@@ -12,6 +12,9 @@ EXPECTED_TOOLS = {
     "web_search",
     "sql_query",
     "send_email",
+    "read_pdf",
+    "read_docx",
+    "read_excel",
 }
 
 

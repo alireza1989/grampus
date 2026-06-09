@@ -499,3 +499,39 @@ alignment, action alignment, source authorization, data isolation).
   Dapr and memory infrastructure for each attack payload; the target_fn handles that
 - Multi-turn attacks (ReasoningHijackStrategy) require the target_fn to maintain conversation
   state across the prior_turns list — stateless target_fns will see reduced multi-turn ASR
+
+---
+
+## ADR-021: Document Processing Tools — Optional Extras with Graceful Degradation
+
+**Status:** Accepted
+
+**Context:** Agents need to ingest PDF, Word (.docx), and Excel (.xlsx) documents for RAG pipelines
+and episodic memory. The three document libraries (pymupdf4llm, python-docx, openpyxl) add ~50 MB
+to the install. Not every Nexus deployment needs document ingestion — a pure API agent, a CLI tool,
+or a code-generation agent has no use for these libraries and should not be penalized with extra
+install weight.
+
+**Decision:** All document libraries live under `pip install nexus-ai[documents]` as optional extras.
+The three tool functions (`read_pdf`, `read_docx`, `read_excel`) check for their respective imports
+at call time and return `ToolError(code="MISSING_DEPENDENCY")` with a clear install hint when the
+extra is absent. The chunking layer (`DocumentChunker`) is pure Python and always available — agents
+can chunk arbitrary text without the extras installed.
+
+**Chunking strategy:** Recursive chunking (2026 benchmark winner, 69% E2E accuracy over 50 papers)
+is the default. The `context_header` field stores the heading breadcrumb (`"Title > Section > Sub"`)
+separately from `content` — embedding layers concatenate them for self-contained retrieval without
+polluting the stored text. Target: 512 tokens, FIXED strategy supports 10% overlap for sliding-window
+retrieval.
+
+**PDF reader priority:** PyMuPDF (`fitz`) is preferred over `pypdf` because it is faster and handles
+complex layouts better. `pypdf` is the fallback when PyMuPDF is absent.
+
+**Consequences:**
+- Core Nexus install stays lean; document-capable deployments add ~50 MB with `[documents]`.
+- `[documents]` is the established pattern for all future heavy optional dependency groups.
+- All three tool functions always return `{"ok": bool, ...}` — never raise; callers need no
+  try/except.
+- Excel sheets are capped at 1000 rows to prevent runaway memory usage on large spreadsheets;
+  truncation is noted in the chunk content.
+- The `documents` group is also included in `[all]` for convenience.

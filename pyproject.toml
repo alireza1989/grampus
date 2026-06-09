@@ -76,10 +76,20 @@ all = [
     "weaviate-client>=4.9",
     "qdrant-client>=1.9",
     "a2a-sdk>=0.3.0",
+    "pymupdf4llm>=0.0.17",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+    "openpyxl>=3.1",
 ]
 llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0", "ollama>=0.6"]
 a2a = [
     "a2a-sdk>=0.3.0",
+]
+documents = [
+    "pymupdf4llm>=0.0.17",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+    "openpyxl>=3.1",
 ]
 
 [project.scripts]

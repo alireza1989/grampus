@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from nexus.core.types import ToolParameter
 from nexus.tools.library.calculator import calculator
+from nexus.tools.library.document_tools import read_docx_tool, read_excel_tool, read_pdf_tool
+from nexus.tools.library.document_types import (
+    ChunkStrategy,
+    DocumentChunk,
+    DocumentMetadata,
+    ParsedDocument,
+)
 from nexus.tools.library.file_read import file_read
 from nexus.tools.library.file_write import file_write
 from nexus.tools.library.http_request import http_request
@@ -13,6 +20,95 @@ from nexus.tools.library.web_search import web_search
 from nexus.tools.registry import ToolRegistry
 
 LIBRARY_REGISTRY: ToolRegistry = ToolRegistry()
+
+LIBRARY_REGISTRY.register(
+    read_pdf_tool,
+    name="read_pdf",
+    description=(
+        "Parse a PDF file into structured text chunks ready for RAG or memory ingestion. "
+        "Returns page numbers, heading paths, and token estimates per chunk. "
+        "Requires: pip install 'nexus-ai[documents]'."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="Path to the .pdf file.", required=True
+        ),
+        ToolParameter(
+            name="chunk_size",
+            type="integer",
+            description="Target tokens per chunk.",
+            required=False,
+            default=512,
+        ),
+        ToolParameter(
+            name="chunk_strategy",
+            type="string",
+            description="'recursive' or 'fixed'.",
+            required=False,
+            default="recursive",
+            enum=["recursive", "fixed"],
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    read_docx_tool,
+    name="read_docx",
+    description=(
+        "Parse a Word (.docx) file into structured text chunks with heading-based section paths. "
+        "Requires: pip install 'nexus-ai[documents]'."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="Path to the .docx file.", required=True
+        ),
+        ToolParameter(
+            name="chunk_size",
+            type="integer",
+            description="Target tokens per chunk.",
+            required=False,
+            default=512,
+        ),
+        ToolParameter(
+            name="chunk_strategy",
+            type="string",
+            description="'recursive' or 'fixed'.",
+            required=False,
+            default="recursive",
+            enum=["recursive", "fixed"],
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    read_excel_tool,
+    name="read_excel",
+    description=(
+        "Parse an Excel (.xlsx) file into structured text chunks, one chunk set per sheet. "
+        "Rows rendered as Markdown tables (capped at 1000 rows/sheet). "
+        "Requires: pip install 'nexus-ai[documents]'."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="Path to the .xlsx file.", required=True
+        ),
+        ToolParameter(
+            name="chunk_size",
+            type="integer",
+            description="Target tokens per chunk.",
+            required=False,
+            default=512,
+        ),
+        ToolParameter(
+            name="chunk_strategy",
+            type="string",
+            description="'recursive' or 'fixed'.",
+            required=False,
+            default="recursive",
+            enum=["recursive", "fixed"],
+        ),
+    ],
+)
 
 LIBRARY_REGISTRY.register(
     calculator,
@@ -288,7 +384,14 @@ __all__ = [
     "file_read",
     "file_write",
     "http_request",
+    "read_docx_tool",
+    "read_excel_tool",
+    "read_pdf_tool",
     "send_email",
     "sql_query",
     "web_search",
+    "ChunkStrategy",
+    "DocumentChunk",
+    "DocumentMetadata",
+    "ParsedDocument",
 ]
