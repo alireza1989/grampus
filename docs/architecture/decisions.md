@@ -455,3 +455,47 @@ opt-ins to `AgentRunner` — when both params are None, behavior is identical to
 - The post-session failure hook in AgentRunner requires `AgentState.last_event_id`
   (optional field); if the event log does not surface this, the hook falls back to
   `session_id` as a proxy failure marker
+
+---
+
+## ADR-020: Adversarial Red-Teaming as a First-Class Evaluation Primitive
+
+**Status:** Accepted
+
+**Context:** Agent safety testing in the industry is largely manual, expert-driven, and non-reproducible.
+Two developments in 2026 changed this calculus: (1) OWASP released the first dedicated Agentic Top 10
+(ASI01–ASI10:2026), providing a standardised taxonomy for agent-specific attacks distinct from classic
+LLM jailbreaks; (2) automated red-teaming frameworks (AgenticRed arXiv 2601.13518, Dreadnode arXiv
+2605.04019) demonstrated 85–100% attack success rates with sub-hour campaign execution, making manual
+red-teaming insufficient. Nexus has a uniquely rich attack surface: four memory layers (including the
+F1–F3 reflexion/user/graph additions), sandboxed code execution, multi-agent crews with A2A, and the
+F4 causal world model — all of which are novel attack vectors not covered by classic LLM red-teaming.
+
+**Decision:** Implement `src/nexus/evaluation/red_team/` as a first-class evaluation primitive alongside
+the existing EvalSuite. Architecture: Attacker (generates payloads) → Target (Nexus agent under test) →
+Judge (evaluates success) with an optional mutation feedback loop for failed attempts. Six attack strategy
+implementations cover the highest-impact OWASP Agentic Top 10 categories. Every finding maps to both
+the OWASP category and one of the four security properties formalized in arXiv 2603.19469 (task
+alignment, action alignment, source authorization, data isolation).
+
+**Key design choices:**
+1. **Strategy + Judge separation**: strategies generate payloads deterministically (reproducible);
+   the judge evaluates success with LLM + rule-based fallback.
+2. **target_fn decoupling**: RedTeamRunner takes any `async (messages) -> str` callable, not an
+   AgentRunner instance. This lets users red-team agents running as HTTP servers, not just local instances.
+3. **Rule-based judge always runs**: even with LLM judge enabled, rule-based regex patterns provide
+   a fallback when LLM confidence < 0.5 or when the model is unavailable.
+4. **One mutation retry**: when a payload fails and a model_client is available, AttackerAgent generates
+   one adaptive mutation (AgenticRed pattern) before recording the result. This doubles ASR on rule-based
+   targets without significant overhead.
+5. **CLI exit code 1 on CRITICAL/HIGH**: `nexus redteam` exits non-zero on high-severity findings,
+   enabling CI/CD pipeline integration (block merges that introduce vulnerabilities).
+
+**Consequences:**
+- Zero new required dependencies — all stdlib + existing Pydantic, structlog, model_client
+- `nexus redteam agent.py` requires the agent file to expose `get_agent_config()` and
+  `run_conversation(messages)` — a thin adapter contract
+- The RedTeamRunner is intentionally decoupled from AgentRunner to avoid re-initializing
+  Dapr and memory infrastructure for each attack payload; the target_fn handles that
+- Multi-turn attacks (ReasoningHijackStrategy) require the target_fn to maintain conversation
+  state across the prior_turns list — stateless target_fns will see reduced multi-turn ASR

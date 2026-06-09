@@ -1,4 +1,5 @@
 """Integration tests: F4 hooks in AgentRunner."""
+
 from __future__ import annotations
 
 import pytest
@@ -18,9 +19,11 @@ from nexus.orchestration.runner import AgentRunner, RunnerConfig
 # Minimal fakes
 # -----------------------------------------------------------------------
 
+
 class _FakeToolExecutor:
     async def execute(self, tc):
         from nexus.core.types import ToolResult
+
         return ToolResult(tool_call_id=tc.id, output="done", error=None, duration_ms=1)
 
 
@@ -33,6 +36,7 @@ class _FakeLLM:
     async def complete(self, messages, **kwargs):
         from nexus.core.models.base import ModelResponse
         from nexus.core.types import TokenUsage
+
         return ModelResponse(
             content=self.content,
             tool_calls=[],
@@ -88,6 +92,7 @@ class _TrackingTracer:
             {"session_id": session_id, "agent_id": agent_id, "failure_event_id": failure_event_id}
         )
         from nexus.causal.types import RootCauseCandidate
+
         graph = CausalGraph(graph_id=session_id, agent_id=agent_id)
         candidate = RootCauseCandidate(
             event_id="e1",
@@ -131,6 +136,7 @@ def _make_agent_def(name: str = "test-agent") -> AgentDefinition:
 # Tests
 # -----------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_runner_observes_llm_response_via_world_model():
     world_model = _TrackingWorldModel()
@@ -152,6 +158,7 @@ async def test_runner_diagnoses_on_failure():
         async def complete(self, messages, **kwargs):
             from nexus.core.models.base import ModelResponse
             from nexus.core.types import TokenUsage, ToolCall
+
             return ModelResponse(
                 content=None,
                 tool_calls=[ToolCall(id="tc1", name="some_tool", arguments={})],
@@ -162,7 +169,9 @@ async def test_runner_diagnoses_on_failure():
                 stop_reason="tool_use",
             )
 
-    runner = _make_runner(world_model=world_model, tracer=tracer, llm=_InfiniteToolCallLLM(), max_iterations=2)
+    runner = _make_runner(
+        world_model=world_model, tracer=tracer, llm=_InfiniteToolCallLLM(), max_iterations=2
+    )
     agent_def = _make_agent_def()
 
     with pytest.raises(OrchestrationError):

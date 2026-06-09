@@ -1,4 +1,5 @@
 """Tests for CausalWorldModel — persistent SCM + LLM labeling integration."""
+
 from __future__ import annotations
 
 import pytest
@@ -17,24 +18,21 @@ from nexus.causal.world_model import CausalWorldModel, _slugify
 # Fakes
 # -----------------------------------------------------------------------
 
+
 class _FakeExtractor:
     """Returns a fixed list of relations."""
 
     def __init__(self, relations: list[CausalRelation]) -> None:
         self._relations = relations
 
-    async def extract(
-        self, text: str, *, session_id: str, agent_id: str
-    ) -> list[CausalRelation]:
+    async def extract(self, text: str, *, session_id: str, agent_id: str) -> list[CausalRelation]:
         if not text or not text.strip():
             return []
         return list(self._relations)
 
 
 class _ErrorExtractor:
-    async def extract(
-        self, text: str, *, session_id: str, agent_id: str
-    ) -> list[CausalRelation]:
+    async def extract(self, text: str, *, session_id: str, agent_id: str) -> list[CausalRelation]:
         raise RuntimeError("extractor exploded")
 
 
@@ -52,9 +50,7 @@ class _FakeStore:
 
 
 class _ErrorStore:
-    async def get(
-        self, entity: str, key: str, model_cls: type
-    ) -> tuple[None, None]:
+    async def get(self, entity: str, key: str, model_cls: type) -> tuple[None, None]:
         raise RuntimeError("store exploded")
 
     async def save(self, entity: str, key: str, value: object) -> None:
@@ -63,6 +59,7 @@ class _ErrorStore:
 
 def _make_relation(cause: str, effect: str) -> CausalRelation:
     import uuid
+
     return CausalRelation(
         relation_id=str(uuid.uuid4()),
         cause_description=cause,
@@ -75,13 +72,25 @@ def _make_relation(cause: str, effect: str) -> CausalRelation:
     )
 
 
-def _make_diagnosis(session_id: str = "sess-1", root_causes: list[RootCauseCandidate] | None = None) -> CausalDiagnosis:
+def _make_diagnosis(
+    session_id: str = "sess-1", root_causes: list[RootCauseCandidate] | None = None
+) -> CausalDiagnosis:
     graph = CausalGraph(
         graph_id=session_id,
         agent_id="agent-1",
         nodes={
-            "e1": {"event_type": "llm_call", "description": "llm output", "failed": False, "step_index": 0},
-            "e2": {"event_type": "tool_call", "description": "tool failure", "failed": True, "step_index": 1},
+            "e1": {
+                "event_type": "llm_call",
+                "description": "llm output",
+                "failed": False,
+                "step_index": 0,
+            },
+            "e2": {
+                "event_type": "tool_call",
+                "description": "tool failure",
+                "failed": True,
+                "step_index": 1,
+            },
         },
     )
     if root_causes is None:
@@ -108,6 +117,7 @@ def _make_diagnosis(session_id: str = "sess-1", root_causes: list[RootCauseCandi
 # -----------------------------------------------------------------------
 # observe() tests
 # -----------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_observe_adds_variables_to_graph():
@@ -153,6 +163,7 @@ async def test_observe_empty_text_returns_empty():
 # query_intervention() tests
 # -----------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_query_intervention_on_populated_model():
     rel = _make_relation("tool_a", "outcome_b")
@@ -188,6 +199,7 @@ async def test_query_intervention_never_raises():
 # -----------------------------------------------------------------------
 # absorb_diagnosis() tests
 # -----------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_absorb_diagnosis_adds_causal_chain_edges():
@@ -225,6 +237,7 @@ async def test_absorb_diagnosis_never_raises():
 # load() / save() tests
 # -----------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_load_returns_empty_for_new_agent():
     store = _FakeStore()
@@ -257,6 +270,7 @@ async def test_save_and_load_round_trip():
 # -----------------------------------------------------------------------
 # _slugify utility
 # -----------------------------------------------------------------------
+
 
 def test_slugify_stable_across_calls():
     slug1 = _slugify("Tool Web Search")

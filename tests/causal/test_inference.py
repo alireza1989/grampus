@@ -1,4 +1,5 @@
 """Tests for SimpleCausalInference — backdoor adjustment over simple DAGs."""
+
 from __future__ import annotations
 
 from nexus.causal.inference import SimpleCausalInference
@@ -15,6 +16,7 @@ def _make_graph(
 # -----------------------------------------------------------------------
 # DAG validation
 # -----------------------------------------------------------------------
+
 
 def test_is_dag_true_on_simple_chain():
     g = _make_graph({"a": "A", "b": "B", "c": "C"}, {"a": ["b"], "b": ["c"]})
@@ -41,6 +43,7 @@ def test_topological_sort_returns_empty_on_cycle():
 # Path finding
 # -----------------------------------------------------------------------
 
+
 def test_find_causal_paths_direct():
     g = _make_graph({"a": "A", "b": "B"}, {"a": ["b"]})
     paths = SimpleCausalInference(g).find_causal_paths("a", "b")
@@ -66,6 +69,7 @@ def test_find_causal_paths_empty_when_no_path():
 # Backdoor adjustment set
 # -----------------------------------------------------------------------
 
+
 def test_find_backdoor_adjustment_set_no_confounders():
     # a → b: no parents of a, so no backdoor paths
     g = _make_graph({"a": "A", "b": "B"}, {"a": ["b"]})
@@ -88,6 +92,7 @@ def test_find_backdoor_adjustment_set_with_parent_confounder():
 # -----------------------------------------------------------------------
 # Intervention queries
 # -----------------------------------------------------------------------
+
 
 def test_intervene_direct_path_returns_result():
     g = _make_graph({"a": "A", "b": "B"}, {"a": ["b"]})

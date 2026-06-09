@@ -1,4 +1,5 @@
 """Tests for CausalTracer — event log → causal graph → root cause diagnosis."""
+
 from __future__ import annotations
 
 import pytest
@@ -46,6 +47,7 @@ class _ErrorStore:
 # -----------------------------------------------------------------------
 # trace_session tests
 # -----------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_trace_session_empty_events_returns_empty_graph():
@@ -152,6 +154,7 @@ async def test_build_failure_cascade_no_edge_beyond_three_steps():
 # backward BFS tests
 # -----------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_backward_bfs_finds_ancestors():
     events = [
@@ -183,6 +186,7 @@ async def test_backward_bfs_stops_at_max_depth():
 # -----------------------------------------------------------------------
 # ranking tests
 # -----------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_rank_candidates_earlier_step_higher_positional_score():
@@ -222,6 +226,7 @@ async def test_rank_candidates_fewer_downstream_higher_structural_score():
 # diagnose tests
 # -----------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_diagnose_returns_sorted_candidates():
     events = [
@@ -256,6 +261,7 @@ async def test_diagnose_never_raises():
 # -----------------------------------------------------------------------
 # find_path tests
 # -----------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_find_path_direct_connection():

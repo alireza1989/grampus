@@ -123,3 +123,7 @@ class ArtifactSectionNotFoundError(NexusError):
 
 class CausalError(NexusError):
     """Raised when causal inference fails in an unrecoverable way."""
+
+
+class RedTeamError(NexusError):
+    """Raised when a red-team campaign cannot be executed."""

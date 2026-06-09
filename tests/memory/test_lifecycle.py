@@ -11,15 +11,13 @@ import pytest
 from nexus.memory.lifecycle.adaptive_router import AdaptiveRetriever
 from nexus.memory.lifecycle.tier_manager import LifecycleTierManager
 from nexus.memory.lifecycle.types import (
-    LifecycleStats,
     MemoryTier,
     MemoryType,
     QueryClassification,
     TierRecord,
 )
 from nexus.memory.manager import MemoryRecallResult
-from nexus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
-
+from nexus.memory.types import EpisodicRecord, RetrievedRecord
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -135,8 +133,6 @@ async def test_sweep_demotes_stale_hot_record() -> None:
         current_tier=MemoryTier.HOT,
         last_accessed=old_time,
     )
-
-    call_count: dict = {"n": 0}
 
     async def mock_get(entity: str, key: str, model: object) -> tuple:
         if "hot_index" in key:
@@ -569,7 +565,7 @@ async def test_runner_consolidates_at_session_end() -> None:
     )
 
     from nexus.core.models.base import ModelResponse
-    from nexus.core.types import AgentDefinition, TokenUsage
+    from nexus.core.types import TokenUsage
     from nexus.orchestration.runner import AgentRunner
     from nexus.tools.executor import ToolExecutor
 

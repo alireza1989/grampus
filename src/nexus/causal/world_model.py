@@ -142,7 +142,11 @@ class CausalWorldModel:
         result, _ = await self._store.get(_WORLD_MODEL_ENTITY, self._agent_id, WorldModelGraph)
         if result is None:
             return WorldModelGraph(agent_id=self._agent_id)
-        return WorldModelGraph.model_validate(result) if not isinstance(result, WorldModelGraph) else result
+        return (
+            WorldModelGraph.model_validate(result)
+            if not isinstance(result, WorldModelGraph)
+            else result
+        )
 
     async def save(self, graph: WorldModelGraph) -> None:
         """Persist WorldModelGraph to Dapr."""
