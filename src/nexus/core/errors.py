@@ -119,3 +119,7 @@ class ArtifactConflictError(NexusError):
 
 class ArtifactSectionNotFoundError(NexusError):
     """Raised when accessing a section_id not defined in the artifact's schema."""
+
+
+class CausalError(NexusError):
+    """Raised when causal inference fails in an unrecoverable way."""

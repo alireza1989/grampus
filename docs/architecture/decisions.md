@@ -397,3 +397,61 @@ identical to pre-F3. AgentRunner receives one optional `graph_builder` param.
   this averages 1–3 calls per 30-minute session, not per event
 - `LifecycleTierManager.sweep()` should be called at session start to demote stale HOT records
   from the previous session — add to `AgentRunner.run()` pre-loop via `contextlib.suppress`
+
+---
+
+## ADR-019: Two-Tier Causal Analysis — Trace Tracing + Lightweight SCM
+
+**Status:** Accepted
+
+**Context:** Agents have no mechanism to distinguish root causes from cascading effects
+in failures, and no persistent model of what actions cause what outcomes. Two distinct
+failure modes motivated F4: (1) post-failure diagnosis — when an agent fails at step 8,
+it is non-obvious whether step 2 or step 6 caused it; cascading failures look identical
+to root failures in flat logs; (2) proactive intervention reasoning — agents cannot answer
+"what would have happened if I had skipped that tool call?" without re-executing. The Rung
+Collapse proof (arXiv 2602.11675) established that LLMs cannot perform causal inference
+natively. However, two 2026 papers showed practical paths that do not require solving the
+LLM-native causal reasoning problem: AgentTrace (arXiv 2603.14688, March 2026) showed
+that causal graphs reconstructed from execution logs localize root causes with sub-second
+latency and high accuracy without any LLM inference at debug time. Causal-aware LLMs
+(IJCAI 2025, arXiv 2505.24710) showed that LLMs as graph-labelers (not causal reasoners)
+combined with code-level do-calculus produces reliable interventional answers.
+
+**Decision:** Implement a two-tier causal analysis layer in `src/nexus/causal/`:
+Tier 1 (`CausalTracer`) reconstructs causal graphs from the existing Phase 9 event log
+and diagnoses root causes post-hoc with no LLM inference. Tier 2 (`CausalWorldModel`)
+builds a persistent SCM the LLM populates during execution; `SimpleCausalInference`
+answers P(Y|do(X)) queries via pure-Python backdoor adjustment. Both tiers are additive
+opt-ins to `AgentRunner` — when both params are None, behavior is identical to pre-F4.
+
+**Key design choices:**
+1. **LLM labels, code reasons** — the LLM's job is only to identify and name causal
+   relationships from text. `SimpleCausalInference` does all causal inference. This
+   circumvents the Rung Collapse limitation entirely.
+2. **CausalTracer uses the existing event log** (Phase 9, ADR-005) — no new storage
+   infrastructure. Three edge types (sequential, data-dependency, failure-cascade) are
+   reconstructed purely from log structure.
+3. **Root cause composite score** = 0.6 × structural + 0.4 × positional, matching the
+   AgentTrace and CHIEF signal weighting from the papers.
+4. **SimpleCausalInference is zero-new-deps** — pure Python backdoor adjustment over
+   small DAGs (< 200 variables). For larger graphs, the optional `causal` extras group
+   can wrap DoWhy instead.
+5. **Tier 1 feeds Tier 2** — `absorb_diagnosis()` converts structurally validated causal
+   chains from failure diagnosis into WorldModelGraph edges, giving the SCM ground-truth
+   signal that bypasses LLM extraction uncertainty.
+6. **WorldModelGraph storage** follows the F3 MemoryGraph pattern: one Dapr key per agent,
+   entity = "causal_world_model". No graph database required for typical agent world models.
+
+**Consequences:**
+- Zero new required dependencies — stdlib `re`, `uuid`, `math`, `collections.deque`,
+  `json`, `contextlib`, `asyncio` plus existing Pydantic, Dapr client, model_client
+- `CausalTracer.diagnose()` requires the Phase 9 event store to expose
+  `get_events_for_session(session_id, agent_id) -> list[dict]`; if that method is not
+  yet present on the event store, add it as part of this phase
+- `SimpleCausalInference` assumes a DAG; `is_dag()` should be checked before running
+  `intervene()` on user-provided graphs; cyclic world models are silently handled by
+  returning is_identifiable=False
+- The post-session failure hook in AgentRunner requires `AgentState.last_event_id`
+  (optional field); if the event log does not surface this, the hook falls back to
+  `session_id` as a proxy failure marker

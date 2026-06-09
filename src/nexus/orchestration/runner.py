@@ -33,6 +33,8 @@ from nexus.orchestration.handoff import HandoffContext, HandoffExecutor, Handoff
 from nexus.orchestration.model_router import ModelSpec, ModelTier
 
 if TYPE_CHECKING:
+    from nexus.causal.tracer import CausalTracer
+    from nexus.causal.world_model import CausalWorldModel
     from nexus.memory.graph.builder import GraphBuilder
     from nexus.memory.manager import MemoryManager, MemoryRecallResult
     from nexus.memory.reflexion.engine import ReflexionEngine
@@ -85,6 +87,8 @@ class AgentRunner:
         skill_library: SkillLibrary | None = None,
         user_memory_adapter: UserMemoryAdapter | None = None,
         graph_builder: GraphBuilder | None = None,
+        causal_world_model: CausalWorldModel | None = None,
+        causal_tracer: CausalTracer | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -99,6 +103,8 @@ class AgentRunner:
         self._skill_library = skill_library
         self._user_memory_adapter = user_memory_adapter
         self._graph_builder = graph_builder
+        self._causal_world_model = causal_world_model
+        self._causal_tracer = causal_tracer
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -229,6 +235,14 @@ class AgentRunner:
                         tool_calls=response.tool_calls,
                     )
                 )
+
+                # F4: observe LLM response for causal relations
+                if self._causal_world_model and response.content:
+                    with contextlib.suppress(Exception):
+                        await self._causal_world_model.observe(
+                            response.content,
+                            session_id=state.session_id,
+                        )
 
                 if self._uncertainty_monitor:
                     _unc_step, _unc_action = await self._uncertainty_monitor.observe_llm_response(
@@ -377,6 +391,21 @@ class AgentRunner:
                 consolidator = self._memory_manager._graph_consolidator
                 if event_graph is not None and consolidator is not None:
                     await consolidator.consolidate(event_graph, agent_def.name)
+
+        # F4: on failure, diagnose and absorb into world model
+        if self._causal_tracer and self._causal_world_model and result.status == AgentStatus.FAILED:
+            with contextlib.suppress(Exception):
+                last_event_id = state.last_event_id or session_id
+                diagnosis = await self._causal_tracer.diagnose(
+                    session_id, agent_def.name, failure_event_id=last_event_id
+                )
+                if diagnosis.root_causes:
+                    await self._causal_world_model.absorb_diagnosis(diagnosis)
+                    _log.debug(
+                        "causal_diagnosis_absorbed",
+                        session_id=session_id,
+                        top_cause=diagnosis.root_causes[0].event_id,
+                    )
 
         _evt = await event_log.append(
             EventType.AGENT_COMPLETED,
