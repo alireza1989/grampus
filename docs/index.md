@@ -83,6 +83,7 @@ graph TB
 | **Tool Sandboxing** | Docker-isolated execution, resource limits, network control |
 | **MCP Client** | Discover and invoke tools from any MCP-compatible server |
 | **Eval Framework** | 16 assertion types, streaming quality assertions, LLM-as-judge, A/B prompt testing, regression detection |
+| **Adversarial Red-Teaming** | Six OWASP Agentic Top 10 attack strategies (ASI01/ASI02/ASI06), LLM+rule-based judge, adaptive mutation, `nexus redteam` CLI with CI exit-code support |
 | **Cost Tracking** | Per-model, per-agent, per-session budget enforcement with Slack/email/webhook alerts |
 | **Google Gemini** | Native Gemini client (`gemini-2.0-flash`, `gemini-1.5-pro`) alongside Anthropic and OpenAI |
 | **Local Models** | Ollama client for zero-cost local inference with any pulled model |

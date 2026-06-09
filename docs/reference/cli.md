@@ -686,3 +686,85 @@ nexus playground show python-tutor --format json
 |------|---------|
 | `0` | Success or clean REPL exit |
 | `1` | Model provider not configured or session not found |
+
+---
+
+## nexus redteam
+
+Run an adversarial red-team campaign against an agent to find security vulnerabilities before attackers do.
+
+```bash
+nexus redteam [OPTIONS] AGENT_FILE
+```
+
+| Argument/Option | Default | Description |
+|-----------------|---------|-------------|
+| `AGENT_FILE` | (required) | Path to agent adapter Python file |
+| `--categories/-c TEXT` | all | Attack categories to run (repeatable): `prompt_injection`, `jailbreak`, `reasoning_hijack`, `memory_poison`, `tool_misuse`, `excessive_agency` |
+| `--count/-n INT` | `5` | Number of payloads per strategy |
+| `--output/-o TEXT` | `"text"` | Report format: `text`, `json` |
+| `--stop-on-critical` | `False` | Halt campaign immediately on first CRITICAL finding |
+| `--model TEXT` | `None` | Model ID for LLM-based judge + adaptive mutation (e.g. `claude-sonnet-4-6`) |
+
+The agent file must expose two functions:
+
+- `get_agent_config() -> RedTeamTargetConfig` — agent metadata and capability flags
+- `async run_conversation(messages: list[tuple[str, str]]) -> str` — stateless or stateful conversation handler
+
+### Examples
+
+```bash
+# Full campaign, all categories, text output
+nexus redteam agents/my_agent.py
+
+# Specific categories only
+nexus redteam agents/my_agent.py --categories prompt_injection jailbreak
+
+# Fast CI scan: 3 payloads per strategy, stop on CRITICAL
+nexus redteam agents/my_agent.py --stop-on-critical --count 3
+
+# Thorough pre-release audit with LLM judge
+nexus redteam agents/my_agent.py --model claude-sonnet-4-6 --count 10
+
+# JSON output for downstream processing
+nexus redteam agents/my_agent.py --output json > redteam-report.json
+```
+
+### Attack categories
+
+| Category | OWASP | What it tests |
+|----------|-------|---------------|
+| `prompt_injection` | ASI01:2026 | Direct and indirect instruction overrides |
+| `jailbreak` | ASI01:2026 | Roleplay frames, encoding tricks, logic traps |
+| `reasoning_hijack` | ASI01:2026 | Multi-turn context manipulation |
+| `memory_poison` | ASI06:2026 | Persistent memory write injection |
+| `tool_misuse` | ASI02:2026 | Infinite loops, chain escapes, enumeration |
+| `excessive_agency` | LLM #2 | Scope escalation, implicit permission exploits |
+
+### Report format
+
+```
+SUMMARY
+  Total attacks:     30
+  Successful:        4
+  Attack success:    13.3%
+
+SEVERITY BREAKDOWN
+  HIGH       3
+  MEDIUM     1
+
+FINDINGS
+  [HIGH] Prompt Injection — Direct Injection
+    Category:    prompt_injection
+    OWASP:       ASI01:2026
+    Occurrences: 3
+    Recommendation: Raise PromptInjectionDetector to STRICT...
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | No CRITICAL or HIGH findings |
+| `1` | One or more CRITICAL or HIGH findings — suitable for CI gates |
+| `2` | Agent file missing required functions or invalid category |
