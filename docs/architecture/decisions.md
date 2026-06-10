@@ -654,3 +654,59 @@ via `importlib.metadata.entry_points(group="nexus.plugins")`.
 - `contextlib.suppress(Exception)` wraps all observational hook calls in runner and memory
   manager — plugin failures in `on_agent_start`, `post_llm_call`, etc. are logged but never
   surface to the caller
+
+---
+
+## ADR-025: Content-Addressed Agent Versioning with Deterministic A/B Routing
+
+**Status:** Accepted
+
+**Context:** Agent definitions (system prompt, tools, temperature, model) change over time and
+teams need to track what was deployed when, roll back safely, and run controlled experiments.
+Three specific failure modes motivated this design: (1) without version identity, a prompt
+regression is invisible until users complain — there is no diff, no audit trail, and no rollback
+path; (2) existing A/B testing patterns require a separate routing service and database, creating
+operational overhead for a single toggle; (3) user assignment to A/B buckets is often non-sticky —
+the same user sees different agent behaviors on consecutive calls — which contaminates experiment
+results and degrades user experience.
+
+**Decision:** Implement a self-contained versioning layer in `src/nexus/versioning/` with four
+interlocking components:
+
+1. **Content-addressed version IDs** — `compute_version_id(definition)` produces a deterministic
+   SHA-256 over a canonicalized (key-sorted, tool-list-sorted) JSON representation of the
+   `AgentDefinition`. The same definition always produces the same ID regardless of when or where
+   it is created. Identical definitions are deduplicated at save time without special logic.
+
+2. **Dapr-backed persistence** — `VersionStore` stores versions and deployments via the existing
+   `DaprStateStore` abstraction. Two internal Pydantic wrappers (`_VersionIndex`,
+   `_DeploymentHistory`) store the per-agent version index and capped (50-entry) deployment history
+   as first-class state entries, enabling resilient list_versions() that skips corrupt records rather
+   than failing.
+
+3. **Sticky deterministic A/B routing** — `VersionRouter.resolve()` assigns users to control or
+   treatment by computing `SHA-256(experiment_id:user_id) % 100 < int(split * 100)`. The hash is
+   deterministic: the same user always lands in the same bucket for a given experiment, with no
+   server-side session state required. The routing logic is wrapped in `contextlib.suppress` so a
+   broken experiment never crashes agent execution.
+
+4. **Pure-Python significance testing** — `two_proportion_z_test` (for eval pass rate) and
+   `welch_t_test` (for continuous metrics) are implemented from scratch using stdlib `math.erfc`
+   and Lentz's continued-fraction regularized incomplete beta function. No scipy dependency. Auto-
+   promotion fires when `p < auto_promote_threshold` and both groups have `>= min_samples` runs.
+
+**Consequences:**
+- Zero new required dependencies — stdlib `hashlib`, `difflib`, `math`, `uuid` plus existing
+  Pydantic and Dapr client
+- `AgentRunner` gains one optional `version_router` parameter; default `None` means no behavioral
+  change — all existing callers are unaffected
+- `VersionRouter` is duck-type injectable: any object with `async resolve(agent_id, user_id)`
+  can be substituted in tests without importing the full Dapr stack
+- `compute_version_id` is pure (no I/O, no randomness) — identical inputs always produce
+  identical outputs, making version IDs reproducible across environments and process restarts
+- Deployment history is capped at 50 entries per agent; older entries are silently dropped —
+  acceptable since the audit trail in the Dapr event log (ADR-005) is the authoritative record
+- The `welch_t_test` fallback for continuous metrics (avg_cost_usd, avg_latency_seconds) does not
+  store raw sample arrays, so it uses a 10%-difference heuristic rather than a true p-value;
+  teams needing rigorous continuous-metric significance should call `record_eval_result` on a
+  discretized pass/fail threshold and use the `eval_pass_rate` metric path instead
