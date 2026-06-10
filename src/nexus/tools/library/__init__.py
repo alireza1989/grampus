@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from nexus.core.types import ToolParameter
 from nexus.tools.library.calculator import calculator
+from nexus.tools.library.code_analysis_tools import (
+    analyze_file_tool,
+    check_types_tool,
+    find_symbol_tool,
+    lint_code_tool,
+    summarize_structure_tool,
+)
 from nexus.tools.library.document_tools import read_docx_tool, read_excel_tool, read_pdf_tool
 from nexus.tools.library.document_types import (
     ChunkStrategy,
@@ -366,6 +373,120 @@ LIBRARY_REGISTRY.register(
 )
 
 
+LIBRARY_REGISTRY.register(
+    analyze_file_tool,
+    name="analyze_file",
+    description=(
+        "Full structural analysis of a Python (.py) file: all functions with signatures, "
+        "cyclomatic complexity, decorators, and line ranges; all classes with methods and "
+        "bases; all imports categorized as stdlib/third-party/local. "
+        "Zero dependencies — uses Python ast stdlib."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="Path to the .py file.", required=True
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    lint_code_tool,
+    name="lint_code",
+    description=(
+        "Run Ruff linter on a Python file or directory. Returns structured findings with "
+        "rule ID, message, line, column, and fix availability. "
+        "Degrades gracefully if Ruff is not installed."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="Path to the Python file or directory to lint.",
+            required=True,
+        ),
+        ToolParameter(
+            name="select",
+            type="array",
+            description="Ruff rule codes to check, e.g. ['E', 'F', 'S']. Defaults to Ruff's default selection.",
+            required=False,
+            default=None,
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    check_types_tool,
+    name="check_types",
+    description=(
+        "Run mypy type checker on a Python file. Returns structured type errors with "
+        "error codes, line numbers, and severity. "
+        "Degrades gracefully if mypy is not installed."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="Path to the .py file to type-check.", required=True
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    find_symbol_tool,
+    name="find_symbol",
+    description=(
+        "Search all Python files under a directory for a function or class with the given name. "
+        "Returns file path, line number, kind (function/class/method), and full signature per match."
+    ),
+    parameters=[
+        ToolParameter(
+            name="name",
+            type="string",
+            description="Python identifier to search for (function, class, or method name).",
+            required=True,
+        ),
+        ToolParameter(
+            name="directory",
+            type="string",
+            description="Root directory to search under.",
+            required=False,
+            default=".",
+        ),
+        ToolParameter(
+            name="max_files",
+            type="integer",
+            description="Maximum number of files to scan.",
+            required=False,
+            default=200,
+        ),
+    ],
+)
+
+LIBRARY_REGISTRY.register(
+    summarize_structure_tool,
+    name="summarize_structure",
+    description=(
+        "Return a lightweight public-API index for all Python modules in a directory: "
+        "module name, public function names, public class names per file. "
+        "Use before analyze_file to identify which specific file to inspect in detail."
+    ),
+    parameters=[
+        ToolParameter(
+            name="directory",
+            type="string",
+            description="Root directory to index.",
+            required=False,
+            default=".",
+        ),
+        ToolParameter(
+            name="max_files",
+            type="integer",
+            description="Maximum number of files to index.",
+            required=False,
+            default=200,
+        ),
+    ],
+)
+
+
 def get_library_registry() -> ToolRegistry:
     """Return the pre-populated library registry."""
     return LIBRARY_REGISTRY
@@ -380,6 +501,11 @@ __all__ = [
     "LIBRARY_REGISTRY",
     "get_library_registry",
     "get_tool_names",
+    "analyze_file_tool",
+    "check_types_tool",
+    "find_symbol_tool",
+    "lint_code_tool",
+    "summarize_structure_tool",
     "calculator",
     "file_read",
     "file_write",

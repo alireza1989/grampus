@@ -535,3 +535,29 @@ complex layouts better. `pypdf` is the fallback when PyMuPDF is absent.
 - Excel sheets are capped at 1000 rows to prevent runaway memory usage on large spreadsheets;
   truncation is noted in the chunk content.
 - The `documents` group is also included in `[all]` for convenience.
+
+---
+
+## ADR-022: Code Analysis Tools — stdlib AST Engine + Subprocess Lint Runners
+
+**Status:** Accepted
+
+**Context:** Agents analyzing code need targeted structural queries, not raw file reads. Research
+(arXiv 2603.27277, Codebase-Memory, March 2026) demonstrated that structured code analysis tools
+reduce agent token usage by 10x and tool calls by 2.1x versus grep+file-read patterns. The tool
+surface must answer: "what's in this file?", "where is X defined?", "what are the lint issues?",
+"what are the type errors?"
+
+**Decision:** Five tools built in two tiers: (1) pure-stdlib AST engine for symbol extraction,
+complexity, import analysis, and symbol search — zero dependencies; (2) subprocess thin wrappers
+around ruff and mypy — both already in the Nexus toolchain — with graceful degradation when
+not on PATH. No tree-sitter (binary dep, overkill for Python-first framework). No radon/lizard
+(cyclomatic complexity computed directly from `ast.NodeVisitor` in ~20 lines). No new entries in
+`[project.dependencies]`.
+
+**Consequences:**
+- All five tools work on any Nexus installation — no `[analysis]` extras required
+- Lint and type-check tools degrade gracefully: return `ok` with `available=False` + install hint
+- Subprocess runners are tested with mocked subprocess — integration against real ruff/mypy is
+  handled implicitly by the existing CI which runs ruff and mypy on every push
+- Symbol search is O(files) — the 200-file default cap keeps it interactive-speed for typical repos

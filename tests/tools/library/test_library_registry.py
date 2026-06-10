@@ -15,6 +15,12 @@ EXPECTED_TOOLS = {
     "read_pdf",
     "read_docx",
     "read_excel",
+    # H45 code analysis tools
+    "analyze_file",
+    "lint_code",
+    "check_types",
+    "find_symbol",
+    "summarize_structure",
 }
 
 
