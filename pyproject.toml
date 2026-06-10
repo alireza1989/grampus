@@ -48,6 +48,7 @@ anthropic = ["anthropic>=0.97"]
 openai = ["openai>=2.0"]
 gemini = ["google-genai>=1.0"]
 ollama = ["ollama>=0.6"]
+cohere = ["cohere>=5.1.8"]
 phoenix = ["arize-phoenix-otel>=0.6"]
 sql = ["sqlalchemy>=2.0", "aiosqlite>=0.19", "greenlet>=3.0"]
 langchain = ["langchain-core>=0.2"]
@@ -62,6 +63,7 @@ all = [
     "openai>=2.0",
     "google-genai>=1.0",
     "ollama>=0.6",
+    "cohere>=5.1.8",
     "arize-phoenix-otel>=0.6",
     "sqlalchemy>=2.0",
     "aiosqlite>=0.19",
@@ -81,7 +83,7 @@ all = [
     "python-docx>=1.1",
     "openpyxl>=3.1",
 ]
-llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0", "ollama>=0.6"]
+llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0", "ollama>=0.6", "cohere>=5.1.8"]
 a2a = [
     "a2a-sdk>=0.3.0",
 ]

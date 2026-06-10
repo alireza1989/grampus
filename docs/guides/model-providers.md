@@ -11,6 +11,7 @@ Nexus supports multiple LLM providers through a unified `ModelClient` interface 
 | Anthropic | `AnthropicClient` | `nexus-ai[anthropic]` | `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5` |
 | OpenAI | `OpenAIClient` | `nexus-ai[openai]` | `gpt-4o`, `gpt-4o-mini`, `o1`, `o3` |
 | Google Gemini | `GeminiClient` | `nexus-ai[gemini]` | `gemini-2.0-flash`, `gemini-1.5-pro` |
+| Cohere | `CohereClient` | `nexus-ai[cohere]` | `command-a-03-2025`, `command-r-plus-08-2024`, `command-r-08-2024`, `command-r7b-12-2024` |
 | Ollama (local) | `OllamaClient` | `nexus-ai[ollama]` | `llama3.2`, `mistral`, `qwen2.5`, `phi4`, `deepseek-r1`, any pulled model |
 
 ---
@@ -68,6 +69,36 @@ client = GeminiClient(api_key=os.environ["NEXUS_MODEL__GEMINI_API_KEY"])
 ```
 
 Environment variable: `NEXUS_MODEL__GEMINI_API_KEY`
+
+---
+
+### Cohere
+
+```bash
+pip install "nexus-ai[cohere]"
+```
+
+```python
+import os
+
+from nexus.core.models.cohere import CohereClient
+
+client = CohereClient(api_key=os.environ["NEXUS_MODEL__COHERE_API_KEY"])
+```
+
+Environment variable: `NEXUS_MODEL__COHERE_API_KEY`
+
+**Available models:**
+
+| Model | Context | Pricing (input / output per 1M tokens) | Best for |
+|-------|---------|----------------------------------------|----------|
+| `command-a-03-2025` | 256K | $2.50 / $10.00 | Flagship — agentic tasks, tool use |
+| `command-r-plus-08-2024` | 128K | $2.50 / $10.00 | RAG, long-context reasoning |
+| `command-r-08-2024` | 128K | $0.15 / $0.60 | Balanced cost/quality |
+| `command-r7b-12-2024` | 128K | $0.0375 / $0.15 | High-throughput, budget-constrained |
+
+!!! note "Cohere SDK version"
+    Requires Cohere Python SDK v5.1.8+. Nexus uses the v2 client (`AsyncClientV2`) which accepts the same OpenAI-compatible message format, including tool calls.
 
 ---
 
@@ -179,9 +210,9 @@ For production deployments, the `ModelRouter` automatically selects the cheapest
 
 | Tier | Example models | Use case |
 |------|---------------|----------|
-| `fast` | `claude-haiku-4-5`, `gemini-2.0-flash`, `llama3.2` | Simple reasoning, tool arg generation |
-| `balanced` | `claude-sonnet-4-6`, `gpt-4o-mini`, `qwen2.5` | Most tasks |
-| `powerful` | `claude-opus-4-7`, `gpt-4o`, `o1` | Complex reasoning, synthesis |
+| `fast` | `claude-haiku-4-5`, `gemini-2.0-flash`, `command-r7b-12-2024`, `llama3.2` | Simple reasoning, tool arg generation |
+| `balanced` | `claude-sonnet-4-6`, `gpt-4o-mini`, `command-r-08-2024`, `qwen2.5` | Most tasks |
+| `powerful` | `claude-opus-4-7`, `gpt-4o`, `command-a-03-2025`, `o1` | Complex reasoning, synthesis |
 
 Configure routing in `nexus.yaml`:
 
