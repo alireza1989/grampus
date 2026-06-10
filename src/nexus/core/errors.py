@@ -135,3 +135,7 @@ class EmbeddingError(NexusError):
 
 class VersioningError(NexusError):
     """Raised when version management operations fail."""
+
+
+class RAGError(NexusError):
+    """Raised when RAG pipeline operations fail (ingestion, retrieval, store setup)."""

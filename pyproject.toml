@@ -82,6 +82,7 @@ all = [
     "pypdf>=4.0",
     "python-docx>=1.1",
     "openpyxl>=3.1",
+    "asyncpg>=0.30",
 ]
 llm = ["anthropic>=0.97", "openai>=2.0", "google-genai>=1.0", "ollama>=0.6", "cohere>=5.1.8"]
 a2a = [
@@ -92,6 +93,9 @@ documents = [
     "pypdf>=4.0",
     "python-docx>=1.1",
     "openpyxl>=3.1",
+]
+rag = [
+    "asyncpg>=0.30",
 ]
 
 [project.scripts]
@@ -116,6 +120,7 @@ dev = [
     "jinja2>=3.0",
     "sse-starlette>=2.1",
     "pytest-httpx>=0.35",
+    "asyncpg>=0.30",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -157,6 +162,7 @@ exclude = ["src/nexus/templates/"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = ["-ra", "--tb=short"]
+pythonpath = ["src", "demos"]
 markers = [
     "integration: marks tests requiring external services (docker, dapr, postgres, redis)",
     "dapr: marks tests requiring a live Dapr sidecar (set DAPR_HTTP_PORT)",
