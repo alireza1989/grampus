@@ -18,6 +18,7 @@ from nexus.cli.commands.run import run
 from nexus.cli.commands.schedule import schedule
 from nexus.cli.commands.serve import serve
 from nexus.cli.commands.state import state
+from nexus.cli.commands.version import version_group
 
 
 @click.group()
@@ -40,3 +41,4 @@ cli.add_command(schedule)
 cli.add_command(state)
 cli.add_command(playground)
 cli.add_command(redteam_command, name="redteam")
+cli.add_command(version_group, name="version")

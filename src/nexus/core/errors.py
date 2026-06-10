@@ -131,3 +131,7 @@ class RedTeamError(NexusError):
 
 class EmbeddingError(NexusError):
     """Raised when an embedding API call fails."""
+
+
+class VersioningError(NexusError):
+    """Raised when version management operations fail."""

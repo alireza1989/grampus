@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from nexus.orchestration.uncertainty.monitor import UncertaintyMonitor
     from nexus.plugins.manager import PluginManager
     from nexus.tools.executor import ToolExecutor
+    from nexus.versioning.router import VersionRouter
 
 _log = get_logger(__name__)
 
@@ -91,6 +92,7 @@ class AgentRunner:
         causal_world_model: CausalWorldModel | None = None,
         causal_tracer: CausalTracer | None = None,
         plugin_manager: PluginManager | None = None,
+        version_router: VersionRouter | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -108,6 +110,7 @@ class AgentRunner:
         self._causal_world_model = causal_world_model
         self._causal_tracer = causal_tracer
         self._plugins = plugin_manager
+        self._version_router = version_router
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -144,6 +147,14 @@ class AgentRunner:
             BudgetExceededError: Propagated from CostTracker when budget is hit.
         """
         start = time.monotonic()
+        _active_definition = agent_def
+        if self._version_router is not None:
+            with contextlib.suppress(Exception):
+                _resolved = await self._version_router.resolve(agent_def.name, user_id=user_id)
+                if _resolved is not None:
+                    _active_definition = _resolved
+        agent_def = _active_definition
+
         state = agent_state or self._build_state(agent_def, session_id)
         state.status = AgentStatus.RUNNING
         if user_id is not None:
