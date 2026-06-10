@@ -1,0 +1,50 @@
+[
+  {
+    "id": "q1",
+    "question": "What infrastructure layer does Nexus use for state management and pub/sub?",
+    "expected_topics": ["Dapr", "distributed runtime", "state management"],
+    "reference_section": "What Is Nexus?"
+  },
+  {
+    "id": "q2",
+    "question": "What are the four memory layers in Nexus?",
+    "expected_topics": ["working memory", "episodic memory", "semantic memory", "procedural memory"],
+    "reference_section": "Memory Architecture"
+  },
+  {
+    "id": "q3",
+    "question": "What trust score is assigned to tool results in Nexus memory?",
+    "expected_topics": ["0.6", "tool results", "trust score"],
+    "reference_section": "Memory Architecture"
+  },
+  {
+    "id": "q4",
+    "question": "What embedding providers does Nexus support?",
+    "expected_topics": ["OpenAI", "Cohere", "Ollama"],
+    "reference_section": "Embedding Service"
+  },
+  {
+    "id": "q5",
+    "question": "How does Nexus detect prompt injection?",
+    "expected_topics": ["regex", "heuristics", "semantic classification"],
+    "reference_section": "Safety and Observability"
+  },
+  {
+    "id": "q6",
+    "question": "What does the DebateOrchestrator do?",
+    "expected_topics": ["multi-model", "consensus", "high-stakes"],
+    "reference_section": "Orchestration"
+  },
+  {
+    "id": "q7",
+    "question": "What database does Nexus use for vector storage?",
+    "expected_topics": ["PostgreSQL", "pgvector"],
+    "reference_section": "Deployment"
+  },
+  {
+    "id": "q8",
+    "question": "What CLI commands does Nexus provide?",
+    "expected_topics": ["nexus run", "nexus eval", "nexus deploy", "nexus dev"],
+    "reference_section": "Deployment"
+  }
+]

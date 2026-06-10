@@ -710,3 +710,45 @@ interlocking components:
   store raw sample arrays, so it uses a 10%-difference heuristic rather than a true p-value;
   teams needing rigorous continuous-metric significance should call `record_eval_result` on a
   discretized pass/fail threshold and use the `eval_pass_rate` metric path instead
+
+---
+
+## ADR-026: RAG Pipeline as a First-Class Demo Template
+
+**Status:** Accepted
+
+**Context:** RAG (Retrieval-Augmented Generation) is the highest-demand agent use case in
+production deployments. Every team building with Nexus needs to index documents and answer
+questions from them. Without a complete, working reference implementation, each team
+reinvents the same pipeline — often making the same mistakes: dense-only retrieval (misses
+keyword queries), IVFFlat indexing (requires training, poor incremental performance),
+context concatenation without position-aware ordering, and no citation grounding. A
+complete template that avoids these mistakes removes the most common adoption barrier.
+
+**Decision:** Implement `demos/rag/` as a production-ready RAG template using the full
+Nexus stack. Key design choices baked in from 2025-2026 research and benchmarks:
+
+1. **Hybrid BM25 + vector search with RRF** — PostgreSQL `tsvector` provides BM25 at zero
+   additional infrastructure cost. RRF constant k=60 is the research-validated default.
+2. **HNSW over IVFFlat** — no training pass, better recall, handles incremental inserts.
+3. **Lost-in-the-middle reordering** — interleaves high-scoring chunks to start and end
+   of context window based on 2023 Stanford findings replicated across 2024-2025.
+4. **Namespace scoping as a hard requirement** — every SQL query filters by namespace,
+   preventing cross-tenant data leakage without application-level enforcement.
+5. **Dimension mismatch detection at setup time** — `RAGStore.setup()` checks existing
+   table dimensions against the embedding service, converting a silent data corruption
+   bug into a clear startup error.
+6. **Closure-based tool factory** — `make_retrieve_tool()` binds store and embedding
+   service into the tool function without global state, demonstrating the correct pattern
+   for stateful tools in Nexus.
+
+**Consequences:**
+- Template uses `asyncpg` directly for pgvector operations — Dapr state store API does
+  not expose arbitrary SQL needed for hybrid search. Added as `[rag]` optional extra.
+- Template works without Dapr sidecar (only PostgreSQL required) to minimize quickstart
+  friction. Production deployments add Dapr for embedding caching via Redis.
+- `demos/` is not type-checked by mypy (demo code, not library code). New `RAGError` in
+  `src/nexus/core/errors.py` is the only library addition from this phase.
+- Evaluation script uses LLM-as-judge (Claude) — requires Anthropic API key. The scoring
+  is intentionally simplified (2 metrics) to remain readable as a reference, not to replace
+  a full RAGAS setup in production.
