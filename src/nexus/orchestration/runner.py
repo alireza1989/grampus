@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from nexus.core.errors import OrchestrationError, UncertaintyError
+from nexus.core.errors import OrchestrationError, SafetyError, UncertaintyError
 from nexus.core.logging import get_logger
 from nexus.core.types import (
     AgentDefinition,
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from nexus.observability.metrics import NexusMetrics
     from nexus.orchestration.cost_tracker import CostSummary, CostTracker
     from nexus.orchestration.uncertainty.monitor import UncertaintyMonitor
+    from nexus.plugins.manager import PluginManager
     from nexus.tools.executor import ToolExecutor
 
 _log = get_logger(__name__)
@@ -89,6 +90,7 @@ class AgentRunner:
         graph_builder: GraphBuilder | None = None,
         causal_world_model: CausalWorldModel | None = None,
         causal_tracer: CausalTracer | None = None,
+        plugin_manager: PluginManager | None = None,
         config: RunnerConfig | None = None,
     ) -> None:
         self._model_client = model_client
@@ -105,6 +107,7 @@ class AgentRunner:
         self._graph_builder = graph_builder
         self._causal_world_model = causal_world_model
         self._causal_tracer = causal_tracer
+        self._plugins = plugin_manager
         self._config = config or RunnerConfig()
         self._waiting_sessions: dict[str, set[str]] = defaultdict(set)
         self._trace_queues: dict[str, list[asyncio.Queue[AgentEvent | None]]] = defaultdict(list)
@@ -157,6 +160,19 @@ class AgentRunner:
         )
         self._publish_trace(session_id, _evt)
 
+        if self._plugins:
+            with contextlib.suppress(Exception):
+                from nexus.plugins.types import AgentStartContext
+
+                await self._plugins.call_on_agent_start(
+                    AgentStartContext(
+                        agent_id=agent_def.name,
+                        session_id=session_id,
+                        user_input=user_input,
+                        model=agent_def.model,
+                    )
+                )
+
         if self._uncertainty_monitor:
             self._uncertainty_monitor.initialize(session_id=session_id, agent_id=agent_def.name)
 
@@ -186,9 +202,30 @@ class AgentRunner:
         try:
             for i in range(self._config.max_iterations):
                 steps = i + 1
+                _messages_for_llm = list(state.messages)
+                _llm_ctx = None
+                if self._plugins:
+                    from nexus.plugins.types import HookBlockedError, LLMCallContext
+
+                    _llm_ctx = LLMCallContext(
+                        agent_id=agent_def.name,
+                        session_id=session_id,
+                        model=agent_def.model,
+                        step=steps,
+                    )
+                    try:
+                        _messages_for_llm = await self._plugins.call_pre_llm(
+                            _llm_ctx, _messages_for_llm, None
+                        )
+                    except HookBlockedError as exc:
+                        raise SafetyError(
+                            str(exc),
+                            code="PLUGIN_BLOCKED",
+                            details={"hook": "pre_llm_call", "step": steps},
+                        ) from exc
                 _llm_start = time.monotonic()
                 response = await self._model_client.complete(
-                    messages=state.messages,
+                    messages=_messages_for_llm,
                     model=agent_def.model,
                     temperature=agent_def.temperature,
                 )
@@ -227,6 +264,12 @@ class AgentRunner:
                         step_name=f"step_{steps}",
                         model_spec=_minimal_spec(response.model),
                     )
+
+                if self._plugins and _llm_ctx is not None:
+                    with contextlib.suppress(Exception):
+                        await self._plugins.call_post_llm(
+                            _llm_ctx, response.content, response.token_usage
+                        )
 
                 state.messages.append(
                     Message(
@@ -313,6 +356,7 @@ class AgentRunner:
                         state,
                         event_log=event_log,
                         handoff_depth=_handoff_depth,
+                        step=steps,
                     )
                     tool_calls_made += len(results)
                     state.messages.append(Message(role=Role.TOOL, tool_results=results))
@@ -331,6 +375,18 @@ class AgentRunner:
                 with contextlib.suppress(Exception):
                     await self._reflexion_engine.observe_failure(
                         agent_def, user_input, exc, state, self._model_client
+                    )
+            if self._plugins:
+                with contextlib.suppress(Exception):
+                    from nexus.plugins.types import ErrorContext
+
+                    await self._plugins.call_on_error(
+                        ErrorContext(
+                            agent_id=agent_def.name,
+                            session_id=session_id,
+                            error=exc,
+                            step=steps,
+                        )
                     )
             raise
 
@@ -353,6 +409,21 @@ class AgentRunner:
         state.metadata["agent_def"] = agent_def.model_dump()
 
         await self._persist_state(agent_def, session_id, state)
+
+        if self._plugins:
+            with contextlib.suppress(Exception):
+                from nexus.plugins.types import AgentEndContext
+
+                await self._plugins.call_on_agent_end(
+                    AgentEndContext(
+                        agent_id=agent_def.name,
+                        session_id=session_id,
+                        output=final_output or "",
+                        steps_taken=steps,
+                        total_cost_usd=accumulated.cost_usd if accumulated else 0.0,
+                        duration_seconds=time.monotonic() - start,
+                    )
+                )
 
         result = ExecutionResult(
             output=final_output,
@@ -532,7 +603,9 @@ class AgentRunner:
                 for tc in tool_calls:
                     yield StreamEvent(event_type=StreamEventType.TOOL_CALL_START, tool_call=tc)
 
-                results = await self._execute_tool_calls(tool_calls, state, event_log=None)
+                results = await self._execute_tool_calls(
+                    tool_calls, state, event_log=None, step=steps
+                )
                 tool_calls_made += len(results)
                 state.messages.append(Message(role=Role.TOOL, tool_results=results))
 
@@ -715,6 +788,7 @@ class AgentRunner:
         state: AgentState | None = None,
         event_log: EventLog | None = None,
         handoff_depth: int = 0,
+        step: int = 0,
     ) -> list[ToolResult]:
         results = []
         for tc in tool_calls:
@@ -767,7 +841,40 @@ class AgentRunner:
                     )
                     if state is not None:
                         self._publish_trace(state.session_id, _evt)
-                result = await self._tool_executor.execute(tc)
+                _tool_ctx = None
+                _tc_exec = tc
+                if self._plugins:
+                    from nexus.plugins.types import HookBlockedError, ToolCallContext
+
+                    _aid = state.agent_id if state else "unknown"
+                    _sid = state.session_id if state else "unknown"
+                    _tool_ctx = ToolCallContext(
+                        agent_id=_aid, session_id=_sid, tool_name=tc.name, step=step
+                    )
+                    try:
+                        _targs = await self._plugins.call_pre_tool(_tool_ctx, dict(tc.arguments))
+                    except HookBlockedError as exc:
+                        raise SafetyError(
+                            str(exc),
+                            code="PLUGIN_BLOCKED",
+                            details={"hook": "pre_tool_call", "tool": tc.name},
+                        ) from exc
+                    _tc_exec = tc.model_copy(update={"arguments": _targs})
+                result = await self._tool_executor.execute(_tc_exec)
+                if self._plugins and _tool_ctx is not None:
+                    with contextlib.suppress(Exception):
+                        from nexus.plugins.types import ToolResultContext
+
+                        await self._plugins.call_post_tool(
+                            ToolResultContext(
+                                agent_id=_tool_ctx.agent_id,
+                                session_id=_tool_ctx.session_id,
+                                tool_name=tc.name,
+                                duration_ms=float(result.duration_ms),
+                                ok=result.error is None,
+                            ),
+                            result.output,
+                        )
                 if self._metrics:
                     self._metrics.record_tool_call(
                         tool_name=tc.name,

@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from nexus.memory.graph.consolidator import SemanticConsolidator
     from nexus.memory.lifecycle.adaptive_router import AdaptiveRetriever
     from nexus.memory.lifecycle.tier_manager import LifecycleTierManager
+    from nexus.plugins.manager import PluginManager
 
 _log = get_logger(__name__)
 
@@ -82,6 +83,7 @@ class MemoryManager:
         graph_consolidator: SemanticConsolidator | None = None,
         lifecycle_manager: LifecycleTierManager | None = None,
         adaptive_router: AdaptiveRetriever | None = None,
+        plugin_manager: PluginManager | None = None,
     ) -> None:
         self._working = working_memory
         self._episodic = episodic_memory
@@ -96,6 +98,7 @@ class MemoryManager:
         self._graph_consolidator = graph_consolidator
         self._lifecycle_manager = lifecycle_manager
         self._adaptive_router = adaptive_router
+        self._plugins = plugin_manager
 
     async def remember(
         self,
@@ -143,12 +146,32 @@ class MemoryManager:
                     hint="The content was flagged as a potential memory injection. Review the source and trust level of this write.",
                 )
 
+        _final_content = content
+        _mem_ctx: Any = None
+        if self._plugins:
+            from nexus.plugins.types import HookBlockedError, MemoryWriteContext
+
+            _mem_ctx = MemoryWriteContext(
+                agent_id=self._agent_id,
+                session_id=session_id,
+                memory_type=",".join(types),
+                source_id=source_id,
+            )
+            try:
+                _final_content = await self._plugins.call_pre_memory_write(_mem_ctx, content)
+            except HookBlockedError as exc:
+                raise MemorySecurityError(
+                    str(exc),
+                    code="PLUGIN_BLOCKED",
+                    details={"hook": "pre_memory_write", "source_id": source_id},
+                ) from exc
+
         provenance_json: str | None = provenance.model_dump_json() if provenance else None
 
         for memory_type in types:
             if memory_type == "episodic":
                 await self._episodic.store(
-                    content, session_id=session_id, provenance=provenance_json, **kwargs
+                    _final_content, session_id=session_id, provenance=provenance_json, **kwargs
                 )
                 _log.debug("memory_remembered_episodic", agent=self._agent_id)
             elif memory_type == "semantic":
@@ -156,12 +179,16 @@ class MemoryManager:
                     id=str(uuid.uuid4()),
                     subject=self._agent_id,
                     predicate="knows",
-                    object_value=content,
+                    object_value=_final_content,
                 )
                 await self._semantic.store(fact)
                 _log.debug("memory_remembered_semantic", agent=self._agent_id)
             else:
                 _log.debug("memory_remember_unknown_type", memory_type=memory_type)
+
+        if self._plugins and _mem_ctx is not None:
+            with contextlib.suppress(Exception):
+                await self._plugins.call_post_memory_write(_mem_ctx, None)
 
     async def recall(
         self,

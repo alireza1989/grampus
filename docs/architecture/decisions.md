@@ -599,3 +599,58 @@ without leaking provider-specific concepts into callers that don't need it.
   `EmbeddingService` is accepted
 - Cache keys now include a provider name prefix — existing cached embeddings are invalidated on
   upgrade (acceptable: the cache is a performance optimisation, not ground truth)
+
+---
+
+## ADR-024: Lifecycle Hook Plugin System — stdlib Entry Points with Async-Native Registry
+
+**Status:** Accepted
+
+**Context:** Production deployments of Nexus require observability integrations (Datadog, Splunk),
+compliance controls (PII redaction, audit logging, HIPAA content filtering), and cross-cutting
+concerns (rate limiting, cost allocation, canary routing) that cannot be baked into the core
+framework without creating vendor coupling. Three prior approaches were considered: (a) subclassing
+`AgentRunner` / `MemoryManager` — brittle, requires forking for each integration; (b) middleware
+wrapping via httpx-style transports — applies only to HTTP calls, misses in-process hooks; (c) event
+callbacks via `asyncio.Queue` — decoupled but no pre-hook mutation capability, no blocking support.
+None of these patterns cover the full lifecycle (start → LLM call → tool call → memory write → end →
+error) with both observational and mutating semantics.
+
+**Decision:** Implement a `src/nexus/plugins/` package providing a two-tier hook system:
+(1) **pre-hooks** (`pre_llm_call`, `pre_tool_call`, `pre_memory_write`) run sequentially in priority
+order, thread their return values as a transformation pipeline, and surface `HookBlockedError` as
+`SafetyError`/`MemorySecurityError` with `code="PLUGIN_BLOCKED"`; (2) **observational hooks**
+(`on_agent_start`, `on_agent_end`, `post_llm_call`, `post_tool_call`, `post_memory_write`,
+`on_error`) run concurrently via `asyncio.gather`, with individual plugin failures logged and
+suppressed — a broken plugin never crashes agent execution. Third-party plugins are discovered
+via `importlib.metadata.entry_points(group="nexus.plugins")`.
+
+**Key design choices:**
+1. **`plugin_manager=None` default** — `AgentRunner` and `MemoryManager` with no plugin manager
+   are behaviorally identical to pre-H49. Zero overhead for deployments that don't use plugins.
+2. **`HookBlockedError` is the only bubbling exception** — all other plugin exceptions are
+   suppressed in both pre-hooks (caught, logged, chain continues) and observational hooks
+   (gathered, logged, suppressed). This asymmetry is intentional: mutations must succeed
+   cleanly or be skipped, but observation failures must never crash the agent.
+3. **Frozen context dataclasses** — all 7 context objects are `@dataclass(frozen=True)`. Plugins
+   receive read-only contexts; they cannot modify agent state through the context object.
+4. **Inline imports under TYPE_CHECKING** — `PluginManager` appears only in `TYPE_CHECKING`
+   blocks in `runner.py` and `memory/manager.py`; actual plugin types are imported inline inside
+   `if self._plugins:` guards. This eliminates any circular import risk.
+5. **Priority controls sequential order** — lower `priority` integer runs earlier in pre-hooks.
+   Observational hooks use insertion order (priority-independence for concurrent dispatch).
+6. **`NexusPlugin` base class with no-op hooks** — subclasses override only the hooks they need;
+   all others are silent pass-throughs by default.
+
+**Consequences:**
+- Zero new required dependencies — stdlib `importlib.metadata`, `asyncio`, `dataclasses` only
+- Third-party plugins ship as Python packages with `[project.entry-points."nexus.plugins"]` in
+  their `pyproject.toml`; `create_manager_from_entry_points()` loads them automatically
+- Pre-hook mutation (messages, tool arguments, memory content) enables compliance plugins to
+  redact PII, inject system context, or rewrite arguments without modifying agent code
+- The `HookBlockedError` → `SafetyError(code="PLUGIN_BLOCKED")` / `MemorySecurityError(code=
+  "PLUGIN_BLOCKED")` mapping gives callers a machine-readable signal that is distinct from
+  model errors, tool errors, and budget errors
+- `contextlib.suppress(Exception)` wraps all observational hook calls in runner and memory
+  manager — plugin failures in `on_agent_start`, `post_llm_call`, etc. are logged but never
+  surface to the caller
