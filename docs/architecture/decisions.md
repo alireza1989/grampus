@@ -561,3 +561,41 @@ not on PATH. No tree-sitter (binary dep, overkill for Python-first framework). N
 - Subprocess runners are tested with mocked subprocess — integration against real ruff/mypy is
   handled implicitly by the existing CI which runs ruff and mypy on every push
 - Symbol search is O(files) — the 200-file default cap keeps it interactive-speed for typical repos
+
+---
+
+## ADR-023: Multi-Provider Embedding Service with Per-Memory-Type Routing
+
+**Status:** Accepted
+
+**Context:** `EmbeddingService` was hardwired to a single OpenAI client. Three production problems
+motivated this change: (1) no way to use cheaper/faster local embeddings (Ollama) for low-stakes
+memory types like working memory while keeping a higher-quality model for semantic memory; (2) no
+way to use Cohere's domain-tuned Embed v3 models; (3) a silent dimension-mismatch bug — switching
+providers without updating the pgvector column dimensions silently drops all writes with no error,
+confirmed in multiple production incident reports (2025–2026). Additionally, Cohere Embed v3+
+requires an `input_type` parameter (`"search_document"` vs `"search_query"`) that the old single-
+provider API had no mechanism to expose — omitting it is a silent quality degradation.
+
+**Decision:** Introduce `EmbeddingProvider` ABC with three concrete implementations
+(`OpenAIEmbeddingProvider`, `CohereEmbeddingProvider`, `OllamaEmbeddingProvider`). Refactor
+`EmbeddingService` to wrap any provider while preserving the existing `.embed()` / `.embed_batch()`
+interface exactly — all call sites are unchanged. Add `.dimensions` property to surface the
+provider's output dimension for pgvector validation at setup time, not at write time. Add
+`EmbeddingRouter` for optional per-memory-type provider routing (opt-in; existing code that passes
+a single `EmbeddingService` is unaffected). Add an optional `input_type` parameter to `embed()` and
+`embed_batch()` so Cohere's `search_query` / `search_document` distinction is correctly handled
+without leaking provider-specific concepts into callers that don't need it.
+
+**Consequences:**
+- All existing `.embed(text)` call sites continue to work without modification
+- `OllamaEmbeddingProvider` uses httpx (already a core dep) — zero new required dependencies
+- `OpenAIEmbeddingProvider` and `CohereEmbeddingProvider` require their respective optional
+  extras (`[openai]`, `[cohere]`)
+- `.dimensions` property enables pgvector setup code to validate column width before the first
+  write, converting the silent dimension-mismatch bug into a startup-time error
+- `EmbeddingRouter` is duck-type compatible with `EmbeddingService` for the three shared methods
+  (`.embed()`, `.embed_batch()`, `.dimensions`), so it can be injected anywhere an
+  `EmbeddingService` is accepted
+- Cache keys now include a provider name prefix — existing cached embeddings are invalidated on
+  upgrade (acceptable: the cache is a performance optimisation, not ground truth)

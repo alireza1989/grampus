@@ -1,4 +1,4 @@
-"""Embedding service with Redis cache backed by Dapr."""
+"""Embedding service with provider abstraction and Dapr-backed cache."""
 
 from __future__ import annotations
 
@@ -8,64 +8,86 @@ import math
 from typing import Any
 
 from nexus.core.logging import get_logger
+from nexus.memory.embedding_providers import EmbeddingProvider
 
 _log = get_logger(__name__)
 
-_DEFAULT_MODEL = "text-embedding-3-small"
 _CACHE_ENTITY = "embedding_cache"
 
 
 class EmbeddingService:
-    """Compute text embeddings via OpenAI API with Dapr-backed caching.
+    """Unified embedding facade backed by any EmbeddingProvider.
 
-    Cache keys are SHA-256(model + ":" + text) so switching models never
-    returns stale embeddings.
+    Preserved interface: .embed(text), .embed_batch(texts).
+    All call sites in the memory layer are unchanged.
+    New: .dimensions property for pgvector column validation.
+    New: input_type param on embed/embed_batch (used by Cohere; ignored by others).
 
     Args:
-        openai_client: Async OpenAI client with ``embeddings.create``.
-        cache_store: A DaprStateStore (or duck-typed equivalent) for caching.
-        model: Embedding model name.
+        provider: Any EmbeddingProvider implementation.
+        cache_store: Dapr state store (or duck-typed equivalent) for caching.
+        openai_client: Deprecated — pass provider= instead. Accepted for
+            backwards compatibility; wraps the client in OpenAIEmbeddingProvider.
+        model: Model name; only used with the deprecated openai_client path.
     """
 
     def __init__(
         self,
-        openai_client: Any,
-        cache_store: Any,
+        provider: EmbeddingProvider | None = None,
+        cache_store: Any = None,
         *,
-        model: str = _DEFAULT_MODEL,
+        openai_client: Any = None,
+        model: str = "text-embedding-3-small",
     ) -> None:
-        self._client = openai_client
-        self._cache = cache_store
-        self._model = model
+        if provider is None and openai_client is not None:
+            from nexus.memory.embedding_providers import OpenAIEmbeddingProvider
 
-    async def embed(self, text: str) -> list[float]:
+            provider = OpenAIEmbeddingProvider(openai_client, model)
+        if provider is None:
+            raise TypeError("provider is required (or pass openai_client= for backwards compat)")
+        if cache_store is None:
+            raise TypeError("cache_store is required")
+        self._provider: EmbeddingProvider = provider
+        self._cache: Any = cache_store
+
+    @property
+    def dimensions(self) -> int:
+        """Number of dimensions in vectors produced by this service."""
+        return self._provider.dimensions
+
+    @property
+    def model(self) -> str:
+        """Model identifier forwarded from the provider (for logging)."""
+        m = getattr(self._provider, "_model", None)
+        if isinstance(m, str):
+            return m
+        return self._provider.provider_name
+
+    async def embed(self, text: str, *, input_type: str = "search_document") -> list[float]:
         """Return the embedding vector for *text*, using the cache when possible."""
-        cache_key = _cache_key(self._model, text)
-        cached = await self._load_from_cache(cache_key)
+        key = _cache_key(self._provider.provider_name, self.model, text)
+        cached = await self._load_from_cache(key)
         if cached is not None:
             return cached
-        embedding = await self._call_api(text)
-        await self._save_to_cache(cache_key, embedding)
+        vectors = await self._provider.embed_batch([text], input_type=input_type)
+        embedding = vectors[0]
+        await self._save_to_cache(key, embedding)
         return embedding
 
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        """Return embeddings for all texts, parallelising API calls for cache misses."""
+    async def embed_batch(
+        self, texts: list[str], *, input_type: str = "search_document"
+    ) -> list[list[float]]:
+        """Return embeddings for all texts. Cache hits are served without API calls."""
         import asyncio
 
-        return list(await asyncio.gather(*[self.embed(t) for t in texts]))
+        async def _one(t: str) -> list[float]:
+            return await self.embed(t, input_type=input_type)
+
+        return list(await asyncio.gather(*[_one(t) for t in texts]))
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
-
-    async def _call_api(self, text: str) -> list[float]:
-        response = await self._client.embeddings.create(
-            input=text,
-            model=self._model,
-        )
-        embedding: list[float] = response.data[0].embedding
-        _log.debug("embedding_computed", model=self._model, text_len=len(text))
-        return embedding
 
     async def _load_from_cache(self, key: str) -> list[float] | None:
         result, _ = await self._cache.get(_CACHE_ENTITY, key, _CacheEntry)
@@ -87,8 +109,8 @@ class _CacheEntry:
     data: bytes
 
 
-def _cache_key(model: str, text: str) -> str:
-    return hashlib.sha256(f"{model}:{text}".encode()).hexdigest()
+def _cache_key(provider: str, model: str, text: str) -> str:
+    return hashlib.sha256(f"{provider}:{model}:{text}".encode()).hexdigest()
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:

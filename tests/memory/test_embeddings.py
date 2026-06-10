@@ -9,6 +9,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from nexus.memory.embedding_providers import OpenAIEmbeddingProvider
 from nexus.memory.embeddings import EmbeddingService, cosine_similarity
 
 FAKE_EMBEDDING = [0.1, 0.2, 0.3, 0.4, 0.5]
@@ -39,7 +40,8 @@ def mock_cache() -> AsyncMock:
 
 @pytest.fixture()
 def service(mock_openai: AsyncMock, mock_cache: AsyncMock) -> EmbeddingService:
-    return EmbeddingService(openai_client=mock_openai, cache_store=mock_cache)
+    provider = OpenAIEmbeddingProvider(client=mock_openai)
+    return EmbeddingService(provider=provider, cache_store=mock_cache)
 
 
 class TestCosineSimilarity:
@@ -116,7 +118,6 @@ class TestEmbeddingServiceEmbed:
     async def test_same_text_called_twice_api_once(
         self, mock_openai: AsyncMock, mock_cache: AsyncMock
     ) -> None:
-
         cached_data: bytes | None = None
 
         async def fake_get(entity_type: str, key: str, cls: type) -> tuple:  # type: ignore
@@ -134,7 +135,10 @@ class TestEmbeddingServiceEmbed:
         mock_cache.get = AsyncMock(side_effect=fake_get)
         mock_cache.save = AsyncMock(side_effect=fake_save)
 
-        service = EmbeddingService(openai_client=mock_openai, cache_store=mock_cache)
+        service = EmbeddingService(
+            provider=OpenAIEmbeddingProvider(client=mock_openai),
+            cache_store=mock_cache,
+        )
         await service.embed("test text")
         await service.embed("test text")
         assert mock_openai.embeddings.create.call_count == 1
@@ -149,6 +153,11 @@ class TestEmbeddingServiceEmbed:
         result = await service.embed("hello")
         assert isinstance(result, list)
         assert all(isinstance(x, float) for x in result)
+
+    def test_service_dimensions_returns_provider_dimensions(
+        self, service: EmbeddingService
+    ) -> None:
+        assert service.dimensions == 1536
 
 
 class TestEmbeddingServiceEmbedBatch:
@@ -177,18 +186,15 @@ class TestEmbeddingServiceEmbedBatch:
         self, mock_openai: AsyncMock, mock_cache: AsyncMock
     ) -> None:
         s1 = EmbeddingService(
-            openai_client=mock_openai,
+            provider=OpenAIEmbeddingProvider(client=mock_openai, model="text-embedding-3-small"),
             cache_store=mock_cache,
-            model="text-embedding-3-small",
         )
         s2 = EmbeddingService(
-            openai_client=mock_openai,
+            provider=OpenAIEmbeddingProvider(client=mock_openai, model="text-embedding-3-large"),
             cache_store=mock_cache,
-            model="text-embedding-3-large",
         )
         mock_cache.get.return_value = (None, "")
         await s1.embed("hello")
         await s2.embed("hello")
         keys = [str(call) for call in mock_cache.get.call_args_list]
-        # The two calls should use different keys
         assert keys[0] != keys[1]

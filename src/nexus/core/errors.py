@@ -127,3 +127,7 @@ class CausalError(NexusError):
 
 class RedTeamError(NexusError):
     """Raised when a red-team campaign cannot be executed."""
+
+
+class EmbeddingError(NexusError):
+    """Raised when an embedding API call fails."""

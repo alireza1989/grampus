@@ -2,6 +2,13 @@
 
 from nexus.memory.auditor import AuditReport, MemoryAuditor
 from nexus.memory.consolidation import ConsolidationPipeline, ConsolidationResult
+from nexus.memory.embedding_providers import (
+    CohereEmbeddingProvider,
+    EmbeddingProvider,
+    EmbeddingRouter,
+    OllamaEmbeddingProvider,
+    OpenAIEmbeddingProvider,
+)
 from nexus.memory.embeddings import EmbeddingService, cosine_similarity
 from nexus.memory.episodic import EpisodicMemory
 from nexus.memory.manager import MemoryManager, MemoryRecallResult
@@ -27,6 +34,11 @@ from nexus.memory.working import WorkingMemory
 
 __all__ = [
     "AuditReport",
+    "CohereEmbeddingProvider",
+    "EmbeddingProvider",
+    "EmbeddingRouter",
+    "OllamaEmbeddingProvider",
+    "OpenAIEmbeddingProvider",
     "ConsolidationPipeline",
     "ConsolidationResult",
     "EmbeddingService",
