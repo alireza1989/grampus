@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.evaluation.assertions import AssertionResult
-from nexus.evaluation.baseline import RegressionReport
-from nexus.evaluation.reporter import EvalReport, EvalReporter, ReportFormat
-from nexus.evaluation.suite import CaseResult, SuiteResult
+from grampus.evaluation.assertions import AssertionResult
+from grampus.evaluation.baseline import RegressionReport
+from grampus.evaluation.reporter import EvalReport, EvalReporter, ReportFormat
+from grampus.evaluation.suite import CaseResult, SuiteResult
 
 
 def _make_suite_result(

@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.manager — MemoryManager unified interface."""
+"""Tests for grampus.memory.manager — MemoryManager unified interface."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.types import Message, Role
-from nexus.memory.consolidation import ConsolidationResult
-from nexus.memory.manager import MemoryManager, MemoryRecallResult
-from nexus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
+from grampus.core.types import Message, Role
+from grampus.memory.consolidation import ConsolidationResult
+from grampus.memory.manager import MemoryManager, MemoryRecallResult
+from grampus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -287,7 +287,7 @@ class TestRecall:
         manager: MemoryManager,
         mock_sem_retriever: AsyncMock,
     ) -> None:
-        from nexus.memory.semantic_retriever import ScoredFact
+        from grampus.memory.semantic_retriever import ScoredFact
 
         fact = make_semantic_fact()
         scored = ScoredFact(

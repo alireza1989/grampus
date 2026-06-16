@@ -1,4 +1,4 @@
-"""Tests for nexus version CLI subcommands."""
+"""Tests for grampus version CLI subcommands."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.core.types import AgentDefinition
-from nexus.versioning.types import (
+from grampus.cli.main import cli
+from grampus.core.types import AgentDefinition
+from grampus.versioning.types import (
     ABTestConfig,
     AgentVersion,
     DeploymentRecord,
@@ -43,7 +43,7 @@ class TestVersionListCommand:
         mock_mgr = MagicMock()
         mock_mgr.list_versions = AsyncMock(return_value=versions)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "list", "cli-agent"])
 
         assert result.exit_code == 0
@@ -59,7 +59,7 @@ class TestVersionListCommand:
         mock_mgr = MagicMock()
         mock_mgr.list_versions = AsyncMock(return_value=versions)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "list", "cli-agent"])
 
         assert result.exit_code == 0
@@ -80,10 +80,8 @@ class TestVersionDeployCommand:
         mock_mgr = MagicMock()
         mock_mgr.deploy = AsyncMock(return_value=record)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
-            result = runner.invoke(
-                cli, ["version", "deploy", v.version_id, "--agent", "cli-agent"]
-            )
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+            result = runner.invoke(cli, ["version", "deploy", v.version_id, "--agent", "cli-agent"])
 
         assert result.exit_code == 0
         assert "Deployed" in result.output
@@ -104,7 +102,7 @@ class TestVersionRollbackCommand:
         mock_mgr = MagicMock()
         mock_mgr.rollback = AsyncMock(return_value=record)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "rollback", "cli-agent"])
 
         assert result.exit_code == 0
@@ -112,7 +110,7 @@ class TestVersionRollbackCommand:
         assert v.version_id[:12] in result.output or v.version_id in result.output
 
     def test_rollback_versioning_error_exits_one(self) -> None:
-        from nexus.core.errors import VersioningError
+        from grampus.core.errors import VersioningError
 
         runner = CliRunner()
         mock_mgr = MagicMock()
@@ -120,7 +118,7 @@ class TestVersionRollbackCommand:
             side_effect=VersioningError("No prior", code="NO_PRIOR_VERSION")
         )
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "rollback", "cli-agent"])
 
         assert result.exit_code == 1
@@ -143,7 +141,7 @@ class TestVersionDiffCommand:
         mock_mgr = MagicMock()
         mock_mgr.diff = AsyncMock(return_value=diff)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "diff", "aaa", "bbb", "--agent", "cli-agent"])
 
         assert result.exit_code == 0
@@ -165,7 +163,7 @@ class TestVersionDiffCommand:
         mock_mgr = MagicMock()
         mock_mgr.diff = AsyncMock(return_value=diff)
 
-        with patch("nexus.cli.commands.version._build_version_manager", return_value=mock_mgr):
+        with patch("grampus.cli.commands.version._build_version_manager", return_value=mock_mgr):
             result = runner.invoke(cli, ["version", "diff", "aaa", "aaa", "--agent", "cli-agent"])
 
         assert result.exit_code == 0
@@ -187,7 +185,7 @@ class TestVersionABStartCommand:
         mock_ab_mgr = MagicMock()
         mock_ab_mgr.start_test = AsyncMock(return_value=cfg)
 
-        with patch("nexus.cli.commands.version._build_ab_manager", return_value=mock_ab_mgr):
+        with patch("grampus.cli.commands.version._build_ab_manager", return_value=mock_ab_mgr):
             result = runner.invoke(
                 cli,
                 [
@@ -209,8 +207,8 @@ class TestVersionABStartCommand:
 
 class TestVersionABStatusCommand:
     def test_ab_status_prints_metrics(self) -> None:
-        from nexus.versioning.metrics import VersionMetrics
-        from nexus.versioning.types import ABTestResult
+        from grampus.versioning.metrics import VersionMetrics
+        from grampus.versioning.types import ABTestResult
 
         runner = CliRunner()
         ab_result = ABTestResult(
@@ -230,7 +228,7 @@ class TestVersionABStatusCommand:
         mock_ab_mgr = MagicMock()
         mock_ab_mgr.evaluate = AsyncMock(return_value=ab_result)
 
-        with patch("nexus.cli.commands.version._build_ab_manager", return_value=mock_ab_mgr):
+        with patch("grampus.cli.commands.version._build_ab_manager", return_value=mock_ab_mgr):
             result = runner.invoke(cli, ["version", "ab-status", "exp-123"])
 
         assert result.exit_code == 0

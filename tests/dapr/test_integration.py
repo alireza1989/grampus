@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.dapr.client import DaprGateway
-from nexus.dapr.health import is_sidecar_healthy, wait_for_sidecar
-from nexus.dapr.lock import DaprLock
-from nexus.dapr.state import DaprStateStore
+from grampus.dapr.client import DaprGateway
+from grampus.dapr.health import is_sidecar_healthy, wait_for_sidecar
+from grampus.dapr.lock import DaprLock
+from grampus.dapr.state import DaprStateStore
 
 try:
     from pydantic import BaseModel
@@ -68,7 +68,7 @@ async def test_state_delete(state_store: DaprStateStore) -> None:
 
 @pytest.mark.integration
 async def test_state_optimistic_concurrency(state_store: DaprStateStore) -> None:
-    from nexus.core.errors import ConcurrencyError
+    from grampus.core.errors import ConcurrencyError
 
     item = _Item(name="concurrent", count=1)
     await state_store.save("item", "it-cc", item)
@@ -93,7 +93,7 @@ async def test_state_bulk_get_set(state_store: DaprStateStore) -> None:
 
 @pytest.mark.integration
 async def test_distributed_lock(gateway: DaprGateway) -> None:
-    from nexus.core.errors import LockAcquisitionError
+    from grampus.core.errors import LockAcquisitionError
 
     lock1 = DaprLock(
         gateway=gateway,

@@ -1,11 +1,11 @@
-"""Tests for nexus.tools.mcp_client — MCPClient."""
+"""Tests for grampus.tools.mcp_client — MCPClient."""
 
 from __future__ import annotations
 
 import httpx
 
-from nexus.core.types import ToolDefinition, ToolResult
-from nexus.tools.mcp_client import MCPClient
+from grampus.core.types import ToolDefinition, ToolResult
+from grampus.tools.mcp_client import MCPClient
 
 SERVER_URL = "http://mcp-server"
 

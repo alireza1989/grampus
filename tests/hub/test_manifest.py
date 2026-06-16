@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from nexus.hub.manifest import TemplateManifest, TemplateParameter
+from grampus.hub.manifest import TemplateManifest, TemplateParameter
 
 
 class TestTemplateParameter:
@@ -27,7 +27,7 @@ class TestTemplateParameter:
 
 class TestTemplateManifest:
     def _write_yaml(self, tmp_path: Path, content: str) -> Path:
-        p = tmp_path / "nexus-template.yaml"
+        p = tmp_path / "grampus-template.yaml"
         p.write_text(textwrap.dedent(content))
         return p
 
@@ -127,7 +127,7 @@ class TestTemplateManifest:
         )
         # Verify yaml.safe_load is used (not bare yaml.load)
         with patch(
-            "nexus.hub.manifest.yaml.safe_load", wraps=__import__("yaml").safe_load
+            "grampus.hub.manifest.yaml.safe_load", wraps=__import__("yaml").safe_load
         ) as mock_safe:
             TemplateManifest.from_yaml(yaml_path)
             mock_safe.assert_called_once()

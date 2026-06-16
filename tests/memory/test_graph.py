@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.graph — GraphBuilder, SemanticConsolidator, GraphRetriever."""
+"""Tests for grampus.memory.graph — GraphBuilder, SemanticConsolidator, GraphRetriever."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from nexus.memory.graph.builder import GraphBuilder
-from nexus.memory.graph.consolidator import SemanticConsolidator
-from nexus.memory.graph.retriever import GraphRetriever
-from nexus.memory.graph.types import (
+from grampus.memory.graph.builder import GraphBuilder
+from grampus.memory.graph.consolidator import SemanticConsolidator
+from grampus.memory.graph.retriever import GraphRetriever
+from grampus.memory.graph.types import (
     ConceptNode,
     EventGraph,
     EventNode,

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import SafetyError
-from nexus.core.types import ToolCall, ToolResult
-from nexus.safety.action_guard import ActionPolicy, SafetyActionGuard
-from nexus.safety.injection import PromptInjectionDetector
-from nexus.safety.pii import PIIAction, PIIDetector, PIIType
-from nexus.safety.pipeline import SafetyPipeline, SafetyViolation
+from grampus.core.errors import SafetyError
+from grampus.core.types import ToolCall, ToolResult
+from grampus.safety.action_guard import ActionPolicy, SafetyActionGuard
+from grampus.safety.injection import PromptInjectionDetector
+from grampus.safety.pii import PIIAction, PIIDetector, PIIType
+from grampus.safety.pipeline import SafetyPipeline, SafetyViolation
 
 
 def _make_pipeline(

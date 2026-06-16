@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition
-from nexus.server.app import create_app
+from grampus.core.types import AgentDefinition
+from grampus.server.app import create_app
 
 
 @pytest.fixture()

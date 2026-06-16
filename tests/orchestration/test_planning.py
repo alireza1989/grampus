@@ -13,9 +13,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import PlanningError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.errors import PlanningError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     AgentState,
     AgentStatus,
@@ -24,13 +24,13 @@ from nexus.core.types import (
     Role,
     TokenUsage,
 )
-from nexus.orchestration.nodes import planning_node
-from nexus.orchestration.planning.executor import SubGoalExecutor
-from nexus.orchestration.planning.lookahead import LookaheadSimulator
-from nexus.orchestration.planning.planner import Planner
-from nexus.orchestration.planning.replanner import Replanner
-from nexus.orchestration.planning.runner import PlanningRunner
-from nexus.orchestration.planning.types import (
+from grampus.orchestration.nodes import planning_node
+from grampus.orchestration.planning.executor import SubGoalExecutor
+from grampus.orchestration.planning.lookahead import LookaheadSimulator
+from grampus.orchestration.planning.planner import Planner
+from grampus.orchestration.planning.replanner import Replanner
+from grampus.orchestration.planning.runner import PlanningRunner
+from grampus.orchestration.planning.types import (
     Plan,
     PlanningConfig,
     PlanResult,
@@ -39,7 +39,7 @@ from nexus.orchestration.planning.types import (
     VerificationResult,
     build_completed_summary,
 )
-from nexus.orchestration.planning.verifier import PostconditionVerifier
+from grampus.orchestration.planning.verifier import PostconditionVerifier
 
 # ---------------------------------------------------------------------------
 # Helpers

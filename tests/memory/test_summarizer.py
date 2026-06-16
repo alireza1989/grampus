@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.summarizer — conversation compression strategies."""
+"""Tests for grampus.memory.summarizer — conversation compression strategies."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import Message, Role, TokenUsage
-from nexus.memory.summarizer import SummarizationStrategy, Summarizer
-from nexus.memory.token_counter import TokenCounter
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import Message, Role, TokenUsage
+from grampus.memory.summarizer import SummarizationStrategy, Summarizer
+from grampus.memory.token_counter import TokenCounter
 
 
 def make_model_response(content: str) -> ModelResponse:

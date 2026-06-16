@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from nexus.core.errors import HandoffError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.errors import HandoffError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ExecutionResult,
@@ -20,8 +20,8 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
-from nexus.observability.events import EventLog, EventType
-from nexus.orchestration.handoff import (
+from grampus.observability.events import EventLog, EventType
+from grampus.orchestration.handoff import (
     AgentRegistry,
     HandoffContext,
     HandoffExecutor,
@@ -31,7 +31,7 @@ from nexus.orchestration.handoff import (
     _sanitize_context,
     create_handoff_tool,
 )
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -186,7 +186,7 @@ class TestCreateHandoffTool:
         assert summary_param.required is False
 
     def test_returns_tool_definition_instance(self) -> None:
-        from nexus.core.types import ToolDefinition
+        from grampus.core.types import ToolDefinition
 
         tool = create_handoff_tool("x", "desc")
         assert isinstance(tool, ToolDefinition)
@@ -364,7 +364,7 @@ class TestHandoffExecutor:
         executor = HandoffExecutor(registry)
 
         with patch(
-            "nexus.orchestration.handoff._sanitize_context", wraps=_sanitize_context
+            "grampus.orchestration.handoff._sanitize_context", wraps=_sanitize_context
         ) as mock_sanitize:
             req = HandoffRequest(
                 source_agent_id="source",
@@ -593,8 +593,8 @@ class TestA2AEndpoints:
     def _make_client(self, with_executor: bool = False) -> Any:
         from fastapi.testclient import TestClient
 
-        from nexus.orchestration.a2a.registry import AgentRegistry as A2ARegistry
-        from nexus.server.app import create_app
+        from grampus.orchestration.a2a.registry import AgentRegistry as A2ARegistry
+        from grampus.server.app import create_app
 
         runner = MagicMock()
         runner.run = AsyncMock(return_value=_execution_result("A2A done."))
@@ -611,11 +611,11 @@ class TestA2AEndpoints:
 
         executor = task_store = None
         if with_executor:
-            from nexus.orchestration.a2a.executor import NexusA2AExecutor
-            from nexus.orchestration.a2a.task_store import NexusTaskStore
+            from grampus.orchestration.a2a.executor import GrampusA2AExecutor
+            from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-            executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
-            task_store = NexusTaskStore()
+            executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
+            task_store = GrampusTaskStore()
 
         app = create_app(
             runner,

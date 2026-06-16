@@ -1,27 +1,27 @@
-"""Tests for the hint field added to NexusError and its subclasses."""
+"""Tests for the hint field added to GrampusError and its subclasses."""
 
 from __future__ import annotations
 
 import pytest
 from click.testing import CliRunner
 
-from nexus.core.errors import (
+from grampus.core.errors import (
     BudgetExceededError,
     ConfigError,
-    NexusError,
+    GrampusError,
     OrchestrationError,
     ToolNotFoundError,
 )
-from nexus.tools.registry import ToolRegistry
+from grampus.tools.registry import ToolRegistry
 
 
 class TestHintOnBase:
-    def test_nexus_error_default_hint_is_empty_string(self) -> None:
-        err = NexusError("msg", code="X")
+    def test_grampus_error_default_hint_is_empty_string(self) -> None:
+        err = GrampusError("msg", code="X")
         assert err.hint == ""
 
-    def test_nexus_error_hint_stored(self) -> None:
-        err = NexusError("msg", code="X", hint="do this")
+    def test_grampus_error_hint_stored(self) -> None:
+        err = GrampusError("msg", code="X", hint="do this")
         assert err.hint == "do this"
 
     def test_subclass_accepts_hint(self) -> None:
@@ -33,7 +33,7 @@ class TestHintOnBase:
         assert str(err) == "msg"
 
     def test_hint_defaults_do_not_break_existing_construction(self) -> None:
-        err = NexusError("msg", code="X", details={"k": "v"})
+        err = GrampusError("msg", code="X", details={"k": "v"})
         assert err.hint == ""
         assert err.details == {"k": "v"}
 
@@ -65,7 +65,9 @@ class TestHintOnRaiseSites:
 class TestCliHintOutput:
     def test_cli_prints_hint_when_present(self) -> None:
         runner = CliRunner()
-        exc = ConfigError("file not found", code="CONFIG_NOT_FOUND", hint="Run 'nexus init' first.")
+        exc = ConfigError(
+            "file not found", code="CONFIG_NOT_FOUND", hint="Run 'grampus init' first."
+        )
 
         with runner.isolated_filesystem():
             result = runner.invoke(
@@ -74,7 +76,7 @@ class TestCliHintOutput:
 
         assert "Error:" in result.output
         assert "Hint:" in result.output
-        assert "nexus init" in result.output
+        assert "grampus init" in result.output
 
     def test_cli_no_hint_line_when_hint_empty(self) -> None:
         runner = CliRunner()
@@ -90,13 +92,13 @@ class TestCliHintOutput:
 
 
 def _make_echo_command(exc: Exception):  # type: ignore[return]
-    """Return a tiny Click command that calls _print_nexus_error with exc."""
+    """Return a tiny Click command that calls _print_grampus_error with exc."""
     import click
 
-    from nexus.cli.commands.run import _print_nexus_error
+    from grampus.cli.commands.run import _print_grampus_error
 
     @click.command()
     def _cmd() -> None:
-        _print_nexus_error(exc)
+        _print_grampus_error(exc)
 
     return _cmd

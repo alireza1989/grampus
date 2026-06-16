@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError
-from nexus.core.types import TokenUsage
-from nexus.orchestration.cost_tracker import CostEvent, CostTracker
-from nexus.orchestration.model_router import ModelSpec, ModelTier
+from grampus.core.errors import BudgetExceededError
+from grampus.core.types import TokenUsage
+from grampus.orchestration.cost_tracker import CostEvent, CostTracker
+from grampus.orchestration.model_router import ModelSpec, ModelTier
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -118,7 +118,7 @@ class TestCostTrackerRecord:
         pubsub.publish.assert_awaited_once()
         topic_arg = pubsub.publish.call_args[0][0]
         event_arg = pubsub.publish.call_args[0][1]
-        assert topic_arg == "nexus.cost.events"
+        assert topic_arg == "grampus.cost.events"
         assert isinstance(event_arg, CostEvent)
         assert event_arg.model_id == "model-x"
         assert pytest.approx(event_arg.cost_usd) == 0.01

@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from click.testing import CliRunner
 from pydantic import SecretStr
 
-from nexus.cli.main import cli
-from nexus.cli.playground.session import PlaygroundSession, PlaygroundTurn
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import StreamChunk, TokenUsage
+from grampus.cli.main import cli
+from grampus.cli.playground.session import PlaygroundSession, PlaygroundTurn
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import StreamChunk, TokenUsage
 
 
 def _usage(model: str = "test") -> TokenUsage:
@@ -57,8 +57,8 @@ class TestPlaygroundRun:
         runner = CliRunner()
         client = _mock_client()
         with (
-            patch("nexus.cli.commands.playground._load_config", return_value=_config()),
-            patch("nexus.cli.commands.playground.make_client", return_value=client),
+            patch("grampus.cli.commands.playground._load_config", return_value=_config()),
+            patch("grampus.cli.commands.playground.make_client", return_value=client),
         ):
             result = runner.invoke(
                 cli, ["playground", "run", "What is 2+2?", "--model", "llama3.2"]
@@ -70,8 +70,8 @@ class TestPlaygroundRun:
         runner = CliRunner()
         client = _mock_client()
         with (
-            patch("nexus.cli.commands.playground._load_config", return_value=_config()),
-            patch("nexus.cli.commands.playground.make_client", return_value=client),
+            patch("grampus.cli.commands.playground._load_config", return_value=_config()),
+            patch("grampus.cli.commands.playground.make_client", return_value=client),
         ):
             result = runner.invoke(
                 cli,
@@ -84,8 +84,8 @@ class TestPlaygroundRun:
         runner = CliRunner()
         client = _mock_client()
         with (
-            patch("nexus.cli.commands.playground._load_config", return_value=_config()),
-            patch("nexus.cli.commands.playground.make_client", return_value=client),
+            patch("grampus.cli.commands.playground._load_config", return_value=_config()),
+            patch("grampus.cli.commands.playground.make_client", return_value=client),
         ):
             result = runner.invoke(
                 cli,
@@ -102,8 +102,8 @@ class TestPlaygroundCompare:
             return _mock_client(content=f"Answer from {model}")
 
         with (
-            patch("nexus.cli.commands.playground._load_config", return_value=_config()),
-            patch("nexus.cli.playground.repl.make_client", side_effect=_factory),
+            patch("grampus.cli.commands.playground._load_config", return_value=_config()),
+            patch("grampus.cli.playground.repl.make_client", side_effect=_factory),
         ):
             result = runner.invoke(
                 cli,
@@ -121,8 +121,8 @@ class TestPlaygroundCompare:
             return _mock_client()
 
         with (
-            patch("nexus.cli.commands.playground._load_config", return_value=_config()),
-            patch("nexus.cli.playground.repl.make_client", side_effect=_factory),
+            patch("grampus.cli.commands.playground._load_config", return_value=_config()),
+            patch("grampus.cli.playground.repl.make_client", side_effect=_factory),
         ):
             result = runner.invoke(
                 cli,
@@ -136,7 +136,7 @@ class TestPlaygroundCompare:
 class TestPlaygroundSessions:
     def test_playground_sessions_empty(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        with patch("nexus.cli.commands.playground._SESSIONS_DIR", tmp_path):
+        with patch("grampus.cli.commands.playground._SESSIONS_DIR", tmp_path):
             result = runner.invoke(cli, ["playground", "sessions"])
         assert result.exit_code == 0, result.output
         assert "no" in result.output.lower() or result.output.strip() == ""
@@ -145,7 +145,7 @@ class TestPlaygroundSessions:
         s = PlaygroundSession(name="my-test-sess", model="m")
         s.save(directory=tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.playground._SESSIONS_DIR", tmp_path):
+        with patch("grampus.cli.commands.playground._SESSIONS_DIR", tmp_path):
             result = runner.invoke(cli, ["playground", "sessions"])
         assert result.exit_code == 0, result.output
         assert "my-test-sess" in result.output
@@ -170,7 +170,7 @@ class TestPlaygroundShow:
     def test_playground_show_transcript(self, tmp_path: Path) -> None:
         session = self._save_session(tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.playground.PlaygroundSession") as mock_cls:
+        with patch("grampus.cli.commands.playground.PlaygroundSession") as mock_cls:
             mock_cls.load.return_value = session
             result = runner.invoke(cli, ["playground", "show", "show-test"])
         assert result.exit_code == 0, result.output
@@ -180,7 +180,7 @@ class TestPlaygroundShow:
     def test_playground_show_json(self, tmp_path: Path) -> None:
         session = self._save_session(tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.playground.PlaygroundSession") as mock_cls:
+        with patch("grampus.cli.commands.playground.PlaygroundSession") as mock_cls:
             mock_cls.load.return_value = session
             result = runner.invoke(cli, ["playground", "show", "show-test", "--format", "json"])
         assert result.exit_code == 0, result.output
@@ -190,7 +190,7 @@ class TestPlaygroundShow:
 
     def test_playground_show_not_found_exits_nonzero(self, tmp_path: Path) -> None:
         runner = CliRunner()
-        with patch("nexus.cli.commands.playground.PlaygroundSession") as mock_cls:
+        with patch("grampus.cli.commands.playground.PlaygroundSession") as mock_cls:
             mock_cls.load.side_effect = FileNotFoundError("not found")
             result = runner.invoke(cli, ["playground", "show", "ghost"])
         assert result.exit_code != 0

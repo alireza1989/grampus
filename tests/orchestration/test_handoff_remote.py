@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_httpx import HTTPXMock
 
-from nexus.core.errors import HandoffError
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
-from nexus.orchestration.handoff import HandoffContext, HandoffRequest
+from grampus.core.errors import HandoffError
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.orchestration.handoff import HandoffContext, HandoffRequest
 
 
 def _make_agent_def(name: str = "remote-target") -> AgentDefinition:
@@ -45,9 +45,9 @@ def _make_execution_result(output: str = "remote result") -> ExecutionResult:
 
 
 async def test_remote_handoff_uses_a2a_client() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_client = MagicMock(spec=A2AAgentClient)
@@ -81,9 +81,9 @@ async def test_remote_handoff_uses_a2a_client() -> None:
 
 
 async def test_remote_handoff_propagates_context_as_message() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_client = MagicMock(spec=A2AAgentClient)
@@ -123,10 +123,10 @@ async def test_remote_handoff_propagates_context_as_message() -> None:
 
 
 async def test_remote_handoff_wraps_a2a_error_as_handoff_error() -> None:
-    from nexus.core.errors import OrchestrationError
-    from nexus.orchestration.a2a.client import A2AAgentClient
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.core.errors import OrchestrationError
+    from grampus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_client = MagicMock(spec=A2AAgentClient)
@@ -168,18 +168,18 @@ _JSONRPC_SUCCESS = {
 
 
 async def test_dapr_handoff_posts_to_dapr_invoke_url(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
-        url="http://localhost:3500/v1.0/invoke/nexus-worker/method/a2a",
+        url="http://localhost:3500/v1.0/invoke/grampus-worker/method/a2a",
         json=_JSONRPC_SUCCESS,
     )
 
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="dapr-target",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="worker",
     )
 
@@ -191,23 +191,23 @@ async def test_dapr_handoff_posts_to_dapr_invoke_url(httpx_mock: HTTPXMock) -> N
     requests = httpx_mock.get_requests()
     assert len(requests) == 1
     assert "localhost:3500" in str(requests[0].url)
-    assert "/v1.0/invoke/nexus-worker/method/a2a" in str(requests[0].url)
+    assert "/v1.0/invoke/grampus-worker/method/a2a" in str(requests[0].url)
     assert result.status == "completed"
 
 
 async def test_dapr_handoff_sends_jsonrpc_message_send(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
-        url="http://localhost:3500/v1.0/invoke/nexus-worker/method/a2a",
+        url="http://localhost:3500/v1.0/invoke/grampus-worker/method/a2a",
         json=_JSONRPC_SUCCESS,
     )
 
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="dapr-target",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="worker",
     )
 
@@ -221,11 +221,11 @@ async def test_dapr_handoff_sends_jsonrpc_message_send(httpx_mock: HTTPXMock) ->
 
 
 async def test_dapr_handoff_extracts_output_from_response(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
-        url="http://localhost:3500/v1.0/invoke/nexus-worker/method/a2a",
+        url="http://localhost:3500/v1.0/invoke/grampus-worker/method/a2a",
         json={
             "jsonrpc": "2.0",
             "id": "x",
@@ -241,7 +241,7 @@ async def test_dapr_handoff_extracts_output_from_response(httpx_mock: HTTPXMock)
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="dapr-target",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="worker",
     )
 
@@ -252,18 +252,18 @@ async def test_dapr_handoff_extracts_output_from_response(httpx_mock: HTTPXMock)
 
 
 async def test_dapr_handoff_custom_port(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
-        url="http://localhost:3501/v1.0/invoke/nexus-worker/method/a2a",
+        url="http://localhost:3501/v1.0/invoke/grampus-worker/method/a2a",
         json=_JSONRPC_SUCCESS,
     )
 
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="dapr-target",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="worker",
     )
 
@@ -275,11 +275,11 @@ async def test_dapr_handoff_custom_port(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_dapr_handoff_http_error_raises_handoff_error(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
-        url="http://localhost:3500/v1.0/invoke/nexus-worker/method/a2a",
+        url="http://localhost:3500/v1.0/invoke/grampus-worker/method/a2a",
         status_code=503,
         text="service unavailable",
     )
@@ -287,7 +287,7 @@ async def test_dapr_handoff_http_error_raises_handoff_error(httpx_mock: HTTPXMoc
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="dapr-target",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="worker",
     )
 
@@ -296,7 +296,7 @@ async def test_dapr_handoff_http_error_raises_handoff_error(httpx_mock: HTTPXMoc
     with pytest.raises(HandoffError) as exc_info:
         await executor.execute(_make_handoff_request("dapr-target"))
 
-    assert "dapr-target" in str(exc_info.value) or "nexus-worker" in str(exc_info.value)
+    assert "dapr-target" in str(exc_info.value) or "grampus-worker" in str(exc_info.value)
 
 
 # ---------------------------------------------------------------------------
@@ -305,8 +305,8 @@ async def test_dapr_handoff_http_error_raises_handoff_error(httpx_mock: HTTPXMoc
 
 
 async def test_three_way_dispatch_local_uses_runner() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_runner = MagicMock()
@@ -326,8 +326,8 @@ async def test_three_way_dispatch_local_uses_runner() -> None:
 
 
 async def test_three_way_dispatch_dapr_uses_dapr_path(httpx_mock: HTTPXMock) -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     httpx_mock.add_response(
         url="http://localhost:3500/v1.0/invoke/dapr-svc/method/a2a",
@@ -345,9 +345,9 @@ async def test_three_way_dispatch_dapr_uses_dapr_path(httpx_mock: HTTPXMock) -> 
 
 
 async def test_three_way_dispatch_remote_uses_a2a_client() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_client = MagicMock(spec=A2AAgentClient)
@@ -362,8 +362,8 @@ async def test_three_way_dispatch_remote_uses_a2a_client() -> None:
 
 
 async def test_three_way_dispatch_no_path_raises_handoff_error() -> None:
-    from nexus.orchestration.a2a.registry import AgentEntry, AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentEntry, AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     # Manually insert an entry with no execution path
@@ -382,8 +382,8 @@ async def test_three_way_dispatch_no_path_raises_handoff_error() -> None:
 
 
 async def test_local_handoff_unchanged() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.handoff import HandoffExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.handoff import HandoffExecutor
 
     registry = AgentRegistry()
     mock_runner = MagicMock()

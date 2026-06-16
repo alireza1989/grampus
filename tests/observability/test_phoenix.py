@@ -8,17 +8,17 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from nexus.observability.phoenix import PhoenixConfig, configure_phoenix_tracer, phoenix_tracer
-from nexus.observability.tracer import NexusTracer
+from grampus.observability.phoenix import PhoenixConfig, configure_phoenix_tracer, phoenix_tracer
+from grampus.observability.tracer import GrampusTracer
 
 
-def _make_recording_tracer(nexus_tracer: NexusTracer) -> InMemorySpanExporter:
-    """Wire an in-memory exporter onto an existing NexusTracer for assertions."""
+def _make_recording_tracer(grampus_tracer: GrampusTracer) -> InMemorySpanExporter:
+    """Wire an in-memory exporter onto an existing GrampusTracer for assertions."""
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
-    nexus_tracer._tracer = provider.get_tracer("test-service")
+    grampus_tracer._tracer = provider.get_tracer("test-service")
     return exporter
 
 
@@ -27,7 +27,7 @@ class TestPhoenixConfig:
         config = PhoenixConfig()
         assert config.endpoint == "http://localhost:6006"
         assert config.otlp_grpc_endpoint == "http://localhost:4317"
-        assert config.project_name == "nexus"
+        assert config.project_name == "grampus"
         assert config.enabled is True
 
     def test_phoenix_config_custom_values(self) -> None:
@@ -47,19 +47,19 @@ class TestPhoenixConfig:
         monkeypatch.setenv("PHOENIX_PROJECT_NAME", "env-project")
         # PhoenixConfig reads env vars via its factory path; test the context manager
         with phoenix_tracer() as tracer:
-            assert isinstance(tracer, NexusTracer)
+            assert isinstance(tracer, GrampusTracer)
 
 
 class TestConfigurePhoenixTracer:
-    def test_configure_phoenix_tracer_returns_nexus_tracer(self) -> None:
+    def test_configure_phoenix_tracer_returns_grampus_tracer(self) -> None:
         config = PhoenixConfig(enabled=True)
         tracer = configure_phoenix_tracer(config)
-        assert isinstance(tracer, NexusTracer)
+        assert isinstance(tracer, GrampusTracer)
 
     def test_configure_phoenix_tracer_disabled_returns_noop(self) -> None:
         config = PhoenixConfig(enabled=False)
         tracer = configure_phoenix_tracer(config)
-        assert isinstance(tracer, NexusTracer)
+        assert isinstance(tracer, GrampusTracer)
         # disabled tracer has no OTLP endpoint — should work without error
         with tracer.agent_run(session_id="noop-session"):
             pass
@@ -83,43 +83,43 @@ class TestConfigurePhoenixTracer:
 class TestPhoenixTracerContextManager:
     def test_phoenix_tracer_context_manager(self) -> None:
         with phoenix_tracer() as tracer:
-            assert isinstance(tracer, NexusTracer)
+            assert isinstance(tracer, GrampusTracer)
 
     def test_phoenix_tracer_uses_env_endpoint(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("PHOENIX_OTLP_ENDPOINT", "http://custom:4317")
         # Context manager should construct without error using custom endpoint
         with phoenix_tracer() as tracer:
-            assert isinstance(tracer, NexusTracer)
+            assert isinstance(tracer, GrampusTracer)
 
     def test_phoenix_tracer_accepts_explicit_config(self) -> None:
         config = PhoenixConfig(project_name="explicit-project", enabled=True)
         with phoenix_tracer(config=config) as tracer:
-            assert isinstance(tracer, NexusTracer)
+            assert isinstance(tracer, GrampusTracer)
 
     def test_phoenix_tracer_disabled_config(self) -> None:
         config = PhoenixConfig(enabled=False)
         with phoenix_tracer(config=config) as tracer:
-            assert isinstance(tracer, NexusTracer)
+            assert isinstance(tracer, GrampusTracer)
             with tracer.agent_run(session_id="disabled"):
                 pass
 
 
-class TestNexusTracerExtraResourceAttrs:
-    def test_nexus_tracer_extra_resource_attrs_accepted(self) -> None:
-        tracer = NexusTracer(extra_resource_attrs={"phoenix.project.name": "test", "env": "ci"})
-        assert isinstance(tracer, NexusTracer)
+class TestGrampusTracerExtraResourceAttrs:
+    def test_grampus_tracer_extra_resource_attrs_accepted(self) -> None:
+        tracer = GrampusTracer(extra_resource_attrs={"phoenix.project.name": "test", "env": "ci"})
+        assert isinstance(tracer, GrampusTracer)
 
-    def test_nexus_tracer_extra_resource_attrs_none_accepted(self) -> None:
-        tracer = NexusTracer(extra_resource_attrs=None)
-        assert isinstance(tracer, NexusTracer)
+    def test_grampus_tracer_extra_resource_attrs_none_accepted(self) -> None:
+        tracer = GrampusTracer(extra_resource_attrs=None)
+        assert isinstance(tracer, GrampusTracer)
 
-    def test_nexus_tracer_extra_resource_attrs_stored(self) -> None:
-        tracer = NexusTracer(extra_resource_attrs={"phoenix.project.name": "stored-test"})
+    def test_grampus_tracer_extra_resource_attrs_stored(self) -> None:
+        tracer = GrampusTracer(extra_resource_attrs={"phoenix.project.name": "stored-test"})
         assert tracer._extra_resource_attrs == {"phoenix.project.name": "stored-test"}
 
-    def test_nexus_tracer_no_extra_attrs_backward_compat(self) -> None:
+    def test_grampus_tracer_no_extra_attrs_backward_compat(self) -> None:
         # No extra_resource_attrs arg — must still work exactly as before
-        tracer = NexusTracer(service_name="compat-svc", agent_id="a1")
+        tracer = GrampusTracer(service_name="compat-svc", agent_id="a1")
         with tracer.agent_run(session_id="compat"):
             pass
 

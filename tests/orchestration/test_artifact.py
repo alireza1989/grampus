@@ -11,19 +11,19 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import (
+from grampus.core.errors import (
     ArtifactConflictError,
     ArtifactSectionNotFoundError,
-    NexusError,
+    GrampusError,
 )
-from nexus.core.types import AgentStatus, ExecutionResult, TokenUsage
-from nexus.orchestration.artifact.collaborator import ArtifactCollaborator
-from nexus.orchestration.artifact.conflict_detector import ConflictDetector
-from nexus.orchestration.artifact.crew import ArtifactCrew
-from nexus.orchestration.artifact.lock_manager import SectionLockManager
-from nexus.orchestration.artifact.schema import SchemaValidator
-from nexus.orchestration.artifact.store import ArtifactStore
-from nexus.orchestration.artifact.types import (
+from grampus.core.types import AgentStatus, ExecutionResult, TokenUsage
+from grampus.orchestration.artifact.collaborator import ArtifactCollaborator
+from grampus.orchestration.artifact.conflict_detector import ConflictDetector
+from grampus.orchestration.artifact.crew import ArtifactCrew
+from grampus.orchestration.artifact.lock_manager import SectionLockManager
+from grampus.orchestration.artifact.schema import SchemaValidator
+from grampus.orchestration.artifact.store import ArtifactStore
+from grampus.orchestration.artifact.types import (
     Artifact,
     ArtifactContentType,
     ArtifactSchema,
@@ -407,7 +407,7 @@ async def test_load_returns_persisted_artifact() -> None:
 
 def _make_lock_factory(succeed: bool = True) -> Any:
     """Return a lock factory whose __aenter__ succeeds or raises."""
-    from nexus.core.errors import LockAcquisitionError
+    from grampus.core.errors import LockAcquisitionError
 
     class FakeLock:
         async def __aenter__(self) -> FakeLock:
@@ -872,15 +872,15 @@ async def test_integration_check_catches_schema_violation_after_wave() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_artifact_conflict_error_is_nexus_error() -> None:
+def test_artifact_conflict_error_is_grampus_error() -> None:
     err = ArtifactConflictError("test conflict", code="TEST_CODE")
-    assert isinstance(err, NexusError)
+    assert isinstance(err, GrampusError)
     assert err.code == "TEST_CODE"
 
 
-def test_artifact_section_not_found_error_is_nexus_error() -> None:
+def test_artifact_section_not_found_error_is_grampus_error() -> None:
     err = ArtifactSectionNotFoundError("not found", code="SECTION_NOT_FOUND")
-    assert isinstance(err, NexusError)
+    assert isinstance(err, GrampusError)
 
 
 # ---------------------------------------------------------------------------

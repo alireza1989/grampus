@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import AgentState, AgentStatus, Message, Role, TokenUsage, ToolCall
-from nexus.orchestration.graph import Graph
-from nexus.orchestration.nodes import human_node, llm_node, subgraph_node, tool_node
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import AgentState, AgentStatus, Message, Role, TokenUsage, ToolCall
+from grampus.orchestration.graph import Graph
+from grampus.orchestration.nodes import human_node, llm_node, subgraph_node, tool_node
 
 
 def _state() -> AgentState:
@@ -100,7 +100,7 @@ class TestLLMNode:
 class TestToolNode:
     @pytest.mark.asyncio
     async def test_tool_node_executes_pending_tool_calls(self) -> None:
-        from nexus.core.types import ToolResult
+        from grampus.core.types import ToolResult
 
         tool_call = ToolCall(id="tc1", name="search", arguments={"q": "hello"})
         state = _state()
@@ -116,7 +116,7 @@ class TestToolNode:
 
     @pytest.mark.asyncio
     async def test_tool_node_appends_tool_results(self) -> None:
-        from nexus.core.types import ToolResult
+        from grampus.core.types import ToolResult
 
         tool_call = ToolCall(id="tc1", name="search", arguments={"q": "hello"})
         state = _state()
@@ -147,7 +147,7 @@ class TestToolNode:
 
     @pytest.mark.asyncio
     async def test_tool_node_sets_status_running(self) -> None:
-        from nexus.core.types import ToolResult
+        from grampus.core.types import ToolResult
 
         tool_call = ToolCall(id="tc1", name="search", arguments={})
         state = _state()

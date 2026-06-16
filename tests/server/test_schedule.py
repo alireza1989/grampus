@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
 
 
 def _make_usage() -> TokenUsage:
@@ -43,7 +43,7 @@ def mock_agent_def() -> AgentDefinition:
 
 @pytest.fixture
 def client(mock_runner: MagicMock, mock_agent_def: AgentDefinition) -> TestClient:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     app = create_app(mock_runner, mock_agent_def)
     return TestClient(app)
@@ -51,7 +51,7 @@ def client(mock_runner: MagicMock, mock_agent_def: AgentDefinition) -> TestClien
 
 def test_job_callback_returns_accepted(client: TestClient, mock_runner: MagicMock) -> None:
     payload = json.dumps({"value": json.dumps({"input": "run now"})})
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post("/job/my-job", content=payload.encode())
     assert resp.status_code == 200
     data = resp.json()
@@ -63,7 +63,7 @@ def test_job_callback_returns_accepted(client: TestClient, mock_runner: MagicMoc
 
 
 def test_job_callback_empty_body(client: TestClient) -> None:
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post("/job/my-job", content=b"")
     assert resp.status_code == 200
     data = resp.json()
@@ -73,7 +73,7 @@ def test_job_callback_empty_body(client: TestClient) -> None:
 
 
 def test_job_callback_malformed_json(client: TestClient) -> None:
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post("/job/my-job", content=b"not-json")
     assert resp.status_code == 200
     assert resp.json()["accepted"] is True
@@ -82,7 +82,7 @@ def test_job_callback_malformed_json(client: TestClient) -> None:
 
 def test_job_callback_uses_session_prefix(client: TestClient, mock_runner: MagicMock) -> None:
     payload = json.dumps({"value": json.dumps({"input": "hello", "session_prefix": "custom"})})
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post("/job/my-job", content=payload.encode())
     assert resp.status_code == 200
     assert resp.json()["session_id"].startswith("custom-")
@@ -90,7 +90,7 @@ def test_job_callback_uses_session_prefix(client: TestClient, mock_runner: Magic
 
 
 def test_job_callback_default_input_uses_job_name(client: TestClient) -> None:
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post("/job/special-job", content=b"")
     assert resp.status_code == 200
     coro = mock_task.call_args[0][0]
@@ -102,15 +102,15 @@ def test_job_callback_default_input_uses_job_name(client: TestClient) -> None:
 def test_job_callback_with_schedule_store(
     mock_runner: MagicMock, mock_agent_def: AgentDefinition
 ) -> None:
-    from nexus.dapr.schedule_store import ScheduleStore
-    from nexus.server.app import create_app
+    from grampus.dapr.schedule_store import ScheduleStore
+    from grampus.server.app import create_app
 
     store = ScheduleStore(state_store=None)
     app = create_app(mock_runner, mock_agent_def, schedule_store=store)
     tc = TestClient(app)
 
     payload = json.dumps({"value": json.dumps({"input": "go"})})
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = tc.post("/job/tracked-job", content=payload.encode())
     assert resp.status_code == 200
     assert resp.json()["accepted"] is True

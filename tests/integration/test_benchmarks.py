@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from nexus.core.types import AgentStatus, ExecutionResult, TokenUsage
+from grampus.core.types import AgentStatus, ExecutionResult, TokenUsage
 
 _SAMPLE_TEXT = (
     "The quick brown fox jumps over the lazy dog. "
@@ -30,7 +30,7 @@ def _p99(times_s: list[float]) -> float:
 @pytest.mark.benchmark
 class TestSafetyOverhead:
     async def test_injection_check_under_5ms(self) -> None:
-        from nexus.safety.injection import DetectionLevel, PromptInjectionDetector
+        from grampus.safety.injection import DetectionLevel, PromptInjectionDetector
 
         detector = PromptInjectionDetector(level=DetectionLevel.BALANCED)
         times: list[float] = []
@@ -43,7 +43,7 @@ class TestSafetyOverhead:
         assert p99_ms < 5.0, f"p99 injection check latency {p99_ms:.2f}ms > 5ms budget"
 
     async def test_pii_scan_under_5ms(self) -> None:
-        from nexus.safety.pii import PIIDetector
+        from grampus.safety.pii import PIIDetector
 
         detector = PIIDetector()
         times: list[float] = []
@@ -59,7 +59,7 @@ class TestSafetyOverhead:
 @pytest.mark.benchmark
 class TestMemoryOverhead:
     async def test_validator_check_under_2ms(self) -> None:
-        from nexus.memory.validator import MemoryValidator
+        from grampus.memory.validator import MemoryValidator
 
         validator = MemoryValidator()
         times: list[float] = []
@@ -74,7 +74,7 @@ class TestMemoryOverhead:
 
 
 def _make_exec_result(output: str = "test output") -> ExecutionResult:
-    from nexus.core.types import Message, Role
+    from grampus.core.types import Message, Role
 
     return ExecutionResult(
         output=output,
@@ -92,7 +92,7 @@ def _make_exec_result(output: str = "test output") -> ExecutionResult:
 @pytest.mark.benchmark
 class TestEvalOverhead:
     async def test_contains_assertion_under_1ms(self) -> None:
-        from nexus.evaluation.assertions import contains
+        from grampus.evaluation.assertions import contains
 
         assertion = contains("test")
         result = _make_exec_result()
@@ -106,7 +106,7 @@ class TestEvalOverhead:
         assert p99_ms < 1.0, f"p99 contains latency {p99_ms:.2f}ms > 1ms budget"
 
     async def test_not_contains_assertion_under_1ms(self) -> None:
-        from nexus.evaluation.assertions import not_contains
+        from grampus.evaluation.assertions import not_contains
 
         assertion = not_contains("forbidden")
         result = _make_exec_result()
@@ -120,7 +120,7 @@ class TestEvalOverhead:
         assert p99_ms < 1.0, f"p99 not_contains latency {p99_ms:.2f}ms > 1ms budget"
 
     async def test_matches_regex_assertion_under_1ms(self) -> None:
-        from nexus.evaluation.assertions import matches_regex
+        from grampus.evaluation.assertions import matches_regex
 
         assertion = matches_regex(r"\w+")
         result = _make_exec_result()
@@ -134,7 +134,7 @@ class TestEvalOverhead:
         assert p99_ms < 1.0, f"p99 matches_regex latency {p99_ms:.2f}ms > 1ms budget"
 
     async def test_tool_was_called_assertion_under_1ms(self) -> None:
-        from nexus.evaluation.assertions import tool_was_called
+        from grampus.evaluation.assertions import tool_was_called
 
         assertion = tool_was_called("search")
         result = _make_exec_result()

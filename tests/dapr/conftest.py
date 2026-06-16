@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.config import DaprConfig
+from grampus.core.config import DaprConfig
 
 
 @pytest.fixture()

@@ -5,15 +5,15 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from nexus.hub.installer import TemplateInstaller
-from nexus.hub.manifest import TemplateManifest
-from nexus.hub.registry import TemplateRegistry
-from nexus.hub.renderer import collect_variables
+from grampus.hub.installer import TemplateInstaller
+from grampus.hub.manifest import TemplateManifest
+from grampus.hub.registry import TemplateRegistry
+from grampus.hub.renderer import collect_variables
 
 
 def _templates_dir() -> Path:
     """Locate the bundled templates directory."""
-    import nexus.hub.registry as reg_module
+    import grampus.hub.registry as reg_module
 
     pkg_dir = Path(reg_module.__file__).parent.parent
     return pkg_dir / "templates"
@@ -25,7 +25,7 @@ def _deep_research_dir() -> Path:
 
 class TestDeepResearchTemplate:
     def test_deep_research_manifest_valid(self) -> None:
-        manifest_path = _deep_research_dir() / "nexus-template.yaml"
+        manifest_path = _deep_research_dir() / "grampus-template.yaml"
         assert manifest_path.exists(), f"Manifest not found at {manifest_path}"
         manifest = TemplateManifest.from_yaml(manifest_path)
         assert manifest.name == "deep-research-crew"
@@ -35,14 +35,14 @@ class TestDeepResearchTemplate:
         assert len(manifest.parameters) >= 3
 
     def test_deep_research_all_files_present(self) -> None:
-        manifest_path = _deep_research_dir() / "nexus-template.yaml"
+        manifest_path = _deep_research_dir() / "grampus-template.yaml"
         manifest = TemplateManifest.from_yaml(manifest_path)
         for fname in manifest.files:
             fpath = _deep_research_dir() / fname
             assert fpath.exists(), f"File declared in manifest not found: {fname}"
 
     def test_deep_research_no_undeclared_variables(self) -> None:
-        manifest_path = _deep_research_dir() / "nexus-template.yaml"
+        manifest_path = _deep_research_dir() / "grampus-template.yaml"
         manifest = TemplateManifest.from_yaml(manifest_path)
         declared = {p.name for p in manifest.parameters}
 
@@ -60,7 +60,7 @@ class TestDeepResearchTemplate:
         assert not undeclared, "Undeclared variables found:\n" + "\n".join(undeclared)
 
     def test_deep_research_renders_cleanly(self, tmp_path: Path) -> None:
-        manifest_path = _deep_research_dir() / "nexus-template.yaml"
+        manifest_path = _deep_research_dir() / "grampus-template.yaml"
         manifest = TemplateManifest.from_yaml(manifest_path)
         variables = collect_variables(manifest, {})
         registry = TemplateRegistry(_http_client=None)
@@ -79,7 +79,7 @@ class TestDeepResearchTemplate:
                 assert not remaining, f"Unrendered placeholders in {fname}: {remaining}"
 
     def test_deep_research_entry_point_exists_after_render(self, tmp_path: Path) -> None:
-        manifest_path = _deep_research_dir() / "nexus-template.yaml"
+        manifest_path = _deep_research_dir() / "grampus-template.yaml"
         manifest = TemplateManifest.from_yaml(manifest_path)
         variables = collect_variables(manifest, {})
         registry = TemplateRegistry(_http_client=None)

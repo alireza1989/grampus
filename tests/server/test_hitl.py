@@ -11,8 +11,8 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import (
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import (
     AgentDefinition,
     AgentState,
     AgentStatus,
@@ -21,7 +21,7 @@ from nexus.core.types import (
     Role,
     TokenUsage,
 )
-from nexus.server.models import (
+from grampus.server.models import (
     PendingSession,
     PendingSessionsResponse,
     ResumeRequest,
@@ -70,7 +70,7 @@ def _make_result(
 
 
 def _make_app(runner: MagicMock) -> object:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     agent_def = AgentDefinition(name="test-agent", model="claude-sonnet-4-6")
     return create_app(runner, agent_def)

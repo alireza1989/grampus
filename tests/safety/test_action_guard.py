@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from nexus.core.types import ToolCall
-from nexus.safety.action_guard import ActionCheckResult, ActionPolicy, SafetyActionGuard
+from grampus.core.types import ToolCall
+from grampus.safety.action_guard import ActionCheckResult, ActionPolicy, SafetyActionGuard
 
 
 def _make_tool_call(name: str) -> ToolCall:

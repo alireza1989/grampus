@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 
 from pydantic import SecretStr
 
-from nexus.cli.playground.renderer import Renderer
-from nexus.cli.playground.repl import (
+from grampus.cli.playground.renderer import Renderer
+from grampus.cli.playground.repl import (
     _handle_command,
     _ReplState,
     _send_message,
     run_repl,
 )
-from nexus.cli.playground.session import PlaygroundSession, PlaygroundTurn
-from nexus.core.types import Message, Role, StreamChunk, TokenUsage
-from nexus.evaluation.prompt_versions import PromptVersionManager
+from grampus.cli.playground.session import PlaygroundSession, PlaygroundTurn
+from grampus.core.types import Message, Role, StreamChunk, TokenUsage
+from grampus.evaluation.prompt_versions import PromptVersionManager
 
 
 def _usage() -> TokenUsage:
@@ -70,7 +70,7 @@ def _state(
         history=history,
         config=_config(),
         version_manager=PromptVersionManager(agent_id="test"),
-        sessions_dir=sessions_dir or Path("/tmp/nexus-test-sessions"),
+        sessions_dir=sessions_dir or Path("/tmp/grampus-test-sessions"),
     )
 
 
@@ -118,7 +118,7 @@ class TestCommandModel:
     async def test_repl_command_model_switch(self) -> None:
         state = _state()
         new_client = _mock_client()
-        with patch("nexus.cli.playground.repl.make_client", return_value=new_client):
+        with patch("grampus.cli.playground.repl.make_client", return_value=new_client):
             result = await _handle_command("/model gpt-4o", state)
         assert result is True
         assert state.active_model == "gpt-4o"

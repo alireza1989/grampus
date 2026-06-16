@@ -1,11 +1,11 @@
-"""Tests for nexus.tools.library.file_read and file_write."""
+"""Tests for grampus.tools.library.file_read and file_write."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from nexus.tools.library.file_read import file_read
-from nexus.tools.library.file_write import file_write
+from grampus.tools.library.file_read import file_read
+from grampus.tools.library.file_write import file_write
 
 
 class TestFileRead:

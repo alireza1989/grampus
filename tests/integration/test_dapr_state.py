@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import ConcurrencyError
-from nexus.core.types import AgentState, AgentStatus
+from grampus.core.errors import ConcurrencyError
+from grampus.core.types import AgentState, AgentStatus
 from tests.integration.conftest import FakeStateStore
 
 

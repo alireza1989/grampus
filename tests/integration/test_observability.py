@@ -1,10 +1,10 @@
-"""Integration tests for EventLog, NexusMetrics, and BehaviorMonitor."""
+"""Integration tests for EventLog, GrampusMetrics, and BehaviorMonitor."""
 
 from __future__ import annotations
 
 import pytest
 
-from nexus.observability.events import EventLog, EventType
+from grampus.observability.events import EventLog, EventType
 from tests.integration.conftest import FakeStateStore
 
 
@@ -60,9 +60,9 @@ class TestObservabilityIntegration:
         assert log.event_count() == 2
 
     async def test_metrics_accumulate_across_llm_calls(self) -> None:
-        from nexus.observability.metrics import NexusMetrics
+        from grampus.observability.metrics import GrampusMetrics
 
-        metrics = NexusMetrics(agent_id="met-agent")
+        metrics = GrampusMetrics(agent_id="met-agent")
         metrics.record_llm_call(
             model="claude", input_tokens=100, output_tokens=50, cost_usd=0.01, latency_ms=200.0
         )
@@ -75,9 +75,9 @@ class TestObservabilityIntegration:
         assert snap.llm_call_count == 2
 
     async def test_prometheus_text_valid_after_recording(self) -> None:
-        from nexus.observability.metrics import NexusMetrics
+        from grampus.observability.metrics import GrampusMetrics
 
-        metrics = NexusMetrics(agent_id="prom-agent")
+        metrics = GrampusMetrics(agent_id="prom-agent")
         metrics.record_llm_call(
             model="mock", input_tokens=10, output_tokens=5, cost_usd=0.001, latency_ms=50.0
         )
@@ -87,7 +87,7 @@ class TestObservabilityIntegration:
         assert len(prom_text) > 0
 
     async def test_behavior_monitor_detects_cost_spike_after_window(self) -> None:
-        from nexus.observability.behavior import AnomalyType, BehaviorMonitor
+        from grampus.observability.behavior import AnomalyType, BehaviorMonitor
 
         monitor = BehaviorMonitor(
             agent_id="beh-agent",
@@ -101,7 +101,7 @@ class TestObservabilityIntegration:
         assert found_cost_spike, "Expected cost spike anomaly not detected"
 
     async def test_behavior_monitor_no_anomaly_before_window_full(self) -> None:
-        from nexus.observability.behavior import BehaviorMonitor
+        from grampus.observability.behavior import BehaviorMonitor
 
         monitor = BehaviorMonitor(agent_id="beh2-agent")
         for _ in range(5):
@@ -112,11 +112,11 @@ class TestObservabilityIntegration:
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
 
-        from nexus.observability.tracer import NexusTracer
+        from grampus.observability.tracer import GrampusTracer
 
         provider = TracerProvider()
         trace.set_tracer_provider(provider)
-        tracer = NexusTracer(agent_id="trace-agent", session_id="ts1")
+        tracer = GrampusTracer(agent_id="trace-agent", session_id="ts1")
 
         with tracer.agent_run_span() as span:
             tracer.record_llm_call(

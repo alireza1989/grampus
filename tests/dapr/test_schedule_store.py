@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.dapr.schedule_store import ScheduleConfig, ScheduleStore
+from grampus.dapr.schedule_store import ScheduleConfig, ScheduleStore
 
 
 def _make_config(name: str = "test-job") -> ScheduleConfig:

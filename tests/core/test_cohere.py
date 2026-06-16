@@ -1,4 +1,4 @@
-"""Tests for nexus.core.models.cohere — CohereClient."""
+"""Tests for grampus.core.models.cohere — CohereClient."""
 
 from __future__ import annotations
 
@@ -10,15 +10,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import ModelError
-from nexus.core.models.cohere import (
+from grampus.core.errors import ModelError
+from grampus.core.models.base import ModelClient, ModelResponse
+from grampus.core.models.cohere import (
     CohereClient,
     _normalise_stop_reason,
     _to_cohere_messages,
     _to_cohere_tools,
 )
-from nexus.core.models.base import ModelClient, ModelResponse
-from nexus.core.types import (
+from grampus.core.types import (
     Message,
     Role,
     ToolCall,
@@ -26,7 +26,6 @@ from nexus.core.types import (
     ToolParameter,
     ToolResult,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures and helpers
@@ -127,7 +126,7 @@ class TestToCohereMessages:
         assert result[0]["content"] == "failed"
 
     def test_assistant_with_tool_calls(self) -> None:
-        tc = ToolCall(id="tc-1", name="search", arguments={"q": "nexus"})
+        tc = ToolCall(id="tc-1", name="search", arguments={"q": "grampus"})
         msg = Message(role=Role.ASSISTANT, content="Searching…", tool_calls=[tc])
         result = _to_cohere_messages([msg])
         assert len(result) == 1
@@ -139,7 +138,7 @@ class TestToCohereMessages:
         assert tc_out["id"] == "tc-1"
         assert tc_out["type"] == "function"
         assert tc_out["function"]["name"] == "search"
-        assert json.loads(tc_out["function"]["arguments"]) == {"q": "nexus"}
+        assert json.loads(tc_out["function"]["arguments"]) == {"q": "grampus"}
 
     def test_system_not_skipped(self) -> None:
         messages = [
@@ -260,12 +259,10 @@ class TestCohereClientComplete:
         tc_mock.id = "tc-abc"
         fn_mock = MagicMock()
         fn_mock.name = "search"
-        fn_mock.arguments = '{"q": "nexus"}'
+        fn_mock.arguments = '{"q": "grampus"}'
         tc_mock.function = fn_mock
 
-        mock_sdk.chat = AsyncMock(
-            return_value=_make_chat_response(tool_calls=[tc_mock])
-        )
+        mock_sdk.chat = AsyncMock(return_value=_make_chat_response(tool_calls=[tc_mock]))
         client = _make_client(mock_sdk)
         result = await client.complete(
             messages=[Message(role=Role.USER, content="search")],
@@ -274,7 +271,7 @@ class TestCohereClientComplete:
         assert len(result.tool_calls) == 1
         assert result.tool_calls[0].id == "tc-abc"
         assert result.tool_calls[0].name == "search"
-        assert result.tool_calls[0].arguments == {"q": "nexus"}
+        assert result.tool_calls[0].arguments == {"q": "grampus"}
 
     @pytest.mark.asyncio
     async def test_no_text_content_returns_none(self, mock_sdk: MagicMock) -> None:
@@ -364,9 +361,7 @@ class TestCohereClientComplete:
 class TestCohereClientStream:
     @pytest.mark.asyncio
     async def test_yields_text_chunks(self, mock_sdk: MagicMock) -> None:
-        mock_sdk.chat_stream = MagicMock(
-            return_value=_make_stream_events(["Hello", " world"])
-        )
+        mock_sdk.chat_stream = MagicMock(return_value=_make_stream_events(["Hello", " world"]))
         client = _make_client(mock_sdk)
         chunks = []
         async for chunk in client.stream(
@@ -400,7 +395,9 @@ class TestCohereClientStream:
     @pytest.mark.asyncio
     async def test_final_chunk_cost_computed(self, mock_sdk: MagicMock) -> None:
         mock_sdk.chat_stream = MagicMock(
-            return_value=_make_stream_events(["hi"], input_tokens=1_000_000, output_tokens=1_000_000)
+            return_value=_make_stream_events(
+                ["hi"], input_tokens=1_000_000, output_tokens=1_000_000
+            )
         )
         client = _make_client(mock_sdk)
         chunks = []

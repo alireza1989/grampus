@@ -19,7 +19,7 @@ class TestMemoryPersistenceE2E:
         self, fake_state_store: FakeStateStore
     ) -> None:
         """Session A stores a record; Session B retrieves it by ID."""
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         emb = FakeEmbeddingService()
         agent_id = "persist-agent"
@@ -35,9 +35,9 @@ class TestMemoryPersistenceE2E:
     async def test_semantic_facts_survive_consolidation_cycle(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         emb = FakeEmbeddingService()
         agent_id = "consol-persist-agent"
@@ -49,7 +49,7 @@ class TestMemoryPersistenceE2E:
 
         mock_llm = MockModelClient()
         mock_llm._responses = [
-            __import__("nexus.core.models.base", fromlist=["ModelResponse"]).ModelResponse(
+            __import__("grampus.core.models.base", fromlist=["ModelResponse"]).ModelResponse(
                 content=json.dumps(
                     [
                         {
@@ -61,7 +61,7 @@ class TestMemoryPersistenceE2E:
                     ]
                 ),
                 tool_calls=[],
-                token_usage=__import__("nexus.core.types", fromlist=["TokenUsage"]).TokenUsage(
+                token_usage=__import__("grampus.core.types", fromlist=["TokenUsage"]).TokenUsage(
                     input_tokens=5, output_tokens=5, total_tokens=10, cost_usd=0.0, model="mock"
                 ),
                 model="mock",
@@ -83,8 +83,8 @@ class TestMemoryPersistenceE2E:
     async def test_provenance_preserved_across_sessions(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.provenance import Provenance, ProvenanceTracker, SourceType
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.provenance import Provenance, ProvenanceTracker, SourceType
 
         emb = FakeEmbeddingService()
         agent_id = "prov-persist-agent"
@@ -106,7 +106,7 @@ class TestMemoryPersistenceE2E:
     async def test_multiple_records_all_retrievable_by_id(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         emb = FakeEmbeddingService()
         agent_id = "multi-persist-agent"

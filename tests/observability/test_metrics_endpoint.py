@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
-from nexus.observability.metrics import NexusMetrics
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.observability.metrics import GrampusMetrics
 
 
 def _make_result() -> ExecutionResult:
@@ -26,8 +26,8 @@ def _make_result() -> ExecutionResult:
 
 
 @pytest.fixture
-def metrics() -> NexusMetrics:
-    return NexusMetrics(agent_id="test-agent")
+def metrics() -> GrampusMetrics:
+    return GrampusMetrics(agent_id="test-agent")
 
 
 @pytest.fixture
@@ -46,11 +46,11 @@ def mock_agent_def() -> AgentDefinition:
 def app_with_metrics(
     mock_runner: MagicMock,
     mock_agent_def: AgentDefinition,
-    metrics: NexusMetrics,
+    metrics: GrampusMetrics,
 ) -> object:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
-    return create_app(mock_runner, mock_agent_def, nexus_metrics=metrics)
+    return create_app(mock_runner, mock_agent_def, grampus_metrics=metrics)
 
 
 @pytest.fixture
@@ -58,9 +58,9 @@ def app_no_metrics(
     mock_runner: MagicMock,
     mock_agent_def: AgentDefinition,
 ) -> object:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
-    return create_app(mock_runner, mock_agent_def, nexus_metrics=None)
+    return create_app(mock_runner, mock_agent_def, grampus_metrics=None)
 
 
 # ---------------------------------------------------------------------------
@@ -80,8 +80,8 @@ def test_metrics_content_type_is_text_plain(app_with_metrics: object) -> None:
     assert response.headers["content-type"].startswith("text/plain")
 
 
-def test_metrics_contains_nexus_token_counter(
-    app_with_metrics: object, metrics: NexusMetrics
+def test_metrics_contains_grampus_token_counter(
+    app_with_metrics: object, metrics: GrampusMetrics
 ) -> None:
     metrics.record_llm_call(
         model="test-model",
@@ -92,10 +92,10 @@ def test_metrics_contains_nexus_token_counter(
     )
     client = TestClient(app_with_metrics)
     response = client.get("/metrics")
-    assert "nexus_total_tokens" in response.text
+    assert "grampus_total_tokens" in response.text
 
 
-def test_metrics_contains_help_lines(app_with_metrics: object, metrics: NexusMetrics) -> None:
+def test_metrics_contains_help_lines(app_with_metrics: object, metrics: GrampusMetrics) -> None:
     metrics.record_llm_call(
         model="test-model",
         input_tokens=10,
@@ -105,10 +105,10 @@ def test_metrics_contains_help_lines(app_with_metrics: object, metrics: NexusMet
     )
     client = TestClient(app_with_metrics)
     response = client.get("/metrics")
-    assert "# HELP nexus_total_tokens" in response.text
+    assert "# HELP grampus_total_tokens" in response.text
 
 
-def test_metrics_contains_type_lines(app_with_metrics: object, metrics: NexusMetrics) -> None:
+def test_metrics_contains_type_lines(app_with_metrics: object, metrics: GrampusMetrics) -> None:
     metrics.record_llm_call(
         model="test-model",
         input_tokens=10,
@@ -118,7 +118,7 @@ def test_metrics_contains_type_lines(app_with_metrics: object, metrics: NexusMet
     )
     client = TestClient(app_with_metrics)
     response = client.get("/metrics")
-    assert "# TYPE nexus_total_tokens counter" in response.text
+    assert "# TYPE grampus_total_tokens counter" in response.text
 
 
 def test_metrics_no_collector_returns_comment(app_no_metrics: object) -> None:
@@ -128,7 +128,9 @@ def test_metrics_no_collector_returns_comment(app_no_metrics: object) -> None:
     assert "# No metrics collector configured" in response.text
 
 
-def test_metrics_histogram_buckets_present(app_with_metrics: object, metrics: NexusMetrics) -> None:
+def test_metrics_histogram_buckets_present(
+    app_with_metrics: object, metrics: GrampusMetrics
+) -> None:
     metrics.record_llm_call(
         model="test-model",
         input_tokens=20,
@@ -138,10 +140,10 @@ def test_metrics_histogram_buckets_present(app_with_metrics: object, metrics: Ne
     )
     client = TestClient(app_with_metrics)
     response = client.get("/metrics")
-    assert "nexus_llm_latency_ms_bucket" in response.text
+    assert "grampus_llm_latency_ms_bucket" in response.text
 
 
-def test_metrics_agent_id_label_present(app_with_metrics: object, metrics: NexusMetrics) -> None:
+def test_metrics_agent_id_label_present(app_with_metrics: object, metrics: GrampusMetrics) -> None:
     metrics.record_llm_call(
         model="test-model",
         input_tokens=5,

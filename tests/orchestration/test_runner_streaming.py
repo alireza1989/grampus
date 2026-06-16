@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     StreamChunk,
     StreamEvent,
@@ -18,8 +18,8 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
-from nexus.memory.manager import MemoryRecallResult
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.memory.manager import MemoryRecallResult
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
 # ---------------------------------------------------------------------------
 # Helpers

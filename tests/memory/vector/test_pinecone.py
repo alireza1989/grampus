@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.vector.pinecone — PineconeVectorStore."""
+"""Tests for grampus.memory.vector.pinecone — PineconeVectorStore."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.core.errors import ToolError
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult
-from nexus.memory.vector.pinecone import PineconeVectorStore
+from grampus.core.errors import ToolError
+from grampus.memory.vector.base import VectorRecord, VectorSearchResult
+from grampus.memory.vector.pinecone import PineconeVectorStore
 
 FAKE_VECTOR = [0.1] * 8
 
@@ -18,7 +18,7 @@ def _make_store(_client: MagicMock | None = None) -> PineconeVectorStore:
     return PineconeVectorStore(
         api_key="pk-test",
         index_host="https://idx.example.pinecone.io",
-        namespace="nexus",
+        namespace="grampus",
         _client=_client,
     )
 

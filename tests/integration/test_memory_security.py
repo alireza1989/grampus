@@ -14,8 +14,8 @@ class TestMemorySecurityIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
 
         em = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="sec-agent")
         tracker = ProvenanceTracker()
@@ -28,7 +28,7 @@ class TestMemorySecurityIntegration:
         import json
 
         raw = json.loads(fetched.provenance)  # type: ignore[arg-type]
-        from nexus.memory.provenance import Provenance
+        from grampus.memory.provenance import Provenance
 
         loaded = Provenance(**raw)
         assert tracker.verify(content, loaded)
@@ -38,9 +38,9 @@ class TestMemorySecurityIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.auditor import MemoryAuditor
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.auditor import MemoryAuditor
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
 
         em = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="audit-agent")
         tracker = ProvenanceTracker()
@@ -56,7 +56,7 @@ class TestMemorySecurityIntegration:
         assert report.tampered_ids or report.integrity_score < 1.0
 
     async def test_injection_pattern_blocked_by_validator(self) -> None:
-        from nexus.memory.validator import MemoryValidator
+        from grampus.memory.validator import MemoryValidator
 
         validator = MemoryValidator()
         result = validator.validate(
@@ -68,7 +68,7 @@ class TestMemorySecurityIntegration:
         assert any("injection" in r for r in result.reasons)
 
     async def test_clean_content_passes_validator(self) -> None:
-        from nexus.memory.validator import MemoryValidator
+        from grampus.memory.validator import MemoryValidator
 
         validator = MemoryValidator()
         result = validator.validate("User completed the task successfully.", source_id="system")
@@ -76,7 +76,7 @@ class TestMemorySecurityIntegration:
         assert len(result.reasons) == 0
 
     async def test_rate_limit_blocks_burst_writes(self) -> None:
-        from nexus.memory.validator import MemoryValidator
+        from grampus.memory.validator import MemoryValidator
 
         validator = MemoryValidator(max_writes_per_minute=3)
         source_id = "burst-source"
@@ -89,8 +89,8 @@ class TestMemorySecurityIntegration:
         assert any("rate limit" in reason for reason in r4.reasons)
 
     async def test_trust_score_reflects_source_type(self) -> None:
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
-        from nexus.memory.trust import TrustScorer
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.trust import TrustScorer
 
         tracker = ProvenanceTracker()
         scorer = TrustScorer()
@@ -103,8 +103,8 @@ class TestMemorySecurityIntegration:
         assert system_score > external_score
 
     async def test_trust_score_decays_over_time(self) -> None:
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
-        from nexus.memory.trust import TrustScorer
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.trust import TrustScorer
 
         tracker = ProvenanceTracker()
         scorer = TrustScorer(decay_rate=0.1)
@@ -115,8 +115,8 @@ class TestMemorySecurityIntegration:
         assert old_score < fresh_score
 
     async def test_low_trust_source_gets_lower_score(self) -> None:
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
-        from nexus.memory.trust import TrustScorer
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.trust import TrustScorer
 
         tracker = ProvenanceTracker()
         scorer = TrustScorer()

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from nexus.evaluation.suite import CaseResult, SuiteResult
+from grampus.evaluation.suite import CaseResult, SuiteResult
 
 
 def _make_suite_result(
@@ -49,7 +49,7 @@ def _make_suite_result(
 
 class TestQualityBaseline:
     def test_record_stores_run(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         sr = _make_suite_result()
@@ -58,7 +58,7 @@ class TestQualityBaseline:
         assert len(qb.history()) == 1
 
     def test_pin_sets_baseline(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         sr = _make_suite_result()
@@ -68,7 +68,7 @@ class TestQualityBaseline:
         assert qb.pinned().id == run.id  # type: ignore[union-attr]
 
     def test_pin_latest_pins_most_recent(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         qb.record(_make_suite_result())
@@ -77,7 +77,7 @@ class TestQualityBaseline:
         assert pinned.id == run2.id
 
     def test_compare_returns_none_when_no_baseline(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         sr = _make_suite_result()
@@ -85,7 +85,7 @@ class TestQualityBaseline:
         assert report is None
 
     def test_compare_no_regression_when_above_threshold(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline(regression_threshold=0.05)
         baseline_sr = _make_suite_result(passed=4, total=5)  # 80%
@@ -97,7 +97,7 @@ class TestQualityBaseline:
         assert report.regressed is False
 
     def test_compare_regression_detected_when_below_threshold(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline(regression_threshold=0.05)
         baseline_sr = _make_suite_result(passed=10, total=10)  # 100%
@@ -110,7 +110,7 @@ class TestQualityBaseline:
         assert report.delta == pytest.approx(-0.2)
 
     def test_compare_identifies_newly_failing_cases(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         baseline_sr = _make_suite_result(case_results={"case-A": True, "case-B": True})
@@ -122,7 +122,7 @@ class TestQualityBaseline:
         assert "case-B" in report.newly_failing
 
     def test_compare_identifies_newly_passing_cases(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         baseline_sr = _make_suite_result(case_results={"case-A": False, "case-B": True})
@@ -134,7 +134,7 @@ class TestQualityBaseline:
         assert "case-A" in report.newly_passing
 
     def test_history_sorted_by_recorded_at(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         for _ in range(3):
@@ -145,7 +145,7 @@ class TestQualityBaseline:
             assert history[i].recorded_at <= history[i + 1].recorded_at
 
     def test_cost_delta_computed_correctly(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         qb = QualityBaseline()
         qb.record(_make_suite_result(cost_usd=0.01))

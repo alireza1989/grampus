@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.core.errors import SnapshotError
-from nexus.core.types import AgentDefinition, AgentState, AgentStatus, TokenUsage
+from grampus.core.errors import SnapshotError
+from grampus.core.types import AgentDefinition, AgentState, AgentStatus, TokenUsage
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -44,7 +44,7 @@ def _make_agent_state(
 
 
 def _make_snapshot(**kwargs: Any) -> Any:
-    from nexus.orchestration.snapshot import StateSnapshot
+    from grampus.orchestration.snapshot import StateSnapshot
 
     defaults = dict(
         agent_id="test-agent",
@@ -65,7 +65,7 @@ def _make_snapshot(**kwargs: Any) -> Any:
 
 class TestStateSnapshot:
     def test_fields_default_populated(self) -> None:
-        from nexus.orchestration.snapshot import StateSnapshot
+        from grampus.orchestration.snapshot import StateSnapshot
 
         snap = StateSnapshot(
             agent_id="a",
@@ -77,7 +77,7 @@ class TestStateSnapshot:
         assert snap.schema_version == "1.0"
 
     def test_json_round_trip(self) -> None:
-        from nexus.orchestration.snapshot import StateSnapshot
+        from grampus.orchestration.snapshot import StateSnapshot
 
         original = _make_snapshot()
         serialized = original.model_dump_json(indent=2)
@@ -87,13 +87,13 @@ class TestStateSnapshot:
         assert restored.session_id == original.session_id
         assert restored.state.current_step == original.state.current_step
 
-    def test_nexus_version_populated(self) -> None:
+    def test_grampus_version_populated(self) -> None:
         snap = _make_snapshot()
-        assert snap.nexus_version
-        assert len(snap.nexus_version) > 0
+        assert snap.grampus_version
+        assert len(snap.grampus_version) > 0
 
     def test_tags_default_empty(self) -> None:
-        from nexus.orchestration.snapshot import StateSnapshot
+        from grampus.orchestration.snapshot import StateSnapshot
 
         snap = StateSnapshot(
             agent_id="a",
@@ -103,7 +103,7 @@ class TestStateSnapshot:
         assert snap.tags == []
 
     def test_description_default_empty(self) -> None:
-        from nexus.orchestration.snapshot import StateSnapshot
+        from grampus.orchestration.snapshot import StateSnapshot
 
         snap = StateSnapshot(
             agent_id="a",
@@ -120,7 +120,7 @@ class TestStateSnapshot:
 
 class TestSnapshotManagerFileOps:
     def test_to_file_creates_file(self, tmp_path: Any) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         out = tmp_path / "snap.json"
@@ -128,7 +128,7 @@ class TestSnapshotManagerFileOps:
         assert out.exists()
 
     def test_to_file_creates_parent_dirs(self, tmp_path: Any) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         out = tmp_path / "sub" / "dir" / "snap.json"
@@ -136,7 +136,7 @@ class TestSnapshotManagerFileOps:
         assert out.exists()
 
     def test_from_file_round_trips_snapshot(self, tmp_path: Any) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         out = tmp_path / "snap.json"
@@ -147,14 +147,14 @@ class TestSnapshotManagerFileOps:
         assert restored.state.current_step == snap.state.current_step
 
     def test_from_file_missing_file_raises(self, tmp_path: Any) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         with pytest.raises(SnapshotError) as exc_info:
             SnapshotManager.from_file(tmp_path / "nonexistent.json")
         assert exc_info.value.code == "FILE_NOT_FOUND"
 
     def test_from_file_invalid_json_raises(self, tmp_path: Any) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         bad = tmp_path / "bad.json"
         bad.write_text("not-valid-json{{{", encoding="utf-8")
@@ -163,7 +163,7 @@ class TestSnapshotManagerFileOps:
         assert exc_info.value.code == "INVALID_SNAPSHOT"
 
     def test_from_dict_valid_data_returns_snapshot(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         data = json.loads(snap.model_dump_json())
@@ -171,7 +171,7 @@ class TestSnapshotManagerFileOps:
         assert restored.snapshot_id == snap.snapshot_id
 
     def test_from_dict_invalid_data_raises(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         with pytest.raises(SnapshotError) as exc_info:
             SnapshotManager.from_dict({"missing": "required_fields"})
@@ -192,7 +192,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_calls_store_get(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         state = _make_agent_state()
         store = self._mock_store(state)
@@ -202,7 +202,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_returns_snapshot_with_correct_agent_id(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         state = _make_agent_state(agent_id="my-agent")
         store = self._mock_store(state)
@@ -213,7 +213,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_state_not_found_raises(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store(None)
         mgr = SnapshotManager(state_store=store)
@@ -223,7 +223,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_no_store_raises(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         mgr = SnapshotManager(None)
         with pytest.raises(SnapshotError) as exc_info:
@@ -232,7 +232,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_description_propagated(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store(_make_agent_state())
         mgr = SnapshotManager(state_store=store)
@@ -241,7 +241,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_tags_propagated(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store(_make_agent_state())
         mgr = SnapshotManager(state_store=store)
@@ -250,7 +250,7 @@ class TestSnapshotManagerExport:
 
     @pytest.mark.asyncio
     async def test_export_session_source_environment_propagated(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store(_make_agent_state())
         mgr = SnapshotManager(state_store=store)
@@ -271,7 +271,7 @@ class TestSnapshotManagerRestore:
 
     @pytest.mark.asyncio
     async def test_restore_writes_to_store(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store()
         mgr = SnapshotManager(state_store=store)
@@ -284,7 +284,7 @@ class TestSnapshotManagerRestore:
 
     @pytest.mark.asyncio
     async def test_restore_no_store_raises(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         mgr = SnapshotManager(None)
         with pytest.raises(SnapshotError) as exc_info:
@@ -293,7 +293,7 @@ class TestSnapshotManagerRestore:
 
     @pytest.mark.asyncio
     async def test_restore_with_session_id_override(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store()
         mgr = SnapshotManager(state_store=store)
@@ -304,7 +304,7 @@ class TestSnapshotManagerRestore:
 
     @pytest.mark.asyncio
     async def test_restore_updated_at_refreshed_on_override(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store()
         mgr = SnapshotManager(state_store=store)
@@ -318,7 +318,7 @@ class TestSnapshotManagerRestore:
 
     @pytest.mark.asyncio
     async def test_restore_original_session_unchanged_without_override(self) -> None:
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.orchestration.snapshot import SnapshotManager
 
         store = self._mock_store()
         mgr = SnapshotManager(state_store=store)
@@ -341,7 +341,7 @@ def _make_app(
     """Build a minimal FastAPI app with mock state for endpoint tests."""
     from fastapi import FastAPI
 
-    from nexus.server.routes import create_router
+    from grampus.server.routes import create_router
 
     app = FastAPI()
     app.include_router(create_router(has_memory=False))
@@ -464,8 +464,8 @@ class TestSnapshotCLI:
     def test_show_command_prints_summary(self, tmp_path: Any) -> None:
         from click.testing import CliRunner
 
-        from nexus.cli.commands.state import state
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.cli.commands.state import state
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot(agent_id="my-agent", session_id="sess-xyz")
         snap_file = tmp_path / "snap.json"
@@ -479,8 +479,8 @@ class TestSnapshotCLI:
     def test_show_command_json_format(self, tmp_path: Any) -> None:
         from click.testing import CliRunner
 
-        from nexus.cli.commands.state import state
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.cli.commands.state import state
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         snap_file = tmp_path / "snap.json"
@@ -495,7 +495,7 @@ class TestSnapshotCLI:
     def test_show_command_missing_file_exits_nonzero(self, tmp_path: Any) -> None:
         from click.testing import CliRunner
 
-        from nexus.cli.commands.state import state
+        from grampus.cli.commands.state import state
 
         runner = CliRunner()
         result = runner.invoke(state, ["show", str(tmp_path / "nonexistent.json")])
@@ -504,15 +504,15 @@ class TestSnapshotCLI:
     def test_import_dry_run_prints_summary_no_write(self, tmp_path: Any) -> None:
         from click.testing import CliRunner
 
-        from nexus.cli.commands.state import state
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.cli.commands.state import state
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot()
         snap_file = tmp_path / "snap.json"
         SnapshotManager.to_file(snap, snap_file)
 
         runner = CliRunner()
-        with patch("nexus.cli.commands.state.SnapshotManager") as mock_mgr_cls:
+        with patch("grampus.cli.commands.state.SnapshotManager") as mock_mgr_cls:
             mock_mgr = MagicMock()
             mock_mgr_cls.return_value = mock_mgr
             mock_mgr_cls.from_file = SnapshotManager.from_file  # keep real from_file
@@ -525,8 +525,8 @@ class TestSnapshotCLI:
     def test_import_dry_run_shows_all_fields(self, tmp_path: Any) -> None:
         from click.testing import CliRunner
 
-        from nexus.cli.commands.state import state
-        from nexus.orchestration.snapshot import SnapshotManager
+        from grampus.cli.commands.state import state
+        from grampus.orchestration.snapshot import SnapshotManager
 
         snap = _make_snapshot(
             agent_id="my-agent",

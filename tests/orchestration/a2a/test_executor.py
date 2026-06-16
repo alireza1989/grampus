@@ -1,4 +1,4 @@
-"""Tests for NexusA2AExecutor."""
+"""Tests for GrampusA2AExecutor."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from a2a.types.a2a_pb2 import (
     TaskStatusUpdateEvent,
 )
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
 
 
 def _make_request_context(
@@ -86,11 +86,11 @@ class _CollectingQueue(EventQueueLegacy):
 
 
 async def test_execute_emits_working_then_completed() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     runner = _make_runner("result text")
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context("do something")
     queue = _CollectingQueue()
@@ -109,11 +109,11 @@ async def test_execute_emits_working_then_completed() -> None:
 
 
 async def test_execute_emits_failed_on_runner_exception() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     runner = _make_runner(raise_exc=RuntimeError("boom"))
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context()
     queue = _CollectingQueue()
@@ -126,11 +126,11 @@ async def test_execute_emits_failed_on_runner_exception() -> None:
 
 
 async def test_execute_extracts_text_from_message_parts() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     runner = _make_runner()
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context(text="my task text")
     queue = _CollectingQueue()
@@ -145,11 +145,11 @@ async def test_execute_extracts_text_from_message_parts() -> None:
 
 
 async def test_cancel_emits_canceled_state() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     runner = _make_runner()
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context()
     queue = _CollectingQueue()
@@ -163,11 +163,11 @@ async def test_cancel_emits_canceled_state() -> None:
 
 
 async def test_execute_output_text_in_completed_message() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     runner = _make_runner("the answer")
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context()
     queue = _CollectingQueue()
@@ -182,7 +182,7 @@ async def test_execute_output_text_in_completed_message() -> None:
 
 
 async def test_execute_builds_history_from_context_task() -> None:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
 
     existing_task = Task()
     existing_task.id = "task-1"
@@ -194,7 +194,7 @@ async def test_execute_builds_history_from_context_task() -> None:
 
     runner = _make_runner("follow-up result")
     agent_def = _make_agent_def()
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
 
     context = _make_request_context(
         text="follow-up",

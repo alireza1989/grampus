@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.state — DaprStateStore namespaced CRUD."""
+"""Tests for grampus.dapr.state — DaprStateStore namespaced CRUD."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import BaseModel
 
-from nexus.core.errors import ConcurrencyError, StateSerializationError
-from nexus.dapr.state import DaprStateStore
+from grampus.core.errors import ConcurrencyError, StateSerializationError
+from grampus.dapr.state import DaprStateStore
 
 
 class Item(BaseModel):

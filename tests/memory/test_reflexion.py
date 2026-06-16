@@ -13,15 +13,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.reflexion.engine import ReflexionEngine
-from nexus.memory.reflexion.optimizer import PromptOptimizer
-from nexus.memory.reflexion.skill_library import SkillLibrary
-from nexus.memory.reflexion.types import (
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.reflexion.engine import ReflexionEngine
+from grampus.memory.reflexion.optimizer import PromptOptimizer
+from grampus.memory.reflexion.skill_library import SkillLibrary
+from grampus.memory.reflexion.types import (
     ReflexionHookResult,
     SkillExtractionResult,
 )
-from nexus.memory.types import Procedure, ProcedureType
+from grampus.memory.types import Procedure, ProcedureType
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -53,13 +53,13 @@ def _make_procedure(
 
 
 def _make_state(agent_id: str = "agent-1") -> Any:
-    from nexus.core.types import AgentState
+    from grampus.core.types import AgentState
 
     return AgentState(agent_id=agent_id, session_id="session-1")
 
 
 def _make_agent_def(model: str = "claude-sonnet-4-6") -> Any:
-    from nexus.core.types import AgentDefinition
+    from grampus.core.types import AgentDefinition
 
     return AgentDefinition(name="test-agent", model=model, system_prompt="You are helpful.")
 
@@ -104,8 +104,8 @@ def _make_embedding_svc(dim: int = 4) -> Any:
 
 
 def _make_model_client(content: str = '{"quality": 0.8}') -> Any:
-    from nexus.core.models.base import ModelResponse
-    from nexus.core.types import TokenUsage
+    from grampus.core.models.base import ModelResponse
+    from grampus.core.types import TokenUsage
 
     resp = ModelResponse(
         content=content,
@@ -122,7 +122,7 @@ def _make_model_client(content: str = '{"quality": 0.8}') -> Any:
 
 
 def _make_execution_result(status_completed: bool = True) -> Any:
-    from nexus.core.types import AgentStatus, ExecutionResult, Message, Role, TokenUsage
+    from grampus.core.types import AgentStatus, ExecutionResult, Message, Role, TokenUsage
 
     return ExecutionResult(
         output="The task is done.",
@@ -279,8 +279,8 @@ class TestReflexionEngine:
         engine = ReflexionEngine(mem, embed)
 
         # First call: reflection text, second: quality rating
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         def _resp(content: str) -> ModelResponse:
             return ModelResponse(
@@ -324,8 +324,8 @@ class TestReflexionEngine:
         ]
         idx = 0
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         async def _c(**kw: Any) -> ModelResponse:
             nonlocal idx
@@ -372,8 +372,8 @@ class TestReflexionEngine:
         responses = ["Good reflection text.", '{"quality": 0.65}']
         idx = 0
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         async def _c(**kw: Any) -> ModelResponse:
             nonlocal idx
@@ -671,9 +671,9 @@ class TestPromptOptimizer:
         candidate_pass_rate: float = 0.8,
         no_failing: bool = False,
     ) -> tuple[PromptOptimizer, Any, Any]:
-        from nexus.evaluation.assertions import AssertionResult
-        from nexus.evaluation.prompt_versions import PromptVersionManager
-        from nexus.evaluation.suite import CaseResult, SuiteResult
+        from grampus.evaluation.assertions import AssertionResult
+        from grampus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.suite import CaseResult, SuiteResult
 
         mem = _make_procedural_mem()
         embed = _make_embedding_svc()
@@ -763,7 +763,7 @@ class TestPromptOptimizer:
     @pytest.mark.asyncio()
     async def test_optimize_never_raises(self) -> None:
         """Even when eval_runner raises, optimize returns improved=False."""
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mem = _make_procedural_mem()
         embed = _make_embedding_svc()
@@ -787,8 +787,8 @@ class TestPromptOptimizer:
         optimizer, _, agent_def = self._make_optimizer(
             baseline_pass_rate=0.5, candidate_pass_rate=0.6
         )
-        from nexus.evaluation.assertions import AssertionResult
-        from nexus.evaluation.suite import CaseResult
+        from grampus.evaluation.assertions import AssertionResult
+        from grampus.evaluation.suite import CaseResult
 
         failing = [
             CaseResult(
@@ -817,14 +817,14 @@ class TestAgentRunnerReflexionIntegration:
     def _make_runner_with_mocks(
         self, reflexion_engine: Any = None, skill_library: Any = None
     ) -> Any:
-        from nexus.orchestration.runner import AgentRunner
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.runner import AgentRunner
+        from grampus.tools.executor import ToolExecutor
 
         tool_exec = MagicMock(spec=ToolExecutor)
         client = MagicMock()
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         client.complete = AsyncMock(
             return_value=ModelResponse(
@@ -838,7 +838,7 @@ class TestAgentRunnerReflexionIntegration:
             )
         )
 
-        from nexus.observability.events import EventLog
+        from grampus.observability.events import EventLog
 
         with patch.object(EventLog, "open", new_callable=AsyncMock) as mock_el:
             mock_el.return_value = MagicMock(
@@ -856,9 +856,9 @@ class TestAgentRunnerReflexionIntegration:
     @pytest.mark.asyncio()
     async def test_runner_calls_reflexion_engine_on_failure(self) -> None:
         """When the runner raises, it must call reflexion_engine.observe_failure."""
-        from nexus.observability.events import EventLog
-        from nexus.orchestration.runner import AgentRunner
-        from nexus.tools.executor import ToolExecutor
+        from grampus.observability.events import EventLog
+        from grampus.orchestration.runner import AgentRunner
+        from grampus.tools.executor import ToolExecutor
 
         reflexion_engine = MagicMock()
         reflexion_engine.observe_failure = AsyncMock(
@@ -881,9 +881,9 @@ class TestAgentRunnerReflexionIntegration:
     @pytest.mark.asyncio()
     async def test_runner_calls_skill_library_on_success(self) -> None:
         """After a COMPLETED run, skill_library.observe_success must be called."""
-        from nexus.observability.events import EventLog
-        from nexus.orchestration.runner import AgentRunner
-        from nexus.tools.executor import ToolExecutor
+        from grampus.observability.events import EventLog
+        from grampus.orchestration.runner import AgentRunner
+        from grampus.tools.executor import ToolExecutor
 
         skill_library = MagicMock()
         skill_library.observe_success = AsyncMock(
@@ -892,8 +892,8 @@ class TestAgentRunnerReflexionIntegration:
 
         tool_exec = MagicMock(spec=ToolExecutor)
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         client = MagicMock()
         client.complete = AsyncMock(
@@ -918,15 +918,15 @@ class TestAgentRunnerReflexionIntegration:
     @pytest.mark.asyncio()
     async def test_runner_without_hooks_behaves_identically(self) -> None:
         """AgentRunner with no F1 params produces identical ExecutionResult."""
-        from nexus.core.types import AgentStatus
-        from nexus.observability.events import EventLog
-        from nexus.orchestration.runner import AgentRunner
-        from nexus.tools.executor import ToolExecutor
+        from grampus.core.types import AgentStatus
+        from grampus.observability.events import EventLog
+        from grampus.orchestration.runner import AgentRunner
+        from grampus.tools.executor import ToolExecutor
 
         tool_exec = MagicMock(spec=ToolExecutor)
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         client = MagicMock()
         client.complete = AsyncMock(

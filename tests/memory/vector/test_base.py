@@ -1,10 +1,15 @@
-"""Tests for nexus.memory.vector.base — VectorStore ABC and data models."""
+"""Tests for grampus.memory.vector.base — VectorStore ABC and data models."""
 
 from __future__ import annotations
 
 import pytest
 
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult, VectorStore, VectorStoreType
+from grampus.memory.vector.base import (
+    VectorRecord,
+    VectorSearchResult,
+    VectorStore,
+    VectorStoreType,
+)
 
 
 def test_vector_record_payload_defaults_empty() -> None:

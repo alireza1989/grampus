@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError, OrchestrationError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.errors import BudgetExceededError, OrchestrationError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     AgentState,
     AgentStatus,
@@ -19,9 +19,9 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
-from nexus.memory.manager import MemoryRecallResult
-from nexus.orchestration.cost_tracker import CostSummary
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.memory.manager import MemoryRecallResult
+from grampus.orchestration.cost_tracker import CostSummary
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -1,4 +1,4 @@
-"""Tests for nexus eval command."""
+"""Tests for grampus eval command."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.evaluation.suite import CaseResult, SuiteResult
+from grampus.cli.main import cli
+from grampus.evaluation.suite import CaseResult, SuiteResult
 
 
 def _make_suite_result(*, pass_rate: float = 0.8, passed: int = 4, total: int = 5) -> SuiteResult:
@@ -46,14 +46,14 @@ def _write_suite_file(path: Path) -> Path:
 
 
 class TestEvalCommand:
-    """Tests for nexus eval command."""
+    """Tests for grampus eval command."""
 
     def test_eval_runs_suite_and_prints_report(self, tmp_path: Path) -> None:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result()
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -65,8 +65,8 @@ class TestEvalCommand:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result()
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -83,8 +83,8 @@ class TestEvalCommand:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result()
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -98,8 +98,8 @@ class TestEvalCommand:
         output_file = tmp_path / "report.txt"
         mock_result = _make_suite_result()
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -112,8 +112,8 @@ class TestEvalCommand:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result(pass_rate=0.8)
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -124,8 +124,8 @@ class TestEvalCommand:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result(pass_rate=0.95, passed=5, total=5)
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()
@@ -136,8 +136,8 @@ class TestEvalCommand:
         suite_file = _write_suite_file(tmp_path)
         mock_result = _make_suite_result()
         with (
-            patch("nexus.cli.commands.eval._load_suite"),
-            patch("nexus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
+            patch("grampus.cli.commands.eval._load_suite"),
+            patch("grampus.cli.commands.eval._run_suite", new_callable=AsyncMock) as mock_run,
         ):
             mock_run.return_value = mock_result
             runner = CliRunner()

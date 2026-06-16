@@ -10,11 +10,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from click.testing import CliRunner
 
-from nexus.evaluation.red_team.attacker import AttackerAgent
-from nexus.evaluation.red_team.judge import RedTeamJudge
-from nexus.evaluation.red_team.report import RedTeamReport, RedTeamSummary
-from nexus.evaluation.red_team.runner import RedTeamRunner
-from nexus.evaluation.red_team.types import (
+from grampus.evaluation.red_team.attacker import AttackerAgent
+from grampus.evaluation.red_team.judge import RedTeamJudge
+from grampus.evaluation.red_team.report import RedTeamReport, RedTeamSummary
+from grampus.evaluation.red_team.runner import RedTeamRunner
+from grampus.evaluation.red_team.types import (
     AttackCategory,
     AttackPayload,
     AttackResult,
@@ -149,7 +149,7 @@ async def test_attacker_mutate_never_raises() -> None:
 @pytest.mark.asyncio
 async def test_attacker_generate_never_raises() -> None:
     """When a strategy throws, generate_payloads must return remaining payloads, not raise."""
-    from nexus.evaluation.red_team.strategies.base import BaseAttackStrategy
+    from grampus.evaluation.red_team.strategies.base import BaseAttackStrategy
 
     class _ExplodingStrategy(BaseAttackStrategy):
         @property
@@ -252,7 +252,7 @@ async def test_runner_multi_turn_payload_sends_prior_turns() -> None:
         received_messages.append(list(messages))
         return "safe response"
 
-    from nexus.evaluation.red_team.strategies.reasoning_hijack import ReasoningHijackStrategy
+    from grampus.evaluation.red_team.strategies.reasoning_hijack import ReasoningHijackStrategy
 
     strategy = ReasoningHijackStrategy()
     attacker = AttackerAgent(strategies=[strategy])
@@ -362,7 +362,7 @@ def test_report_build_never_raises() -> None:
 
 
 def test_redteam_command_exists_in_cli() -> None:
-    from nexus.cli.main import cli
+    from grampus.cli.main import cli
 
     runner = CliRunner()
     result = runner.invoke(cli, ["--help"])
@@ -371,7 +371,7 @@ def test_redteam_command_exists_in_cli() -> None:
 
 
 def test_redteam_command_has_help() -> None:
-    from nexus.cli.main import cli
+    from grampus.cli.main import cli
 
     runner = CliRunner()
     result = runner.invoke(cli, ["redteam", "--help"])
@@ -380,7 +380,7 @@ def test_redteam_command_has_help() -> None:
 
 
 def test_redteam_command_requires_agent_file() -> None:
-    from nexus.cli.main import cli
+    from grampus.cli.main import cli
 
     runner = CliRunner()
     result = runner.invoke(cli, ["redteam"])
@@ -388,7 +388,7 @@ def test_redteam_command_requires_agent_file() -> None:
 
 
 def test_redteam_command_invalid_category_rejected() -> None:
-    from nexus.cli.main import cli
+    from grampus.cli.main import cli
 
     runner = CliRunner()
     # Provide a dummy file to get past the file check

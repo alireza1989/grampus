@@ -6,15 +6,15 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition
-from nexus.observability.metrics import NexusMetrics
-from nexus.server.app import create_app
+from grampus.core.types import AgentDefinition
+from grampus.observability.metrics import GrampusMetrics
+from grampus.server.app import create_app
 
 
-def _make_client(metrics: NexusMetrics | None) -> TestClient:
+def _make_client(metrics: GrampusMetrics | None) -> TestClient:
     runner = MagicMock()
     agent_def = AgentDefinition(name="test", model="claude-sonnet-4-6")
-    app = create_app(runner, agent_def, nexus_metrics=metrics)
+    app = create_app(runner, agent_def, grampus_metrics=metrics)
     return TestClient(app, raise_server_exceptions=False)
 
 
@@ -38,7 +38,7 @@ def test_cost_summary_empty_state_when_no_metrics() -> None:
 
 
 def test_cost_summary_shows_stat_cards() -> None:
-    m = NexusMetrics(agent_id="agent-1")
+    m = GrampusMetrics(agent_id="agent-1")
     m.record_llm_call(
         model="claude-sonnet-4-6",
         input_tokens=100,
@@ -54,7 +54,7 @@ def test_cost_summary_shows_stat_cards() -> None:
 
 
 def test_cost_summary_shows_model_table() -> None:
-    m = NexusMetrics(agent_id="agent-1")
+    m = GrampusMetrics(agent_id="agent-1")
     m.record_llm_call(
         model="claude-opus-4-7",
         input_tokens=200,

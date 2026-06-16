@@ -1,4 +1,4 @@
-"""Tests for nexus memory command."""
+"""Tests for grampus memory command."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.memory.types import EpisodicRecord, SemanticFact
+from grampus.cli.main import cli
+from grampus.memory.types import EpisodicRecord, SemanticFact
 
 
 def _make_episodic_records() -> list[EpisodicRecord]:
@@ -57,15 +57,15 @@ def _make_mock_semantic(facts: list[SemanticFact]) -> AsyncMock:
 
 
 class TestMemoryInspect:
-    """Tests for nexus memory inspect."""
+    """Tests for grampus memory inspect."""
 
     def test_inspect_prints_table_of_records(self, tmp_path: Path) -> None:
         records = _make_episodic_records()
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "inspect", "test-agent"])
@@ -78,8 +78,8 @@ class TestMemoryInspect:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "inspect", "test-agent", "--session", "sess-a"])
@@ -93,8 +93,8 @@ class TestMemoryInspect:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic(facts)
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "inspect", "test-agent", "--type", "semantic"])
@@ -103,15 +103,15 @@ class TestMemoryInspect:
 
 
 class TestMemoryClear:
-    """Tests for nexus memory clear."""
+    """Tests for grampus memory clear."""
 
     def test_clear_prompts_confirmation(self) -> None:
         records = _make_episodic_records()
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "clear", "test-agent"], input="n\n")
@@ -124,8 +124,8 @@ class TestMemoryClear:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "clear", "test-agent", "--yes"])
@@ -137,8 +137,8 @@ class TestMemoryClear:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "clear", "test-agent", "--yes"])
@@ -149,8 +149,8 @@ class TestMemoryClear:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic([])
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "clear", "test-agent"], input="n\n")
@@ -159,7 +159,7 @@ class TestMemoryClear:
 
 
 class TestMemoryStats:
-    """Tests for nexus memory stats."""
+    """Tests for grampus memory stats."""
 
     def test_stats_prints_counts_and_timestamps(self) -> None:
         records = _make_episodic_records()
@@ -167,8 +167,8 @@ class TestMemoryStats:
         mock_ep = _make_mock_episodic(records)
         mock_sem = _make_mock_semantic(facts)
         with (
-            patch("nexus.cli.commands.memory._make_episodic", return_value=mock_ep),
-            patch("nexus.cli.commands.memory._make_semantic", return_value=mock_sem),
+            patch("grampus.cli.commands.memory._make_episodic", return_value=mock_ep),
+            patch("grampus.cli.commands.memory._make_semantic", return_value=mock_sem),
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ["memory", "stats", "test-agent"])

@@ -7,16 +7,14 @@ import textwrap
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
-from nexus.tools.library.code_analysis_tools import (
+from grampus.tools.library.code_analysis_tools import (
     analyze_file_tool,
     check_types_tool,
     find_symbol_tool,
     lint_code_tool,
     summarize_structure_tool,
 )
-from nexus.tools.library.code_lint_runner import (
+from grampus.tools.library.code_lint_runner import (
     MypyResult,
     RuffResult,
     run_mypy,
@@ -85,7 +83,7 @@ _MYPY_SAMPLE_LINES = (
 class TestRuffRunner:
     async def test_run_ruff_returns_findings_from_json(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(_RUFF_SAMPLE_JSON, b"", 1)),
         ):
             result = await run_ruff("test.py")
@@ -102,7 +100,7 @@ class TestRuffRunner:
 
     async def test_run_ruff_graceful_when_not_on_path(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             side_effect=FileNotFoundError("ruff: not found"),
         ):
             result = await run_ruff("test.py")
@@ -113,7 +111,7 @@ class TestRuffRunner:
 
     async def test_run_ruff_handles_ruff_internal_error(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(b"", b"ruff: fatal error", 2)),
         ):
             result = await run_ruff("test.py")
@@ -124,7 +122,7 @@ class TestRuffRunner:
 
     async def test_run_ruff_exit_zero_means_no_findings(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(b"[]", b"", 0)),
         ):
             result = await run_ruff("test.py")
@@ -140,7 +138,7 @@ class TestRuffRunner:
             captured.append(args)
             return b"[]", b"", 0
 
-        with patch("nexus.tools.library.code_lint_runner._exec", side_effect=fake_exec):
+        with patch("grampus.tools.library.code_lint_runner._exec", side_effect=fake_exec):
             await run_ruff("test.py", select=["E", "F"])
 
         assert any("--select=E,F" in a for a in captured[0])
@@ -154,7 +152,7 @@ class TestRuffRunner:
 class TestMypyRunner:
     async def test_run_mypy_parses_json_lines(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(_MYPY_SAMPLE_LINES, b"", 1)),
         ):
             result = await run_mypy("test.py")
@@ -170,7 +168,7 @@ class TestMypyRunner:
 
     async def test_run_mypy_graceful_when_not_on_path(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             side_effect=FileNotFoundError("mypy: not found"),
         ):
             result = await run_mypy("test.py")
@@ -182,7 +180,7 @@ class TestMypyRunner:
 
     async def test_run_mypy_clean_exit_zero_no_errors(self) -> None:
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(b"", b"", 0)),
         ):
             result = await run_mypy("test.py")
@@ -193,7 +191,7 @@ class TestMypyRunner:
     async def test_run_mypy_skips_non_json_lines(self) -> None:
         mixed = b"Success: no issues found\n" + _MYPY_SAMPLE_LINES
         with patch(
-            "nexus.tools.library.code_lint_runner._exec",
+            "grampus.tools.library.code_lint_runner._exec",
             new=AsyncMock(return_value=(mixed, b"", 1)),
         ):
             result = await run_mypy("test.py")
@@ -267,7 +265,7 @@ class TestLintCodeTool:
         mock_result = RuffResult(available=False, findings=[], total=0)
 
         with patch(
-            "nexus.tools.library.code_analysis_tools.run_ruff",
+            "grampus.tools.library.code_analysis_tools.run_ruff",
             new=AsyncMock(return_value=mock_result),
         ):
             result = await lint_code_tool(path=str(p))
@@ -288,7 +286,7 @@ class TestLintCodeTool:
         mock_result = RuffResult(available=True, findings=[], total=0)
 
         with patch(
-            "nexus.tools.library.code_analysis_tools.run_ruff",
+            "grampus.tools.library.code_analysis_tools.run_ruff",
             new=AsyncMock(return_value=mock_result),
         ):
             result = await lint_code_tool(path=str(p))
@@ -307,12 +305,10 @@ class TestCheckTypesTool:
     async def test_unavailable_returns_ok_with_hint(self, tmp_path: Path) -> None:
         p = tmp_path / "mod.py"
         p.write_text("x: int = 1\n")
-        mock_result = MypyResult(
-            available=False, errors=[], total_errors=0, total_warnings=0
-        )
+        mock_result = MypyResult(available=False, errors=[], total_errors=0, total_warnings=0)
 
         with patch(
-            "nexus.tools.library.code_analysis_tools.run_mypy",
+            "grampus.tools.library.code_analysis_tools.run_mypy",
             new=AsyncMock(return_value=mock_result),
         ):
             result = await check_types_tool(path=str(p))
@@ -330,12 +326,10 @@ class TestCheckTypesTool:
     async def test_with_type_errors_returns_ok(self, tmp_path: Path) -> None:
         p = tmp_path / "mod.py"
         p.write_text("x: int = 'oops'\n")
-        mock_result = MypyResult(
-            available=True, errors=[], total_errors=0, total_warnings=0
-        )
+        mock_result = MypyResult(available=True, errors=[], total_errors=0, total_warnings=0)
 
         with patch(
-            "nexus.tools.library.code_analysis_tools.run_mypy",
+            "grampus.tools.library.code_analysis_tools.run_mypy",
             new=AsyncMock(return_value=mock_result),
         ):
             result = await check_types_tool(path=str(p))
@@ -449,7 +443,7 @@ class TestSummarizeStructureTool:
 
 def test_tools_registered_in_library() -> None:
     """All five tools appear in the LIBRARY_REGISTRY after import."""
-    from nexus.tools.library import LIBRARY_REGISTRY
+    from grampus.tools.library import LIBRARY_REGISTRY
 
     names = {t.name for t in LIBRARY_REGISTRY.list_all()}
     assert "analyze_file" in names

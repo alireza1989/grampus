@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from nexus.tools.library.document_chunker import DocumentChunker
-from nexus.tools.library.document_tools import read_docx_tool, read_excel_tool, read_pdf_tool
-from nexus.tools.library.document_types import ChunkStrategy, DocumentMetadata
+from grampus.tools.library.document_chunker import DocumentChunker
+from grampus.tools.library.document_tools import read_docx_tool, read_excel_tool, read_pdf_tool
+from grampus.tools.library.document_types import ChunkStrategy, DocumentMetadata
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -214,7 +214,7 @@ class TestReadExcelTool:
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — require nexus[documents] installed
+# Integration tests — require grampus[documents] installed
 # ---------------------------------------------------------------------------
 
 
@@ -222,7 +222,7 @@ class TestReadExcelTool:
 class TestDocumentIntegration:
     @pytest.fixture()
     def pdf_fixture(self, tmp_path: Path) -> Path:
-        fitz = pytest.importorskip("fitz", reason="requires pymupdf (nexus[documents])")
+        fitz = pytest.importorskip("fitz", reason="requires pymupdf (grampus[documents])")
         doc = fitz.open()
         page = doc.new_page()
         page.insert_text((50, 100), "Chapter One\n\nThis is the body of chapter one.")
@@ -233,7 +233,7 @@ class TestDocumentIntegration:
 
     @pytest.fixture()
     def docx_fixture(self, tmp_path: Path) -> Path:
-        docx = pytest.importorskip("docx", reason="requires python-docx (nexus[documents])")
+        docx = pytest.importorskip("docx", reason="requires python-docx (grampus[documents])")
         doc = docx.Document()
         doc.add_heading("Chapter 1", level=1)
         doc.add_paragraph("This is the first paragraph in chapter one.")
@@ -245,7 +245,7 @@ class TestDocumentIntegration:
 
     @pytest.fixture()
     def xlsx_fixture(self, tmp_path: Path) -> Path:
-        openpyxl = pytest.importorskip("openpyxl", reason="requires openpyxl (nexus[documents])")
+        openpyxl = pytest.importorskip("openpyxl", reason="requires openpyxl (grampus[documents])")
         wb = openpyxl.Workbook()
         ws1 = wb.active
         ws1.title = "Sheet1"

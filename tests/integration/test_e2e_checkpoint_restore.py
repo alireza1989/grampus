@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.types import AgentState, AgentStatus
+from grampus.core.types import AgentState, AgentStatus
 from tests.integration.conftest import FakeStateStore, make_session_id
 
 
@@ -17,7 +17,7 @@ class TestCheckpointRestoreE2E:
     async def test_graph_resumes_from_checkpoint_after_failure(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         node_a_calls = [0]
         node_b_calls = [0]
@@ -62,7 +62,7 @@ class TestCheckpointRestoreE2E:
     async def test_restore_returns_none_with_no_checkpoint(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         async def node(state: AgentState) -> AgentState:
             return state
@@ -74,10 +74,10 @@ class TestCheckpointRestoreE2E:
         assert result is None
 
     async def test_human_node_pause_and_resume(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.core.types import AgentDefinition, ToolCall
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.core.types import AgentDefinition, ToolCall
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
         from tests.integration.conftest import MockModelClient
 
         agent_id = "human-node-agent"
@@ -122,7 +122,7 @@ class TestCheckpointRestoreE2E:
     async def test_checkpoint_state_is_fully_restored(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph, GraphCheckpoint
+        from grampus.orchestration.graph import Graph, GraphCheckpoint
 
         async def node_a(state: AgentState) -> AgentState:
             return state.model_copy(update={"metadata": {**state.metadata, "from_a": "yes"}})

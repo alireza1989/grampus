@@ -6,10 +6,10 @@ import asyncio
 
 import pytest
 
-from nexus.core.errors import ToolNotFoundError, ToolTimeoutError, ToolValidationError
-from nexus.core.types import ToolCall, ToolParameter
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.errors import ToolNotFoundError, ToolTimeoutError, ToolValidationError
+from grampus.core.types import ToolCall, ToolParameter
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def _make_registry() -> ToolRegistry:

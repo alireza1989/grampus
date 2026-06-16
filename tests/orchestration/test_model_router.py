@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import ModelError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import Message, Role, TokenUsage
-from nexus.orchestration.model_router import ModelRouter, ModelSpec, ModelTier, RoutingRule
+from grampus.core.errors import ModelError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import Message, Role, TokenUsage
+from grampus.orchestration.model_router import ModelRouter, ModelSpec, ModelTier, RoutingRule
 
 # ---------------------------------------------------------------------------
 # Fixtures

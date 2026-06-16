@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.procedure_extractor — ProcedureExtractor."""
+"""Tests for grampus.memory.procedure_extractor — ProcedureExtractor."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import TokenUsage, ToolCall
-from nexus.memory.procedure_extractor import ProcedureExtractor
-from nexus.memory.types import Procedure
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import TokenUsage, ToolCall
+from grampus.memory.procedure_extractor import ProcedureExtractor
+from grampus.memory.types import Procedure
 
 
 def make_tool_call(

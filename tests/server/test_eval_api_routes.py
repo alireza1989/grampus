@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition
-from nexus.evaluation.run_store import EvalRunRecord, EvalRunStore
-from nexus.server.app import create_app
+from grampus.core.types import AgentDefinition
+from grampus.evaluation.run_store import EvalRunRecord, EvalRunStore
+from grampus.server.app import create_app
 
 
 def _make_record(suite_name: str = "MySuite", pass_rate: float = 0.8) -> EvalRunRecord:

@@ -1,20 +1,20 @@
-"""Tests for PolicyLoader and NexusSafetyPolicy."""
+"""Tests for PolicyLoader and GrampusSafetyPolicy."""
 
 from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import ConfigError
-from nexus.safety.action_guard import ActionPolicy
-from nexus.safety.injection import DetectionLevel
-from nexus.safety.pipeline import SafetyPipeline
-from nexus.safety.policies import NexusSafetyPolicy, PolicyLoader
+from grampus.core.errors import ConfigError
+from grampus.safety.action_guard import ActionPolicy
+from grampus.safety.injection import DetectionLevel
+from grampus.safety.pipeline import SafetyPipeline
+from grampus.safety.policies import GrampusSafetyPolicy, PolicyLoader
 
 
 class TestPolicyLoader:
     def test_load_returns_default_policy_when_path_none(self) -> None:
         policy = PolicyLoader.load(None)
-        assert isinstance(policy, NexusSafetyPolicy)
+        assert isinstance(policy, GrampusSafetyPolicy)
         assert policy.injection_detection_level == DetectionLevel.BALANCED
 
     def test_load_parses_yaml_file(self, tmp_path: pytest.TempPathFactory) -> None:
@@ -51,12 +51,12 @@ agent_policies:
             PolicyLoader.load("/no/such/path.yaml")
 
     def test_build_pipeline_returns_safety_pipeline(self) -> None:
-        policy = NexusSafetyPolicy()
+        policy = GrampusSafetyPolicy()
         pipeline = PolicyLoader.build_pipeline(policy, agent_id="my-agent")
         assert isinstance(pipeline, SafetyPipeline)
 
     def test_build_pipeline_configures_injection_level(self) -> None:
-        policy = NexusSafetyPolicy(injection_detection_level=DetectionLevel.STRICT)
+        policy = GrampusSafetyPolicy(injection_detection_level=DetectionLevel.STRICT)
         pipeline = PolicyLoader.build_pipeline(policy, agent_id="my-agent")
         # Pipeline has injection detector set
         assert pipeline._injection_detector is not None
@@ -64,16 +64,16 @@ agent_policies:
 
     def test_build_pipeline_wires_agent_policy_by_id(self) -> None:
         ap = ActionPolicy(agent_id="target-agent", denied_tools=["rm"])
-        policy = NexusSafetyPolicy(agent_policies=[ap])
+        policy = GrampusSafetyPolicy(agent_policies=[ap])
         pipeline = PolicyLoader.build_pipeline(policy, agent_id="target-agent")
         assert pipeline._action_guard is not None
 
     def test_build_pipeline_with_no_agent_policy_uses_no_guard(self) -> None:
-        policy = NexusSafetyPolicy()
+        policy = GrampusSafetyPolicy()
         pipeline = PolicyLoader.build_pipeline(policy, agent_id="nonexistent-agent")
         assert pipeline._action_guard is None
 
     def test_build_pipeline_configures_pii_actions(self) -> None:
-        policy = NexusSafetyPolicy(pii_actions={"email": "redact", "ssn": "block"})
+        policy = GrampusSafetyPolicy(pii_actions={"email": "redact", "ssn": "block"})
         pipeline = PolicyLoader.build_pipeline(policy, agent_id="a")
         assert pipeline._pii_detector is not None

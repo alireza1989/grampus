@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.hub.manifest import TemplateManifest, TemplateParameter
-from nexus.hub.renderer import collect_variables, render_content, render_filename
+from grampus.hub.manifest import TemplateManifest, TemplateParameter
+from grampus.hub.renderer import collect_variables, render_content, render_filename
 
 
 class TestRenderContent:

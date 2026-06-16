@@ -1,11 +1,11 @@
-"""Tests for nexus.tools.library.send_email."""
+"""Tests for grampus.tools.library.send_email."""
 
 from __future__ import annotations
 
 import smtplib
 from unittest.mock import MagicMock, patch
 
-from nexus.tools.library.send_email import send_email
+from grampus.tools.library.send_email import send_email
 
 
 class TestSendEmail:

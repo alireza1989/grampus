@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import SafetyError
-from nexus.safety.pii import PIIAction, PIIDetector, PIIResult, PIIType
+from grampus.core.errors import SafetyError
+from grampus.safety.pii import PIIAction, PIIDetector, PIIResult, PIIType
 
 
 class TestPIIDetectorScan:

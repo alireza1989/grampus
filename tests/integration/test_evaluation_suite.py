@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.types import AgentDefinition, AgentStatus
-from nexus.evaluation.assertions import (
+from grampus.core.types import AgentDefinition, AgentStatus
+from grampus.evaluation.assertions import (
     contains,
     max_cost,
     not_contains,
     status_is,
     tool_was_called,
 )
-from nexus.evaluation.suite import EvalCase, EvalSuite
+from grampus.evaluation.suite import EvalCase, EvalSuite
 from tests.integration.conftest import MockModelClient
 
 
@@ -30,9 +30,9 @@ def _agent_def(name: str = "eval-agent") -> AgentDefinition:
 
 
 def _make_runner(response: str = "Done.", cost: float = 0.001) -> object:
-    from nexus.orchestration.runner import AgentRunner, RunnerConfig
-    from nexus.tools.executor import ToolExecutor
-    from nexus.tools.registry import ToolRegistry
+    from grampus.orchestration.runner import AgentRunner, RunnerConfig
+    from grampus.tools.executor import ToolExecutor
+    from grampus.tools.registry import ToolRegistry
 
     client = MockModelClient()
     client.add_response(response, cost_usd=cost)
@@ -86,10 +86,10 @@ class TestEvalSuiteIntegration:
         assert result.passed == 1
 
     async def test_tool_was_called_assertion_passes(self) -> None:
-        from nexus.core.types import ToolCall, ToolParameter
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.core.types import ToolCall, ToolParameter
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         registry = ToolRegistry()
 
@@ -152,9 +152,9 @@ class TestEvalSuiteIntegration:
         assert result.case_results[0].case_name == "tagged"
 
     async def test_concurrent_cases_all_complete(self) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         client = MockModelClient(default_text="Answer.")
         runner = AgentRunner(
@@ -174,7 +174,7 @@ class TestEvalSuiteIntegration:
         assert result.total_cases == 6
 
     async def test_regression_detected_against_baseline(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         baseline = QualityBaseline(suite_name="my-suite")
         baseline.record(pass_rate=0.9, avg_cost=0.001, avg_duration=1.0)
@@ -183,7 +183,7 @@ class TestEvalSuiteIntegration:
         assert regression is True
 
     async def test_no_regression_when_pass_rate_stable(self) -> None:
-        from nexus.evaluation.baseline import QualityBaseline
+        from grampus.evaluation.baseline import QualityBaseline
 
         baseline = QualityBaseline(suite_name="my-suite")
         baseline.record(pass_rate=0.9, avg_cost=0.001, avg_duration=1.0)

@@ -11,12 +11,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import MemorySecurityError
-from nexus.memory.consolidation import ConsolidationResult
-from nexus.memory.manager import MemoryManager
-from nexus.memory.provenance import ProvenanceTracker, SourceType
-from nexus.memory.types import EpisodicRecord
-from nexus.memory.validator import MemoryValidator, ValidationResult
+from grampus.core.errors import MemorySecurityError
+from grampus.memory.consolidation import ConsolidationResult
+from grampus.memory.manager import MemoryManager
+from grampus.memory.provenance import ProvenanceTracker, SourceType
+from grampus.memory.types import EpisodicRecord
+from grampus.memory.validator import MemoryValidator, ValidationResult
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -113,7 +113,7 @@ class TestProvenanceIntegration:
         mock_semantic: AsyncMock,
         mock_consolidation: AsyncMock,
     ) -> None:
-        from nexus.memory.provenance import Provenance
+        from grampus.memory.provenance import Provenance
 
         manager = _make_manager(
             mock_episodic,
@@ -132,7 +132,7 @@ class TestProvenanceIntegration:
         mock_semantic: AsyncMock,
         mock_consolidation: AsyncMock,
     ) -> None:
-        from nexus.memory.provenance import Provenance
+        from grampus.memory.provenance import Provenance
 
         manager = _make_manager(
             mock_episodic,

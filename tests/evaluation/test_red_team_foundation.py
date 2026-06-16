@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from nexus.evaluation.red_team.judge import RedTeamJudge
-from nexus.evaluation.red_team.strategies import (
+from grampus.evaluation.red_team.judge import RedTeamJudge
+from grampus.evaluation.red_team.strategies import (
     ALL_STRATEGIES,
     ExcessiveAgencyStrategy,
     JailbreakStrategy,
@@ -20,7 +20,7 @@ from nexus.evaluation.red_team.strategies import (
     ReasoningHijackStrategy,
     ToolMisuseStrategy,
 )
-from nexus.evaluation.red_team.types import (
+from grampus.evaluation.red_team.types import (
     AttackCategory,
     AttackPayload,
     AttackResult,

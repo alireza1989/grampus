@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import AgentState, AgentStatus
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import AgentState, AgentStatus
 from tests.integration.conftest import FakeStateStore, make_session_id
 
 
@@ -18,7 +18,7 @@ class TestGraphIntegration:
     async def test_linear_graph_completes_with_fake_store(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         log: list[str] = []
 
@@ -40,7 +40,7 @@ class TestGraphIntegration:
         assert final.metadata.get("b") is True
 
     async def test_checkpoint_saved_after_each_node(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.orchestration.graph import Graph, GraphCheckpoint
+        from grampus.orchestration.graph import Graph, GraphCheckpoint
 
         async def node_a(state: AgentState) -> AgentState:
             return state
@@ -58,7 +58,7 @@ class TestGraphIntegration:
     async def test_restore_and_execute_resumes_from_checkpoint(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         executed: list[str] = []
         fail_b = [True]
@@ -98,7 +98,7 @@ class TestGraphIntegration:
     async def test_conditional_routing_reaches_correct_terminal(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         reached: list[str] = []
 
@@ -128,7 +128,7 @@ class TestGraphIntegration:
         assert reached == ["path_b"]
 
     async def test_parallel_nodes_both_execute(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         executed: set[str] = set()
 
@@ -155,7 +155,7 @@ class TestGraphIntegration:
         assert "Y" in executed
 
     async def test_max_steps_exceeded_raises_error(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         async def loop_node(state: AgentState) -> AgentState:
             return state
@@ -170,7 +170,7 @@ class TestGraphIntegration:
     async def test_restore_returns_none_with_no_checkpoint(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.orchestration.graph import Graph
+        from grampus.orchestration.graph import Graph
 
         async def node(state: AgentState) -> AgentState:
             return state

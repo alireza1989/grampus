@@ -1,1 +1,1 @@
-"""Tests for nexus.jupyter — Jupyter notebook integration."""
+"""Tests for grampus.jupyter — Jupyter notebook integration."""

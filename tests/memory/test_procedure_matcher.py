@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.procedure_matcher — ProcedureMatcher."""
+"""Tests for grampus.memory.procedure_matcher — ProcedureMatcher."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.procedure_matcher import ProcedureMatcher
-from nexus.memory.types import Procedure, ProcedureStep
+from grampus.memory.procedure_matcher import ProcedureMatcher
+from grampus.memory.types import Procedure, ProcedureStep
 
 
 def make_step(action: str = "do something") -> ProcedureStep:

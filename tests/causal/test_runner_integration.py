@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.causal.types import (
+from grampus.causal.types import (
     CausalDiagnosis,
     CausalGraph,
     InterventionQuery,
     InterventionResult,
     WorldModelGraph,
 )
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
 # -----------------------------------------------------------------------
 # Minimal fakes
@@ -22,7 +22,7 @@ from nexus.orchestration.runner import AgentRunner, RunnerConfig
 
 class _FakeToolExecutor:
     async def execute(self, tc):
-        from nexus.core.types import ToolResult
+        from grampus.core.types import ToolResult
 
         return ToolResult(tool_call_id=tc.id, output="done", error=None, duration_ms=1)
 
@@ -34,8 +34,8 @@ class _FakeLLM:
         self.content = content
 
     async def complete(self, messages, **kwargs):
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         return ModelResponse(
             content=self.content,
@@ -91,7 +91,7 @@ class _TrackingTracer:
         self.diagnose_calls.append(
             {"session_id": session_id, "agent_id": agent_id, "failure_event_id": failure_event_id}
         )
-        from nexus.causal.types import RootCauseCandidate
+        from grampus.causal.types import RootCauseCandidate
 
         graph = CausalGraph(graph_id=session_id, agent_id=agent_id)
         candidate = RootCauseCandidate(
@@ -156,8 +156,8 @@ async def test_runner_diagnoses_on_failure():
     # Simulate failure by making the runner hit max_iterations
     class _InfiniteToolCallLLM:
         async def complete(self, messages, **kwargs):
-            from nexus.core.models.base import ModelResponse
-            from nexus.core.types import TokenUsage, ToolCall
+            from grampus.core.models.base import ModelResponse
+            from grampus.core.types import TokenUsage, ToolCall
 
             return ModelResponse(
                 content=None,

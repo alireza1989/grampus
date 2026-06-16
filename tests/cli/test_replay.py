@@ -1,4 +1,4 @@
-"""Tests for nexus replay CLI command and EventLog.open()."""
+"""Tests for grampus replay CLI command and EventLog.open()."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 import pytest
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.observability.events import AgentEvent, EventLog, EventType
+from grampus.cli.main import cli
+from grampus.observability.events import AgentEvent, EventLog, EventType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -153,12 +153,12 @@ def _patch_replay(monkeypatch: pytest.MonkeyPatch, log: EventLog) -> None:
 
     # DaprGateway and DaprStateStore are imported inside _replay_async,
     # so patch them at their source module so the lazy import picks up the mock.
-    monkeypatch.setattr("nexus.dapr.client.DaprGateway", MagicMock())
-    monkeypatch.setattr("nexus.dapr.state.DaprStateStore", MagicMock())
+    monkeypatch.setattr("grampus.dapr.client.DaprGateway", MagicMock())
+    monkeypatch.setattr("grampus.dapr.state.DaprStateStore", MagicMock())
 
 
 # ---------------------------------------------------------------------------
-# CLI tests — nexus replay
+# CLI tests — grampus replay
 # ---------------------------------------------------------------------------
 
 
@@ -169,11 +169,11 @@ class TestReplayNoEvents:
 
         # load_config must not raise — use a fake config
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-empty", "--config", "nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-empty", "--config", "grampus.yaml"])
         assert result.exit_code == 1
         assert "No events found" in result.output
 
@@ -192,11 +192,11 @@ class TestReplayRendersAgentStarted:
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml"])
         assert result.exit_code == 0
         assert "AGENT STARTED" in result.output
         assert "hello world" in result.output
@@ -220,11 +220,11 @@ class TestReplayRendersToolCall:
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml"])
         assert result.exit_code == 0
         assert "web_search" in result.output
         assert "✓" in result.output
@@ -240,11 +240,11 @@ class TestReplayRendersToolCall:
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml"])
         assert result.exit_code == 0
         assert "✗" in result.output
 
@@ -261,11 +261,11 @@ class TestReplayRendersHumanPause:
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml"])
         assert result.exit_code == 0
         assert "PAUSED" in result.output
         assert "What is your preferred format?" in result.output
@@ -282,11 +282,11 @@ class TestReplayJsonFlag:
         log = _make_log_with_events(events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml", "--json"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml", "--json"])
         assert result.exit_code == 0
         parsed = json.loads(result.output)
         assert isinstance(parsed, list)
@@ -302,11 +302,11 @@ class TestReplayJsonFlag:
         log = _make_log_with_events([])
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "nexus.yaml", "--json"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "grampus.yaml", "--json"])
         assert result.exit_code == 1
 
 
@@ -330,12 +330,12 @@ class TestReplayFromStep:
         log = _make_log_with_events(all_events)
         _patch_replay(monkeypatch, log)
         monkeypatch.setattr(
-            "nexus.cli.commands.replay.load_config",
+            "grampus.cli.commands.replay.load_config",
             lambda path: MagicMock(dapr=None, agent=None),
         )
 
         result = runner.invoke(
-            cli, ["replay", "sess-123", "--config", "nexus.yaml", "--from-step", "3"]
+            cli, ["replay", "sess-123", "--config", "grampus.yaml", "--from-step", "3"]
         )
         assert result.exit_code == 0
         # Events at seq 3,4 are shown; seq 0,1,2 are NOT
@@ -346,6 +346,6 @@ class TestReplayFromStep:
 
 class TestReplayConfigError:
     def test_missing_config_exits_1(self, runner: CliRunner) -> None:
-        result = runner.invoke(cli, ["replay", "sess-123", "--config", "/nonexistent/nexus.yaml"])
+        result = runner.invoke(cli, ["replay", "sess-123", "--config", "/nonexistent/grampus.yaml"])
         assert result.exit_code == 1
         assert "Error" in result.output

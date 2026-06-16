@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.versioning.stats import two_proportion_z_test, welch_t_test
+from grampus.versioning.stats import two_proportion_z_test, welch_t_test
 
 
 class TestTwoProportionZTest:

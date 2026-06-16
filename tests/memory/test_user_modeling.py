@@ -14,11 +14,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from nexus.memory.user.adapter import UserMemoryAdapter
-from nexus.memory.user.extractor import FactExtractor
-from nexus.memory.user.store import UserMemoryStore
-from nexus.memory.user.synthesizer import ProfileSynthesizer
-from nexus.memory.user.types import (
+from grampus.memory.user.adapter import UserMemoryAdapter
+from grampus.memory.user.extractor import FactExtractor
+from grampus.memory.user.store import UserMemoryStore
+from grampus.memory.user.synthesizer import ProfileSynthesizer
+from grampus.memory.user.types import (
     FactExtractionResult,
     UserFact,
     UserFactCategory,
@@ -63,8 +63,8 @@ def _make_embedding_svc(vec: list[float] | None = None) -> Any:
 
 
 def _make_model_client(content: str = '{"facts": []}') -> Any:
-    from nexus.core.models.base import ModelResponse
-    from nexus.core.types import TokenUsage
+    from grampus.core.models.base import ModelResponse
+    from grampus.core.types import TokenUsage
 
     def _resp(c: str) -> ModelResponse:
         return ModelResponse(
@@ -122,7 +122,7 @@ def _make_episodic_record(
     session_id: str = "sess-1",
     content: str = "I prefer concise answers.",
 ) -> Any:
-    from nexus.memory.types import EpisodicRecord
+    from grampus.memory.types import EpisodicRecord
 
     return EpisodicRecord(
         id=str(uuid.uuid4()),
@@ -398,8 +398,8 @@ class TestFactExtractor:
             store=mem_store, episodic_memory=episodic, embedding_service=embed_svc
         )
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         call_count = 0
 
@@ -566,8 +566,8 @@ class TestProfileSynthesizer:
 
         captured_prompts: list[str] = []
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         async def _capture(**kwargs: Any) -> ModelResponse:
             for msg in kwargs.get("messages", []):
@@ -746,15 +746,15 @@ class TestAgentRunnerF2Integration:
         *,
         user_memory_adapter: Any | None = None,
     ) -> Any:
-        from nexus.orchestration.runner import AgentRunner
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.runner import AgentRunner
+        from grampus.tools.executor import ToolExecutor
 
         tool_reg = MagicMock()
         tool_reg.get = MagicMock(return_value=None)
         executor = ToolExecutor(tool_reg)
 
-        from nexus.core.models.base import ModelResponse
-        from nexus.core.types import TokenUsage
+        from grampus.core.models.base import ModelResponse
+        from grampus.core.types import TokenUsage
 
         resp = ModelResponse(
             content="Done.",
@@ -775,7 +775,7 @@ class TestAgentRunnerF2Integration:
         )
 
     def _make_agent_def(self) -> Any:
-        from nexus.core.types import AgentDefinition
+        from grampus.core.types import AgentDefinition
 
         return AgentDefinition(name="test-agent", model="test", system_prompt="You help.")
 

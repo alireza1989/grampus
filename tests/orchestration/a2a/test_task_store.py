@@ -1,4 +1,4 @@
-"""Tests for NexusTaskStore."""
+"""Tests for GrampusTaskStore."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ def _make_call_context() -> ServerCallContext:
 
 
 async def test_save_and_get_task() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-    store = NexusTaskStore()
+    store = GrampusTaskStore()
     ctx = _make_call_context()
     task = _make_task("t1")
 
@@ -35,9 +35,9 @@ async def test_save_and_get_task() -> None:
 
 
 async def test_get_missing_returns_none() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-    store = NexusTaskStore()
+    store = GrampusTaskStore()
     ctx = _make_call_context()
 
     result = await store.get("nonexistent", ctx)
@@ -45,9 +45,9 @@ async def test_get_missing_returns_none() -> None:
 
 
 async def test_delete_task() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-    store = NexusTaskStore()
+    store = GrampusTaskStore()
     ctx = _make_call_context()
     task = _make_task("t2")
 
@@ -59,9 +59,9 @@ async def test_delete_task() -> None:
 
 
 async def test_in_memory_fallback_when_no_state_store() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-    store = NexusTaskStore(state_store=None)
+    store = GrampusTaskStore(state_store=None)
     ctx = _make_call_context()
     task = _make_task("t3")
 
@@ -72,13 +72,13 @@ async def test_in_memory_fallback_when_no_state_store() -> None:
 
 
 async def test_state_store_failure_does_not_raise() -> None:
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
     bad_store = MagicMock()
     bad_store.set = AsyncMock(side_effect=RuntimeError("dapr down"))
     bad_store.get = AsyncMock(side_effect=RuntimeError("dapr down"))
 
-    store = NexusTaskStore(state_store=bad_store)
+    store = GrampusTaskStore(state_store=bad_store)
     ctx = _make_call_context()
     task = _make_task("t4")
 
@@ -92,9 +92,9 @@ async def test_state_store_failure_does_not_raise() -> None:
 async def test_list_tasks_returns_stored() -> None:
     from a2a.types.a2a_pb2 import ListTasksRequest
 
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
 
-    store = NexusTaskStore()
+    store = GrampusTaskStore()
     ctx = _make_call_context()
     await store.save(_make_task("ta"), ctx)
     await store.save(_make_task("tb"), ctx)

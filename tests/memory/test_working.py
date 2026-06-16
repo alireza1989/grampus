@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.working — WorkingMemory in-session buffer."""
+"""Tests for grampus.memory.working — WorkingMemory in-session buffer."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.types import Message, Role
-from nexus.memory.token_counter import TokenCounter
-from nexus.memory.working import WorkingMemory
+from grampus.core.types import Message, Role
+from grampus.memory.token_counter import TokenCounter
+from grampus.memory.working import WorkingMemory
 
 
 def make_message(content: str, role: Role = Role.USER) -> Message:
@@ -93,7 +93,7 @@ class TestWorkingMemoryAddAndGet:
     ) -> None:
         import json
 
-        from nexus.core.types import Message, Role
+        from grampus.core.types import Message, Role
 
         existing = [Message(role=Role.USER, content="persisted msg")]
         # Return serialised messages from the store

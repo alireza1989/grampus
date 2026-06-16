@@ -1,4 +1,4 @@
-"""Tests for NexusTracer OTEL span wrappers."""
+"""Tests for GrampusTracer OTEL span wrappers."""
 
 from __future__ import annotations
 
@@ -8,29 +8,29 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from nexus.observability.tracer import NexusTracer, SpanKind
+from grampus.observability.tracer import GrampusTracer, SpanKind
 
 
-def _make_tracer_with_exporter() -> tuple[NexusTracer, InMemorySpanExporter]:
-    """Return a NexusTracer wired to an in-memory exporter for assertions."""
+def _make_tracer_with_exporter() -> tuple[GrampusTracer, InMemorySpanExporter]:
+    """Return a GrampusTracer wired to an in-memory exporter for assertions."""
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
-    tracer = NexusTracer(service_name="test-service", agent_id="agent-1")
+    tracer = GrampusTracer(service_name="test-service", agent_id="agent-1")
     tracer._tracer = provider.get_tracer("test-service")
     return tracer, exporter
 
 
-class TestNexusTracerSpans:
+class TestGrampusTracerSpans:
     def test_noop_provider_used_when_no_endpoint(self) -> None:
-        tracer = NexusTracer(service_name="svc", agent_id="a1")
+        tracer = GrampusTracer(service_name="svc", agent_id="a1")
         # Should not raise; span methods must work with NoOp provider
         with tracer.agent_run(session_id="s1"):
             pass
 
     def test_spans_are_context_managers(self) -> None:
-        tracer = NexusTracer(agent_id="a1")
+        tracer = GrampusTracer(agent_id="a1")
         with tracer.agent_run(session_id="s1") as span:
             assert span is not None
 

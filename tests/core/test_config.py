@@ -1,14 +1,14 @@
-"""Tests for nexus.core.config — NexusConfig and sub-configs."""
+"""Tests for grampus.core.config — GrampusConfig and sub-configs."""
 
 from pathlib import Path
 
 import pytest
 
-from nexus.core.config import (
+from grampus.core.config import (
     DaprConfig,
+    GrampusConfig,
     MemoryConfig,
     ModelConfig,
-    NexusConfig,
     ObservabilityConfig,
     SafetyConfig,
 )
@@ -108,13 +108,13 @@ class TestObservabilityConfig:
 
 
 # ---------------------------------------------------------------------------
-# NexusConfig (top-level)
+# GrampusConfig (top-level)
 # ---------------------------------------------------------------------------
 
 
-class TestNexusConfig:
+class TestGrampusConfig:
     def test_creates_with_defaults(self) -> None:
-        cfg = NexusConfig()
+        cfg = GrampusConfig()
         assert isinstance(cfg.model, ModelConfig)
         assert isinstance(cfg.memory, MemoryConfig)
         assert isinstance(cfg.safety, SafetyConfig)
@@ -122,24 +122,24 @@ class TestNexusConfig:
         assert isinstance(cfg.observability, ObservabilityConfig)
 
     def test_env_prefix(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("NEXUS_DAPR__PORT", "4500")
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_DAPR__PORT", "4500")
+        cfg = GrampusConfig()
         assert cfg.dapr.port == 4500
 
     def test_model_env_var(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("NEXUS_MODEL__DEFAULT_MODEL", "claude-3-opus")
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_MODEL__DEFAULT_MODEL", "claude-3-opus")
+        cfg = GrampusConfig()
         assert cfg.model.default_model == "claude-3-opus"
 
     def test_api_key_masked_in_repr(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("NEXUS_MODEL__ANTHROPIC_API_KEY", "sk-super-secret")
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_MODEL__ANTHROPIC_API_KEY", "sk-super-secret")
+        cfg = GrampusConfig()
         assert "sk-super-secret" not in repr(cfg)
 
     def test_load_from_yaml_file(self, tmp_path: Path) -> None:
-        yaml_file = tmp_path / "nexus.yaml"
+        yaml_file = tmp_path / "grampus.yaml"
         yaml_file.write_text("model:\n  default_model: gpt-4o-mini\n")
-        cfg = NexusConfig(_config_file=str(yaml_file))  # type: ignore[call-arg]
+        cfg = GrampusConfig(_config_file=str(yaml_file))  # type: ignore[call-arg]
         assert cfg.model.default_model == "gpt-4o-mini"
 
     def test_yaml_path_overridable_via_env(
@@ -147,19 +147,19 @@ class TestNexusConfig:
     ) -> None:
         yaml_file = tmp_path / "custom.yaml"
         yaml_file.write_text("memory:\n  episodic_top_k: 99\n")
-        monkeypatch.setenv("NEXUS_CONFIG_FILE", str(yaml_file))
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_CONFIG_FILE", str(yaml_file))
+        cfg = GrampusConfig()
         assert cfg.memory.episodic_top_k == 99
 
     def test_env_overrides_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        yaml_file = tmp_path / "nexus.yaml"
+        yaml_file = tmp_path / "grampus.yaml"
         yaml_file.write_text("dapr:\n  port: 3501\n")
-        monkeypatch.setenv("NEXUS_CONFIG_FILE", str(yaml_file))
-        monkeypatch.setenv("NEXUS_DAPR__PORT", "9999")
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_CONFIG_FILE", str(yaml_file))
+        monkeypatch.setenv("GRAMPUS_DAPR__PORT", "9999")
+        cfg = GrampusConfig()
         assert cfg.dapr.port == 9999
 
     def test_missing_yaml_file_uses_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("NEXUS_CONFIG_FILE", "/nonexistent/nexus.yaml")
-        cfg = NexusConfig()
+        monkeypatch.setenv("GRAMPUS_CONFIG_FILE", "/nonexistent/grampus.yaml")
+        cfg = GrampusConfig()
         assert isinstance(cfg.model, ModelConfig)

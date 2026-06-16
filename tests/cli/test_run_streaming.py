@@ -1,4 +1,4 @@
-"""Tests for nexus run --stream flag."""
+"""Tests for grampus run --stream flag."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.core.types import (
+from grampus.cli.main import cli
+from grampus.core.types import (
     AgentStatus,
     ExecutionResult,
     StreamChunk,
@@ -44,8 +44,8 @@ def _mock_execution_result() -> ExecutionResult:
     )
 
 
-def _write_nexus_yaml(path: Path) -> None:
-    (path / "nexus.yaml").write_text(
+def _write_grampus_yaml(path: Path) -> None:
+    (path / "grampus.yaml").write_text(
         "agent:\n  name: test-agent\n  model: claude-sonnet-4-6\n"
         "  system_prompt: You are helpful.\n  max_iterations: 10\n"
         "  memory_enabled: false\n  cost_budget_usd: 1.0\n"
@@ -56,7 +56,7 @@ def _write_agent_py(path: Path) -> Path:
     agent_file = path / "agent.py"
     agent_file.write_text(
         "from unittest.mock import MagicMock\n"
-        "from nexus.core.types import AgentDefinition\n\n"
+        "from grampus.core.types import AgentDefinition\n\n"
         "def create_runner():\n"
         "    return MagicMock()\n\n"
         "def create_agent_def():\n"
@@ -98,7 +98,7 @@ def _make_stream_events(tokens: list[str]) -> list[StreamEvent]:
 
 class TestRunStreamFlag:
     def test_cli_stream_flag_prints_tokens(self, tmp_path: Path) -> None:
-        _write_nexus_yaml(tmp_path)
+        _write_grampus_yaml(tmp_path)
         agent_file = _write_agent_py(tmp_path)
 
         tokens = ["Hello", " ", "world", "!"]
@@ -110,7 +110,7 @@ class TestRunStreamFlag:
 
         mock_runner = type("MockRunner", (), {"stream": _mock_stream})()
 
-        with patch("nexus.cli.commands.run._build_runner", return_value=mock_runner):
+        with patch("grampus.cli.commands.run._build_runner", return_value=mock_runner):
             runner = CliRunner()
             result = runner.invoke(
                 cli,
@@ -118,7 +118,7 @@ class TestRunStreamFlag:
                     "run",
                     str(agent_file),
                     "--config",
-                    str(tmp_path / "nexus.yaml"),
+                    str(tmp_path / "grampus.yaml"),
                     "--input",
                     "Hi",
                     "--stream",
@@ -130,14 +130,14 @@ class TestRunStreamFlag:
         assert "world" in result.output
 
     def test_cli_no_stream_flag_unchanged(self, tmp_path: Path) -> None:
-        _write_nexus_yaml(tmp_path)
+        _write_grampus_yaml(tmp_path)
         agent_file = _write_agent_py(tmp_path)
         from unittest.mock import AsyncMock
 
         mock_result = _mock_execution_result()
         mock_runner = type("MockRunner", (), {"run": AsyncMock(return_value=mock_result)})()
 
-        with patch("nexus.cli.commands.run._build_runner", return_value=mock_runner):
+        with patch("grampus.cli.commands.run._build_runner", return_value=mock_runner):
             runner = CliRunner()
             result = runner.invoke(
                 cli,
@@ -145,7 +145,7 @@ class TestRunStreamFlag:
                     "run",
                     str(agent_file),
                     "--config",
-                    str(tmp_path / "nexus.yaml"),
+                    str(tmp_path / "grampus.yaml"),
                     "--input",
                     "Hello agent",
                     "--no-stream",
@@ -156,7 +156,7 @@ class TestRunStreamFlag:
         assert "Hello from agent" in result.output
 
     def test_cli_stream_prints_tool_call_events(self, tmp_path: Path) -> None:
-        _write_nexus_yaml(tmp_path)
+        _write_grampus_yaml(tmp_path)
         agent_file = _write_agent_py(tmp_path)
 
         tc = ToolCall(id="tc-1", name="web_search", arguments={"q": "test"})
@@ -183,7 +183,7 @@ class TestRunStreamFlag:
 
         mock_runner = type("MockRunner", (), {"stream": _mock_stream})()
 
-        with patch("nexus.cli.commands.run._build_runner", return_value=mock_runner):
+        with patch("grampus.cli.commands.run._build_runner", return_value=mock_runner):
             runner = CliRunner()
             result = runner.invoke(
                 cli,
@@ -191,7 +191,7 @@ class TestRunStreamFlag:
                     "run",
                     str(agent_file),
                     "--config",
-                    str(tmp_path / "nexus.yaml"),
+                    str(tmp_path / "grampus.yaml"),
                     "--input",
                     "Search something",
                     "--stream",
@@ -203,7 +203,7 @@ class TestRunStreamFlag:
         assert "Done!" in result.output
 
     def test_cli_stream_prints_token_summary(self, tmp_path: Path) -> None:
-        _write_nexus_yaml(tmp_path)
+        _write_grampus_yaml(tmp_path)
         agent_file = _write_agent_py(tmp_path)
 
         stream_events = _make_stream_events(["Hi!"])
@@ -214,7 +214,7 @@ class TestRunStreamFlag:
 
         mock_runner = type("MockRunner", (), {"stream": _mock_stream})()
 
-        with patch("nexus.cli.commands.run._build_runner", return_value=mock_runner):
+        with patch("grampus.cli.commands.run._build_runner", return_value=mock_runner):
             runner = CliRunner()
             result = runner.invoke(
                 cli,
@@ -222,7 +222,7 @@ class TestRunStreamFlag:
                     "run",
                     str(agent_file),
                     "--config",
-                    str(tmp_path / "nexus.yaml"),
+                    str(tmp_path / "grampus.yaml"),
                     "--input",
                     "Hi",
                     "--stream",

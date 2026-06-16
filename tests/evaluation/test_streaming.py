@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from nexus.core.types import (
+from grampus.core.types import (
     StreamChunk,
     StreamEvent,
     StreamEventType,
     TokenUsage,
 )
-from nexus.evaluation.streaming import (
+from grampus.evaluation.streaming import (
     StreamingEvalCase,
     StreamingEvalSuite,
     StreamingResult,
@@ -29,7 +29,7 @@ from nexus.evaluation.streaming import (
     stream_output_length,
     token_usage_reported,
 )
-from nexus.evaluation.suite import CaseResult, SuiteResult
+from grampus.evaluation.suite import CaseResult, SuiteResult
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -126,34 +126,34 @@ class TestCollectStream:
 
     @pytest.fixture
     def agent_def(self) -> Any:
-        from nexus.core.types import AgentDefinition
+        from grampus.core.types import AgentDefinition
 
         return AgentDefinition(name="test", model="test-model", system_prompt="be helpful")
 
     @pytest.mark.asyncio
     async def test_collects_full_output(self, runner: MagicMock, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         result = await _collect_stream(runner, agent_def, "hi", "session-1")
         assert result.full_output == "Hello world"
 
     @pytest.mark.asyncio
     async def test_chunk_count(self, runner: MagicMock, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         result = await _collect_stream(runner, agent_def, "hi", "session-1")
         assert result.chunk_count == 2
 
     @pytest.mark.asyncio
     async def test_agent_ended_true(self, runner: MagicMock, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         result = await _collect_stream(runner, agent_def, "hi", "session-1")
         assert result.agent_ended is True
 
     @pytest.mark.asyncio
     async def test_first_token_seconds_populated(self, runner: MagicMock, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         result = await _collect_stream(runner, agent_def, "hi", "session-1")
         assert result.first_token_seconds is not None
@@ -161,7 +161,7 @@ class TestCollectStream:
 
     @pytest.mark.asyncio
     async def test_token_usage_populated(self, runner: MagicMock, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         result = await _collect_stream(runner, agent_def, "hi", "session-1")
         assert result.token_usage is not None
@@ -169,7 +169,7 @@ class TestCollectStream:
 
     @pytest.mark.asyncio
     async def test_tool_calls_counted(self, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         async def _gen_with_tools(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
             yield StreamEvent(event_type=StreamEventType.AGENT_START)
@@ -189,7 +189,7 @@ class TestCollectStream:
 
     @pytest.mark.asyncio
     async def test_exception_captured_as_error(self, agent_def: Any) -> None:
-        from nexus.evaluation.streaming import _collect_stream
+        from grampus.evaluation.streaming import _collect_stream
 
         runner = MagicMock()
         runner.stream = _make_mock_stream(["partial"], error=RuntimeError("network timeout"))
@@ -495,7 +495,7 @@ class TestTokenUsageReported:
 
 @pytest.fixture
 def agent_def() -> Any:
-    from nexus.core.types import AgentDefinition
+    from grampus.core.types import AgentDefinition
 
     return AgentDefinition(name="test", model="test-model", system_prompt="be helpful")
 

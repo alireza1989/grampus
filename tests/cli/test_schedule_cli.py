@@ -1,4 +1,4 @@
-"""Tests for nexus schedule CLI commands."""
+"""Tests for grampus schedule CLI commands."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
-from nexus.core.errors import DaprJobsError
+from grampus.cli.main import cli
+from grampus.core.errors import DaprJobsError
 
 
 def _invoke(*args: str) -> object:
@@ -52,8 +52,8 @@ def test_schedule_create_dry_run() -> None:
 
 
 def test_schedule_create_dry_run_no_dapr_call() -> None:
-    # DaprJobsClient is imported lazily inside _create_async from nexus.dapr.jobs
-    with patch("nexus.dapr.jobs.DaprJobsClient") as mock_cls:
+    # DaprJobsClient is imported lazily inside _create_async from grampus.dapr.jobs
+    with patch("grampus.dapr.jobs.DaprJobsClient") as mock_cls:
         result = _invoke(
             "schedule",
             "create",
@@ -77,10 +77,10 @@ def test_schedule_create_success() -> None:
 
     with (
         patch(
-            "nexus.cli.commands.schedule.load_config",
+            "grampus.cli.commands.schedule.load_config",
             return_value=_make_cfg(),
         ),
-        patch("nexus.dapr.jobs.DaprJobsClient", return_value=mock_client),
+        patch("grampus.dapr.jobs.DaprJobsClient", return_value=mock_client),
     ):
         runner = CliRunner()
         result = runner.invoke(
@@ -101,10 +101,10 @@ def test_schedule_create_dapr_error() -> None:
 
     with (
         patch(
-            "nexus.cli.commands.schedule.load_config",
+            "grampus.cli.commands.schedule.load_config",
             return_value=_make_cfg(),
         ),
-        patch("nexus.dapr.jobs.DaprJobsClient", return_value=mock_client),
+        patch("grampus.dapr.jobs.DaprJobsClient", return_value=mock_client),
     ):
         runner = CliRunner()
         result = runner.invoke(
@@ -118,7 +118,7 @@ def test_schedule_create_dapr_error() -> None:
 
 def test_schedule_list_prints_note() -> None:
     with patch(
-        "nexus.cli.commands.schedule.load_config",
+        "grampus.cli.commands.schedule.load_config",
         return_value=_make_cfg(),
     ):
         runner = CliRunner()
@@ -133,10 +133,10 @@ def test_schedule_delete_found() -> None:
 
     with (
         patch(
-            "nexus.cli.commands.schedule.load_config",
+            "grampus.cli.commands.schedule.load_config",
             return_value=_make_cfg(),
         ),
-        patch("nexus.dapr.jobs.DaprJobsClient", return_value=mock_client),
+        patch("grampus.dapr.jobs.DaprJobsClient", return_value=mock_client),
     ):
         runner = CliRunner()
         result = runner.invoke(cli, ["schedule", "delete", "my-job"])
@@ -150,10 +150,10 @@ def test_schedule_delete_not_found() -> None:
 
     with (
         patch(
-            "nexus.cli.commands.schedule.load_config",
+            "grampus.cli.commands.schedule.load_config",
             return_value=_make_cfg(),
         ),
-        patch("nexus.dapr.jobs.DaprJobsClient", return_value=mock_client),
+        patch("grampus.dapr.jobs.DaprJobsClient", return_value=mock_client),
     ):
         runner = CliRunner()
         result = runner.invoke(cli, ["schedule", "delete", "missing-job"])
@@ -169,10 +169,10 @@ def test_schedule_delete_dapr_error() -> None:
 
     with (
         patch(
-            "nexus.cli.commands.schedule.load_config",
+            "grampus.cli.commands.schedule.load_config",
             return_value=_make_cfg(),
         ),
-        patch("nexus.dapr.jobs.DaprJobsClient", return_value=mock_client),
+        patch("grampus.dapr.jobs.DaprJobsClient", return_value=mock_client),
     ):
         runner = CliRunner()
         result = runner.invoke(cli, ["schedule", "delete", "err-job"])
@@ -191,6 +191,6 @@ def test_schedule_create_missing_config() -> None:
         "--input",
         "go",
         "--config",
-        "/nonexistent/nexus.yaml",
+        "/nonexistent/grampus.yaml",
     )
     assert result.exit_code == 1

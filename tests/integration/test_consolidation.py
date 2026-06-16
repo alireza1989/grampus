@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import TokenUsage
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import TokenUsage
 from tests.integration.conftest import FakeEmbeddingService, FakeStateStore, MockModelClient
 
 
@@ -33,9 +33,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="con-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="con-agent")
@@ -65,9 +65,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="mark-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="mark-agent")
@@ -88,9 +88,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="skip-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="skip-agent")
@@ -109,9 +109,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="store-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="store-agent")
@@ -145,9 +145,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="empty-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="empty-agent")
@@ -164,9 +164,9 @@ class TestConsolidationIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.semantic import SemanticMemory
 
         episodic = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="batch-agent")
         semantic = SemanticMemory(fake_state_store, agent_id="batch-agent")

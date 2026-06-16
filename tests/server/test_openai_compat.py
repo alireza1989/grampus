@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import (
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ExecutionResult,
@@ -19,7 +19,7 @@ from nexus.core.types import (
     TokenUsage,
     ToolCall,
 )
-from nexus.server.openai_compat import (
+from grampus.server.openai_compat import (
     OAIChatChunk,
     OAIChatRequest,
     OAIChatResponse,
@@ -28,7 +28,7 @@ from nexus.server.openai_compat import (
     _extract_system_prompt,
     _extract_user_input,
     _finish_reason,
-    _nexus_usage_to_oai,
+    _grampus_usage_to_oai,
 )
 
 # ---------------------------------------------------------------------------
@@ -92,7 +92,7 @@ def mock_agent_def() -> AgentDefinition:
 
 @pytest.fixture
 def client(mock_runner: MagicMock, mock_agent_def: AgentDefinition) -> TestClient:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     app = create_app(mock_runner, mock_agent_def)
     return TestClient(app)
@@ -138,7 +138,7 @@ class TestOAIModels:
             choices=[],
             usage=OAIUsage(prompt_tokens=1, completion_tokens=1, total_tokens=2),
         )
-        assert resp.system_fingerprint == "nexus-v0.1"
+        assert resp.system_fingerprint == "grampus-v0.1"
 
     def test_oai_chat_chunk_usage_field_optional(self) -> None:
         chunk = OAIChatChunk(
@@ -175,11 +175,11 @@ class TestOAIModels:
         messages = [OAIMessage(role="user", content="hi")]
         assert _extract_system_prompt(messages) is None
 
-    def test_nexus_usage_to_oai_mapping(self) -> None:
+    def test_grampus_usage_to_oai_mapping(self) -> None:
         usage = TokenUsage(
             input_tokens=5, output_tokens=15, total_tokens=20, cost_usd=0.001, model="m"
         )
-        oai = _nexus_usage_to_oai(usage)
+        oai = _grampus_usage_to_oai(usage)
         assert oai.prompt_tokens == 5
         assert oai.completion_tokens == 15
         assert oai.total_tokens == 20
@@ -258,12 +258,12 @@ class TestChatCompletionsNonStreaming:
         assert isinstance(body["created"], int)
 
     def test_chat_completions_has_system_fingerprint(self, client: TestClient) -> None:
-        assert self._post(client).json()["system_fingerprint"] == "nexus-v0.1"
+        assert self._post(client).json()["system_fingerprint"] == "grampus-v0.1"
 
     def test_chat_completions_system_message_applied(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app)
@@ -283,7 +283,7 @@ class TestChatCompletionsNonStreaming:
     def test_chat_completions_temperature_override_applied(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app)

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError, OrchestrationError
-from nexus.core.types import (
+from grampus.core.errors import BudgetExceededError, OrchestrationError
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ToolCall,
@@ -33,7 +33,7 @@ def _agent_def(
 @pytest.mark.integration
 class TestAgentRunnerIntegration:
     async def test_single_shot_run_returns_execution_result(self, agent_runner: object) -> None:
-        from nexus.orchestration.runner import AgentRunner
+        from grampus.orchestration.runner import AgentRunner
 
         runner: AgentRunner = agent_runner  # type: ignore[assignment]
         runner._model_client.add_response("Hello, world!")
@@ -44,8 +44,8 @@ class TestAgentRunnerIntegration:
         assert result.steps_taken >= 1
 
     async def test_react_loop_with_tool_calls(self, mock_tool_registry: object) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
 
         client = MockModelClient()
         client.add_response(
@@ -71,9 +71,9 @@ class TestAgentRunnerIntegration:
         assert result.steps_taken == 2
 
     async def test_cost_tracked_per_llm_call(self, mock_tool_registry: object) -> None:
-        from nexus.orchestration.cost_tracker import CostTracker
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.cost_tracker import CostTracker
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
 
         client = MockModelClient()
         client.add_response("Done.", cost_usd=0.005)
@@ -97,9 +97,9 @@ class TestAgentRunnerIntegration:
         assert summary.total_cost_usd == pytest.approx(0.005)
 
     async def test_budget_exceeded_stops_execution(self, mock_tool_registry: object) -> None:
-        from nexus.orchestration.cost_tracker import CostTracker
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.cost_tracker import CostTracker
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
 
         client = MockModelClient()
         # Use tool-call responses so the loop continues past the first step.
@@ -131,8 +131,8 @@ class TestAgentRunnerIntegration:
             )
 
     async def test_max_iterations_raises_error(self, mock_tool_registry: object) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
 
         client = MockModelClient()
         for _ in range(10):
@@ -156,9 +156,9 @@ class TestAgentRunnerIntegration:
         fake_state_store: FakeStateStore,
         mock_tool_registry: object,
     ) -> None:
-        from nexus.core.types import AgentState
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.core.types import AgentState
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
 
         client = MockModelClient()
         client.add_response("Stored.")
@@ -184,18 +184,18 @@ class TestAgentRunnerIntegration:
         fake_state_store: FakeStateStore,
         mock_tool_registry: object,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.manager import MemoryManager
-        from nexus.memory.procedural import ProceduralMemory
-        from nexus.memory.retriever import EpisodicRetriever
-        from nexus.memory.semantic import SemanticMemory
-        from nexus.memory.semantic_retriever import SemanticRetriever
-        from nexus.memory.summarizer import Summarizer
-        from nexus.memory.token_counter import TokenCounter
-        from nexus.memory.working import WorkingMemory
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.manager import MemoryManager
+        from grampus.memory.procedural import ProceduralMemory
+        from grampus.memory.retriever import EpisodicRetriever
+        from grampus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic_retriever import SemanticRetriever
+        from grampus.memory.summarizer import Summarizer
+        from grampus.memory.token_counter import TokenCounter
+        from grampus.memory.working import WorkingMemory
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
         from tests.integration.conftest import FakeEmbeddingService
 
         store = fake_state_store

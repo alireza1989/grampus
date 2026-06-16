@@ -11,15 +11,15 @@ import re
 import pytest
 
 LAYER_PACKAGES = [
-    "nexus.core",
-    "nexus.dapr",
-    "nexus.memory",
-    "nexus.tools",
-    "nexus.orchestration",
-    "nexus.safety",
-    "nexus.observability",
-    "nexus.evaluation",
-    "nexus.cli",
+    "grampus.core",
+    "grampus.dapr",
+    "grampus.memory",
+    "grampus.tools",
+    "grampus.orchestration",
+    "grampus.safety",
+    "grampus.observability",
+    "grampus.evaluation",
+    "grampus.cli",
 ]
 
 
@@ -28,29 +28,29 @@ LAYER_PACKAGES = [
 # ---------------------------------------------------------------------------
 
 
-def test_nexus_importable() -> None:
-    """Root nexus package can be imported without errors."""
-    import nexus
+def test_grampus_importable() -> None:
+    """Root grampus package can be imported without errors."""
+    import grampus
 
-    assert nexus is not None
+    assert grampus is not None
 
 
 def test_version_attribute_exists() -> None:
     """Package exposes a __version__ string attribute."""
-    import nexus
+    import grampus
 
-    assert hasattr(nexus, "__version__"), "nexus.__version__ is not defined"
-    assert isinstance(nexus.__version__, str), "__version__ must be a str"
-    assert nexus.__version__, "__version__ must not be empty"
+    assert hasattr(grampus, "__version__"), "grampus.__version__ is not defined"
+    assert isinstance(grampus.__version__, str), "__version__ must be a str"
+    assert grampus.__version__, "__version__ must not be empty"
 
 
 def test_version_is_semver() -> None:
     """Package version follows MAJOR.MINOR.PATCH semantic versioning."""
-    import nexus
+    import grampus
 
     pattern = r"^\d+\.\d+\.\d+$"
-    assert re.match(pattern, nexus.__version__), (
-        f"__version__ '{nexus.__version__}' does not follow semver (MAJOR.MINOR.PATCH)"
+    assert re.match(pattern, grampus.__version__), (
+        f"__version__ '{grampus.__version__}' does not follow semver (MAJOR.MINOR.PATCH)"
     )
 
 
@@ -58,11 +58,11 @@ def test_version_matches_pyproject() -> None:
     """Importable __version__ matches the version declared in pyproject.toml."""
     import importlib.metadata
 
-    import nexus
+    import grampus
 
-    declared = importlib.metadata.version("nexus-ai")
-    assert nexus.__version__ == declared, (
-        f"nexus.__version__ ({nexus.__version__}) != pyproject version ({declared})"
+    declared = importlib.metadata.version("grampus-ai")
+    assert grampus.__version__ == declared, (
+        f"grampus.__version__ ({grampus.__version__}) != pyproject version ({declared})"
     )
 
 
@@ -101,15 +101,15 @@ def test_layer_package_is_package_not_module(package: str) -> None:
 
 
 def test_cli_entry_point_importable() -> None:
-    """nexus.cli.main is importable (required for the [project.scripts] entry point)."""
-    import nexus.cli.main as cli_main
+    """grampus.cli.main is importable (required for the [project.scripts] entry point)."""
+    import grampus.cli.main as cli_main
 
     assert cli_main is not None
 
 
 def test_cli_object_exists() -> None:
-    """nexus.cli.main.cli is a callable (the Click group registered in pyproject.toml)."""
-    from nexus.cli.main import cli
+    """grampus.cli.main.cli is a callable (the Click group registered in pyproject.toml)."""
+    from grampus.cli.main import cli
 
     assert callable(cli)
 
@@ -135,15 +135,15 @@ def test_no_layer_imports_bleed_into_root() -> None:
     """Root __init__.py does not explicitly import or re-export any layer.
 
     Python automatically binds subpackage names on the parent after any
-    `import nexus.X` call — that is unavoidable and correct behaviour.
+    `import grampus.X` call — that is unavoidable and correct behaviour.
     This test instead checks the *source* of the root __init__.py to ensure
     it contains no explicit layer imports (those belong in later phases).
     """
     import inspect
 
-    import nexus
+    import grampus
 
-    source = inspect.getsource(nexus)
+    source = inspect.getsource(grampus)
     for layer in (
         "core",
         "dapr",
@@ -159,7 +159,7 @@ def test_no_layer_imports_bleed_into_root() -> None:
             f"Root __init__.py explicitly imports layer '{layer}'. "
             "Phase 0 root package should only define __version__."
         )
-        assert f"from nexus.{layer}" not in source, (
-            f"Root __init__.py re-exports from 'nexus.{layer}'. "
+        assert f"from grampus.{layer}" not in source, (
+            f"Root __init__.py re-exports from 'grampus.{layer}'. "
             "Phase 0 root package should only define __version__."
         )

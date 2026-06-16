@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from nexus.hub.registry import TemplateIndexEntry, TemplateRegistry
+from grampus.hub.registry import TemplateIndexEntry, TemplateRegistry
 
 
 def _make_entry(**kwargs: object) -> TemplateIndexEntry:
@@ -16,7 +16,7 @@ def _make_entry(**kwargs: object) -> TemplateIndexEntry:
         "category": "general",
         "author": "test",
         "download_url": "https://example.com/test.zip",
-        "manifest_url": "https://example.com/nexus-template.yaml",
+        "manifest_url": "https://example.com/grampus-template.yaml",
     }
     defaults.update(kwargs)
     return TemplateIndexEntry(**defaults)  # type: ignore[arg-type]

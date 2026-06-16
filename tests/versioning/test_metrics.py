@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.versioning.metrics import QualityTracker, VersionMetrics
+from grampus.versioning.metrics import QualityTracker, VersionMetrics
 
 
 def _make_state_store() -> MagicMock:

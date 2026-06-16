@@ -1,4 +1,4 @@
-"""Tests for nexus.tools.library.web_search."""
+"""Tests for grampus.tools.library.web_search."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ import importlib
 import httpx
 import pytest
 
-from nexus.tools.library.web_search import web_search
+from grampus.tools.library.web_search import web_search
 
-ws_mod = importlib.import_module("nexus.tools.library.web_search")
+ws_mod = importlib.import_module("grampus.tools.library.web_search")
 
 _DDGO_RESPONSE_WITH_RESULTS = {
     "RelatedTopics": [

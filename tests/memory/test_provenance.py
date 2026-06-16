@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.provenance — SourceType, Provenance, ProvenanceTracker."""
+"""Tests for grampus.memory.provenance — SourceType, Provenance, ProvenanceTracker."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from nexus.memory.provenance import Provenance, ProvenanceTracker, SourceType
+from grampus.memory.provenance import Provenance, ProvenanceTracker, SourceType
 
 
 class TestSourceType:

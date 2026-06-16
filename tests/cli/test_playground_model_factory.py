@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import SecretStr
 
-from nexus.cli.playground.model_factory import make_client
-from nexus.core.errors import ModelError
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.models.gemini import GeminiClient
-from nexus.core.models.ollama import OllamaClient
-from nexus.core.models.openai import OpenAIClient
+from grampus.cli.playground.model_factory import make_client
+from grampus.core.errors import ModelError
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.models.gemini import GeminiClient
+from grampus.core.models.ollama import OllamaClient
+from grampus.core.models.openai import OpenAIClient
 
 # SDK stubs for providers not installed in the test environment
 _FAKE_OLLAMA = MagicMock()

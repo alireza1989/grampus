@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from nexus.core.types import AgentDefinition
-from nexus.versioning.types import (
+from grampus.core.types import AgentDefinition
+from grampus.versioning.types import (
     AgentVersion,
     DeploymentRecord,
     VersionDiff,

@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.serialization — Pydantic ↔ Dapr bytes conversion."""
+"""Tests for grampus.dapr.serialization — Pydantic ↔ Dapr bytes conversion."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from pydantic import BaseModel
 
-from nexus.core.errors import StateSerializationError
-from nexus.dapr.serialization import (
+from grampus.core.errors import StateSerializationError
+from grampus.dapr.serialization import (
     compute_content_hash,
     empty_response,
     from_dapr_bytes,

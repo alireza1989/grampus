@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.memory.semantic import SemanticMemory
-from nexus.memory.types import SemanticFact
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult
+from grampus.memory.semantic import SemanticMemory
+from grampus.memory.types import SemanticFact
+from grampus.memory.vector.base import VectorRecord, VectorSearchResult
 
 FAKE_EMBEDDING = [0.1] * 8
 

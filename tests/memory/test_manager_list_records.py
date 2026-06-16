@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.memory.manager import MemoryManager
-from nexus.memory.types import EpisodicRecord, SemanticFact
+from grampus.memory.manager import MemoryManager
+from grampus.memory.types import EpisodicRecord, SemanticFact
 
 
 def _make_manager(**overrides: object) -> MemoryManager:

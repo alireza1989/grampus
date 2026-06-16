@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from nexus.tools.boundaries import ActionGuard, BoundaryConfig, GuardResult
+from grampus.tools.boundaries import ActionGuard, BoundaryConfig, GuardResult
 
 
 def _make_guard(
@@ -98,12 +98,12 @@ def test_rate_limit_resets_after_window() -> None:
 
     # Simulate two calls that happened 61 seconds ago.
     old_ts = 0.0
-    with patch("nexus.tools.boundaries.time.monotonic", return_value=old_ts):
+    with patch("grampus.tools.boundaries.time.monotonic", return_value=old_ts):
         guard.record_call("tool_x")
         guard.record_call("tool_x")
 
     # Now at t=61 s: the old calls are outside the 60-second window.
-    with patch("nexus.tools.boundaries.time.monotonic", return_value=61.0):
+    with patch("grampus.tools.boundaries.time.monotonic", return_value=61.0):
         result = guard.check_tool("tool_x")
 
     assert result.allowed is True

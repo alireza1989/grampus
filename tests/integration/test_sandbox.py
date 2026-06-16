@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import ToolTimeoutError
-from nexus.tools.sandbox.manager import SandboxConfig, SandboxManager
+from grampus.core.errors import ToolTimeoutError
+from grampus.tools.sandbox.manager import SandboxConfig, SandboxManager
 
 
 @pytest.mark.integration

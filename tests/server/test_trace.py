@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition
-from nexus.observability.events import AgentEvent, EventLog, EventType
-from nexus.server.trace_ui import TRACE_HTML
+from grampus.core.types import AgentDefinition
+from grampus.observability.events import AgentEvent, EventLog, EventType
+from grampus.server.trace_ui import TRACE_HTML
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -31,7 +31,7 @@ def _make_runner() -> MagicMock:
 
 
 def _make_app(runner: Any, agent_def: AgentDefinition | None = None) -> Any:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     return create_app(runner, agent_def or _make_agent_def())
 
@@ -43,8 +43,8 @@ def _make_app(runner: Any, agent_def: AgentDefinition | None = None) -> Any:
 
 @pytest.fixture
 def bare_runner() -> Any:
-    from nexus.orchestration.runner import AgentRunner
-    from nexus.tools.executor import ToolExecutor
+    from grampus.orchestration.runner import AgentRunner
+    from grampus.tools.executor import ToolExecutor
 
     return AgentRunner(model_client=MagicMock(), tool_executor=MagicMock(spec=ToolExecutor))
 
@@ -105,7 +105,7 @@ class TestTraceHistoryEndpoint:
         ]
         log._next_seq = 3
 
-        with patch("nexus.server.routes.EventLog") as mock_cls:
+        with patch("grampus.server.routes.EventLog") as mock_cls:
             mock_cls.open = AsyncMock(return_value=log)
             app = _make_app(_make_runner())
             client = TestClient(app)

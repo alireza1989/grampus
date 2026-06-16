@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from a2a.types.a2a_pb2 import AgentCard, AgentSkill
 
-from nexus.core.types import AgentDefinition
+from grampus.core.types import AgentDefinition
 
 
 def _make_runner() -> MagicMock:
@@ -19,7 +19,7 @@ def _make_agent_def(name: str = "my-agent") -> AgentDefinition:
 
 
 def test_register_local_creates_agent_card() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     runner = _make_runner()
@@ -38,7 +38,7 @@ def test_register_local_creates_agent_card() -> None:
 
 
 def test_register_remote_stores_url() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_remote(name="remote-agent", url="http://remote.test")
@@ -50,7 +50,7 @@ def test_register_remote_stores_url() -> None:
 
 
 def test_get_returns_entry() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_local(name="agent2", runner=_make_runner(), description="Agent 2")
@@ -61,14 +61,14 @@ def test_get_returns_entry() -> None:
 
 
 def test_get_missing_returns_none() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     assert registry.get("does-not-exist") is None
 
 
 def test_list_agents_returns_cards() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_local(name="a", runner=_make_runner(), description="A")
@@ -81,11 +81,11 @@ def test_list_agents_returns_cards() -> None:
 
 
 def test_generate_server_card_has_streaming_capability() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     card = registry.generate_server_card(
-        name="nexus-server",
+        name="grampus-server",
         description="Main server",
         base_url="http://localhost:8000",
     )
@@ -95,7 +95,7 @@ def test_generate_server_card_has_streaming_capability() -> None:
 
 
 def test_generate_server_card_api_key_scheme_when_requested() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     card = registry.generate_server_card(
@@ -109,7 +109,7 @@ def test_generate_server_card_api_key_scheme_when_requested() -> None:
 
 
 def test_generate_server_card_url_points_to_a2a_endpoint() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     card = registry.generate_server_card(
@@ -123,7 +123,7 @@ def test_generate_server_card_url_points_to_a2a_endpoint() -> None:
 
 
 def test_register_local_with_skills() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     skill = AgentSkill()
@@ -150,12 +150,12 @@ def test_register_local_with_skills() -> None:
 
 
 def test_register_dapr_service_creates_entry() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="sibling-agent",
-        dapr_app_id="nexus-worker",
+        dapr_app_id="grampus-worker",
         description="Worker service",
     )
 
@@ -165,25 +165,25 @@ def test_register_dapr_service_creates_entry() -> None:
 
 
 def test_register_dapr_service_sets_app_id() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_dapr_service(
         name="worker",
-        dapr_app_id="nexus-worker-svc",
+        dapr_app_id="grampus-worker-svc",
         description="Worker",
     )
 
     entry = registry.get("worker")
     assert entry is not None
-    assert entry.dapr_app_id == "nexus-worker-svc"
+    assert entry.dapr_app_id == "grampus-worker-svc"
     assert entry.runner is None
     assert entry.remote_url is None
     assert entry.client is None
 
 
 def test_register_dapr_service_default_method_is_a2a() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_dapr_service(name="svc", dapr_app_id="my-app", description="svc")
@@ -194,7 +194,7 @@ def test_register_dapr_service_default_method_is_a2a() -> None:
 
 
 def test_register_dapr_service_custom_method() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_dapr_service(
@@ -210,7 +210,7 @@ def test_register_dapr_service_custom_method() -> None:
 
 
 def test_register_dapr_service_entry_has_no_runner_no_remote_url() -> None:
-    from nexus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.registry import AgentRegistry
 
     registry = AgentRegistry()
     registry.register_dapr_service(

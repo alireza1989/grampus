@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.causal.types import (
+from grampus.causal.types import (
     CausalDiagnosis,
     CausalGraph,
     CausalRelation,
@@ -12,7 +12,7 @@ from nexus.causal.types import (
     RootCauseCandidate,
     WorldModelGraph,
 )
-from nexus.causal.world_model import CausalWorldModel, _slugify
+from grampus.causal.world_model import CausalWorldModel, _slugify
 
 # -----------------------------------------------------------------------
 # Fakes

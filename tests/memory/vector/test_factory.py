@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.vector.factory — create_vector_store()."""
+"""Tests for grampus.memory.vector.factory — create_vector_store()."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import SecretStr
 
-from nexus.core.errors import ConfigError
-from nexus.memory.vector.base import VectorStoreType
-from nexus.memory.vector.factory import create_vector_store
-from nexus.memory.vector.pgvector import PgVectorStore
-from nexus.memory.vector.pinecone import PineconeVectorStore
-from nexus.memory.vector.qdrant import QdrantVectorStore
-from nexus.memory.vector.weaviate import WeaviateVectorStore
+from grampus.core.errors import ConfigError
+from grampus.memory.vector.base import VectorStoreType
+from grampus.memory.vector.factory import create_vector_store
+from grampus.memory.vector.pgvector import PgVectorStore
+from grampus.memory.vector.pinecone import PineconeVectorStore
+from grampus.memory.vector.qdrant import QdrantVectorStore
+from grampus.memory.vector.weaviate import WeaviateVectorStore
 
 
 def _cfg(**overrides):  # type: ignore[no-untyped-def]
     """Build a minimal VectorStoreConfig dict and instantiate it."""
-    from nexus.core.config import VectorStoreConfig
+    from grampus.core.config import VectorStoreConfig
 
     return VectorStoreConfig(**overrides)
 
@@ -34,7 +34,7 @@ def test_factory_pinecone_missing_api_key_raises_config_error() -> None:
         type=VectorStoreType.PINECONE,
         pinecone_index_host="https://idx.example.io",
     )
-    with pytest.raises(ConfigError, match="NEXUS_MEMORY__VECTOR_STORE__PINECONE_API_KEY"):
+    with pytest.raises(ConfigError, match="GRAMPUS_MEMORY__VECTOR_STORE__PINECONE_API_KEY"):
         create_vector_store(cfg)
 
 
@@ -43,7 +43,7 @@ def test_factory_pinecone_missing_index_host_raises_config_error() -> None:
         type=VectorStoreType.PINECONE,
         pinecone_api_key=SecretStr("pk-test"),
     )
-    with pytest.raises(ConfigError, match="NEXUS_MEMORY__VECTOR_STORE__PINECONE_INDEX_HOST"):
+    with pytest.raises(ConfigError, match="GRAMPUS_MEMORY__VECTOR_STORE__PINECONE_INDEX_HOST"):
         create_vector_store(cfg)
 
 

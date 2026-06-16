@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError, SafetyError
-from nexus.core.types import AgentDefinition, ToolCall, ToolParameter
+from grampus.core.errors import BudgetExceededError, SafetyError
+from grampus.core.types import AgentDefinition, ToolCall, ToolParameter
 from tests.integration.conftest import (
     FakeEmbeddingService,
     FakeStateStore,
@@ -32,20 +32,20 @@ class TestSingleAgentE2E:
     async def test_agent_completes_task_with_tool_use(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.manager import MemoryManager
-        from nexus.memory.procedural import ProceduralMemory
-        from nexus.memory.retriever import EpisodicRetriever
-        from nexus.memory.semantic import SemanticMemory
-        from nexus.memory.semantic_retriever import SemanticRetriever
-        from nexus.memory.summarizer import Summarizer
-        from nexus.memory.token_counter import TokenCounter
-        from nexus.memory.working import WorkingMemory
-        from nexus.observability.events import EventLog
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.manager import MemoryManager
+        from grampus.memory.procedural import ProceduralMemory
+        from grampus.memory.retriever import EpisodicRetriever
+        from grampus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic_retriever import SemanticRetriever
+        from grampus.memory.summarizer import Summarizer
+        from grampus.memory.token_counter import TokenCounter
+        from grampus.memory.working import WorkingMemory
+        from grampus.observability.events import EventLog
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         store = fake_state_store
         emb = FakeEmbeddingService()
@@ -119,10 +119,10 @@ class TestSingleAgentE2E:
         assert len(ep_records) >= 1
 
     async def test_agent_respects_cost_budget(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.orchestration.cost_tracker import CostTracker
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.cost_tracker import CostTracker
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         client = MockModelClient()
         for _ in range(5):
@@ -159,19 +159,19 @@ class TestSingleAgentE2E:
             )
 
     async def test_agent_memory_context_prepended(self, fake_state_store: FakeStateStore) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.manager import MemoryManager
-        from nexus.memory.procedural import ProceduralMemory
-        from nexus.memory.retriever import EpisodicRetriever
-        from nexus.memory.semantic import SemanticMemory
-        from nexus.memory.semantic_retriever import SemanticRetriever
-        from nexus.memory.summarizer import Summarizer
-        from nexus.memory.token_counter import TokenCounter
-        from nexus.memory.working import WorkingMemory
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.manager import MemoryManager
+        from grampus.memory.procedural import ProceduralMemory
+        from grampus.memory.retriever import EpisodicRetriever
+        from grampus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic_retriever import SemanticRetriever
+        from grampus.memory.summarizer import Summarizer
+        from grampus.memory.token_counter import TokenCounter
+        from grampus.memory.working import WorkingMemory
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         agent_id = "context-agent"
         session_id = make_session_id()
@@ -222,9 +222,9 @@ class TestSingleAgentE2E:
     async def test_agent_safety_blocks_injection_in_tool_result(
         self, fake_state_store: FakeStateStore
     ) -> None:
-        from nexus.core.types import ToolResult
-        from nexus.safety.injection import DetectionLevel, PromptInjectionDetector
-        from nexus.safety.pipeline import SafetyPipeline
+        from grampus.core.types import ToolResult
+        from grampus.safety.injection import DetectionLevel, PromptInjectionDetector
+        from grampus.safety.pipeline import SafetyPipeline
 
         pipeline = SafetyPipeline(
             injection_detector=PromptInjectionDetector(level=DetectionLevel.BALANCED),

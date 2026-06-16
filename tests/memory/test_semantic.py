@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.semantic — SemanticMemory CRUD and deduplication."""
+"""Tests for grampus.memory.semantic — SemanticMemory CRUD and deduplication."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.semantic import SemanticMemory
-from nexus.memory.types import SemanticFact
+from grampus.memory.semantic import SemanticMemory
+from grampus.memory.types import SemanticFact
 
 
 def make_fact(

@@ -7,14 +7,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import VersioningError
-from nexus.core.types import AgentDefinition
-from nexus.versioning.ab_testing import ABTestManager
-from nexus.versioning.manager import VersionManager
-from nexus.versioning.metrics import QualityTracker
-from nexus.versioning.router import VersionRouter
-from nexus.versioning.store import VersionStore
-from nexus.versioning.types import ABTestConfig, SuccessMetric
+from grampus.core.errors import VersioningError
+from grampus.core.types import AgentDefinition
+from grampus.versioning.ab_testing import ABTestManager
+from grampus.versioning.manager import VersionManager
+from grampus.versioning.metrics import QualityTracker
+from grampus.versioning.router import VersionRouter
+from grampus.versioning.store import VersionStore
+from grampus.versioning.types import ABTestConfig, SuccessMetric
 
 
 def _make_def(prompt: str, name: str = "ab-agent") -> AgentDefinition:

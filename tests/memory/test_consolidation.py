@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.consolidation — ConsolidationPipeline."""
+"""Tests for grampus.memory.consolidation — ConsolidationPipeline."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import TokenUsage
-from nexus.memory.consolidation import ConsolidationPipeline, ConsolidationResult
-from nexus.memory.types import EpisodicRecord, SemanticFact
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import TokenUsage
+from grampus.memory.consolidation import ConsolidationPipeline, ConsolidationResult
+from grampus.memory.types import EpisodicRecord, SemanticFact
 
 
 def make_episode(

@@ -1,4 +1,4 @@
-"""Tests for nexus.core.models — base ABC and provider clients."""
+"""Tests for grampus.core.models — base ABC and provider clients."""
 
 from collections.abc import AsyncIterator
 from typing import Any
@@ -6,12 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import ModelError
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.models.base import ModelClient, ModelResponse
-from nexus.core.models.gemini import GeminiClient, _stop_reason, _to_gemini_contents
-from nexus.core.models.openai import OpenAIClient
-from nexus.core.types import (
+from grampus.core.errors import ModelError
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.models.base import ModelClient, ModelResponse
+from grampus.core.models.gemini import GeminiClient, _stop_reason, _to_gemini_contents
+from grampus.core.models.openai import OpenAIClient
+from grampus.core.types import (
     Message,
     Role,
     TokenUsage,
@@ -785,8 +785,8 @@ class TestGeminiClient:
 # OllamaClient
 # ---------------------------------------------------------------------------
 
-from nexus.core.models.ollama import OllamaClient, _to_ollama_messages  # noqa: E402
-from nexus.core.models.ollama import _stop_reason as _ollama_stop_reason  # noqa: E402
+from grampus.core.models.ollama import OllamaClient, _to_ollama_messages  # noqa: E402
+from grampus.core.models.ollama import _stop_reason as _ollama_stop_reason  # noqa: E402
 
 
 def _make_ollama_response(

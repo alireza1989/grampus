@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import SecretStr
 
-from nexus.cli.playground.repl import run_compare
-from nexus.core.errors import ModelError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import TokenUsage
+from grampus.cli.playground.repl import run_compare
+from grampus.core.errors import ModelError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import TokenUsage
 
 
 def _usage(model: str = "test", cost: float = 0.001) -> TokenUsage:
@@ -58,7 +58,7 @@ class TestRunCompare:
         def _factory(model: str, _cfg: object) -> MagicMock:
             return clients[model]
 
-        with patch("nexus.cli.playground.repl.make_client", side_effect=_factory):
+        with patch("grampus.cli.playground.repl.make_client", side_effect=_factory):
             results = await run_compare(
                 user_message="Hello",
                 models=["llama3.2", "mistral"],
@@ -85,7 +85,7 @@ class TestRunCompare:
             client.complete = _complete
             return client
 
-        with patch("nexus.cli.playground.repl.make_client", side_effect=_factory):
+        with patch("grampus.cli.playground.repl.make_client", side_effect=_factory):
             results = await run_compare(
                 user_message="hi",
                 models=models,
@@ -105,7 +105,7 @@ class TestRunCompare:
                 client.complete = AsyncMock(return_value=_response("ok", model))
             return client
 
-        with patch("nexus.cli.playground.repl.make_client", side_effect=_factory):
+        with patch("grampus.cli.playground.repl.make_client", side_effect=_factory):
             results = await run_compare(
                 user_message="test",
                 models=["llama3.2", "bad-model"],
@@ -124,7 +124,7 @@ class TestRunCompare:
             client.complete = AsyncMock(side_effect=ModelError("api fail", code="MODEL_API_ERROR"))
             return client
 
-        with patch("nexus.cli.playground.repl.make_client", side_effect=_factory):
+        with patch("grampus.cli.playground.repl.make_client", side_effect=_factory):
             results = await run_compare(
                 user_message="x",
                 models=["llama3.2"],
@@ -147,7 +147,7 @@ class TestRunCompare:
             )
 
     async def test_compare_uses_provided_messages(self) -> None:
-        from nexus.core.types import Message, Role
+        from grampus.core.types import Message, Role
 
         received_messages: list[list[Message]] = []
 
@@ -165,7 +165,7 @@ class TestRunCompare:
             Message(role=Role.SYSTEM, content="sys"),
             Message(role=Role.USER, content="user msg"),
         ]
-        with patch("nexus.cli.playground.repl.make_client", side_effect=_factory):
+        with patch("grampus.cli.playground.repl.make_client", side_effect=_factory):
             await run_compare(
                 user_message="ignored",
                 models=["llama3.2"],

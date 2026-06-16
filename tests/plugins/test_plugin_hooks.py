@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import MemorySecurityError, SafetyError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import AgentDefinition, Message, Role, TokenUsage, ToolCall, ToolResult
-from nexus.memory.manager import MemoryManager
-from nexus.orchestration.runner import AgentRunner
-from nexus.plugins import HookBlockedError, NexusPlugin, PluginManager
-from nexus.plugins.types import AgentStartContext
+from grampus.core.errors import MemorySecurityError, SafetyError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import AgentDefinition, Message, Role, TokenUsage, ToolCall, ToolResult
+from grampus.memory.manager import MemoryManager
+from grampus.orchestration.runner import AgentRunner
+from grampus.plugins import GrampusPlugin, HookBlockedError, PluginManager
+from grampus.plugins.types import AgentStartContext
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -80,7 +80,7 @@ def _make_mm(plugin_manager: PluginManager | None = None) -> tuple[MemoryManager
 # ---------------------------------------------------------------------------
 
 
-class SpyPlugin(NexusPlugin):
+class SpyPlugin(GrampusPlugin):
     def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
         super().__init__(**kwargs)
         self.calls: list[tuple[str, object]] = []
@@ -132,7 +132,7 @@ async def test_on_agent_start_called_at_run_start() -> None:
 
 
 async def test_pre_llm_call_can_modify_messages() -> None:
-    class PrependPlugin(NexusPlugin):
+    class PrependPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             system = Message(role=Role.SYSTEM, content="prepended_by_plugin")
             return [system] + list(messages)
@@ -147,7 +147,7 @@ async def test_pre_llm_call_can_modify_messages() -> None:
 
 
 async def test_pre_llm_call_blocked_raises_safety_error() -> None:
-    class BlockPlugin(NexusPlugin):
+    class BlockPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             raise HookBlockedError("compliance policy violation")
 
@@ -169,7 +169,7 @@ async def test_post_llm_call_called_after_response() -> None:
 
 
 async def test_pre_tool_call_can_modify_arguments() -> None:
-    class ArgPlugin(NexusPlugin):
+    class ArgPlugin(GrampusPlugin):
         async def pre_tool_call(self, ctx, arguments):  # type: ignore[override]
             return {**arguments, "extra": "added"}
 
@@ -194,7 +194,7 @@ async def test_pre_tool_call_can_modify_arguments() -> None:
 
 
 async def test_pre_tool_call_blocked_raises_safety_error() -> None:
-    class BlockPlugin(NexusPlugin):
+    class BlockPlugin(GrampusPlugin):
         async def pre_tool_call(self, ctx, arguments):  # type: ignore[override]
             raise HookBlockedError("tool blocked by policy")
 
@@ -275,7 +275,7 @@ async def test_plugin_manager_none_runner_unchanged() -> None:
 
 
 async def test_pre_memory_write_can_modify_content() -> None:
-    class RedactPlugin(NexusPlugin):
+    class RedactPlugin(GrampusPlugin):
         async def pre_memory_write(self, ctx, content):  # type: ignore[override]
             return content.replace("secret", "[REDACTED]")
 
@@ -291,7 +291,7 @@ async def test_pre_memory_write_can_modify_content() -> None:
 
 
 async def test_pre_memory_write_blocked_raises_memory_security_error() -> None:
-    class BlockPlugin(NexusPlugin):
+    class BlockPlugin(GrampusPlugin):
         async def pre_memory_write(self, ctx, content):  # type: ignore[override]
             raise HookBlockedError("memory write blocked by HIPAA plugin")
 

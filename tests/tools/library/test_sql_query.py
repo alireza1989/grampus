@@ -1,4 +1,4 @@
-"""Tests for nexus.tools.library.sql_query."""
+"""Tests for grampus.tools.library.sql_query."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from nexus.tools.library.sql_query import sql_query
+from grampus.tools.library.sql_query import sql_query
 
 
 def _sqlite_url(tmp_path: Path) -> str:

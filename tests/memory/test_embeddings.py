@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.embeddings — EmbeddingService with cache."""
+"""Tests for grampus.memory.embeddings — EmbeddingService with cache."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from nexus.memory.embedding_providers import OpenAIEmbeddingProvider
-from nexus.memory.embeddings import EmbeddingService, cosine_similarity
+from grampus.memory.embedding_providers import OpenAIEmbeddingProvider
+from grampus.memory.embeddings import EmbeddingService, cosine_similarity
 
 FAKE_EMBEDDING = [0.1, 0.2, 0.3, 0.4, 0.5]
 ZERO_EMBEDDING = [0.0, 0.0, 0.0, 0.0, 0.0]

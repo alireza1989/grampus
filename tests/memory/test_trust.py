@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.trust — TrustScorer."""
+"""Tests for grampus.memory.trust — TrustScorer."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from nexus.memory.provenance import Provenance, SourceType
-from nexus.memory.trust import TrustScorer
+from grampus.memory.provenance import Provenance, SourceType
+from grampus.memory.trust import TrustScorer
 
 
 def _make_provenance(source_type: SourceType = SourceType.USER_INPUT) -> Provenance:

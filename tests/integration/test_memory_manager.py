@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import MemorySecurityError
-from nexus.core.types import Message, Role
+from grampus.core.errors import MemorySecurityError
+from grampus.core.types import Message, Role
 from tests.integration.conftest import FakeEmbeddingService, FakeStateStore, MockModelClient
 
 
 @pytest.mark.integration
 class TestMemoryManagerIntegration:
     async def test_remember_episodic_stores_record(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("Alice likes Python.", session_id="s1", memory_types=["episodic"])
@@ -20,7 +20,7 @@ class TestMemoryManagerIntegration:
         assert len(recall.episodic) > 0
 
     async def test_remember_semantic_stores_fact(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("Semantic fact.", session_id="s1", memory_types=["semantic"])
@@ -29,7 +29,7 @@ class TestMemoryManagerIntegration:
         assert recall.query == "fact"
 
     async def test_recall_returns_episodic_results(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("User prefers dark mode.", session_id="s1", memory_types=["episodic"])
@@ -39,7 +39,7 @@ class TestMemoryManagerIntegration:
         assert any("dark mode" in c for c in contents)
 
     async def test_recall_both_types_by_default(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("Python is great.", session_id="s1", memory_types=["episodic"])
@@ -48,7 +48,7 @@ class TestMemoryManagerIntegration:
         assert isinstance(result.semantic, list)
 
     async def test_forget_episodic_removes_record(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("To be forgotten.", session_id="s1", memory_types=["episodic"])
@@ -58,19 +58,19 @@ class TestMemoryManagerIntegration:
         record_id = recall_before.episodic[0].record.id
         await mm.forget(record_id, memory_type="episodic")
 
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         ep: EpisodicMemory = mm._episodic  # type: ignore[attr-defined]
         fetched = await ep.get(record_id)
         assert fetched is None
 
     async def test_forget_semantic_removes_fact(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         await mm.remember("Removable fact.", session_id="s1", memory_types=["semantic"])
 
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = mm._semantic  # type: ignore[attr-defined]
         facts = await sm.list_all()
@@ -80,7 +80,7 @@ class TestMemoryManagerIntegration:
         assert await sm.get(fact_id) is None
 
     async def test_add_and_get_messages_round_trip(self, memory_manager: object) -> None:
-        from nexus.memory.manager import MemoryManager
+        from grampus.memory.manager import MemoryManager
 
         mm: MemoryManager = memory_manager  # type: ignore[assignment]
         msg = Message(role=Role.USER, content="Hello from test.")
@@ -94,17 +94,17 @@ class TestMemoryManagerIntegration:
         fake_embedding_service: FakeEmbeddingService,
         mock_model_client: MockModelClient,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.manager import MemoryManager
-        from nexus.memory.procedural import ProceduralMemory
-        from nexus.memory.provenance import ProvenanceTracker, SourceType
-        from nexus.memory.retriever import EpisodicRetriever
-        from nexus.memory.semantic import SemanticMemory
-        from nexus.memory.semantic_retriever import SemanticRetriever
-        from nexus.memory.summarizer import Summarizer
-        from nexus.memory.token_counter import TokenCounter
-        from nexus.memory.working import WorkingMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.manager import MemoryManager
+        from grampus.memory.procedural import ProceduralMemory
+        from grampus.memory.provenance import ProvenanceTracker, SourceType
+        from grampus.memory.retriever import EpisodicRetriever
+        from grampus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic_retriever import SemanticRetriever
+        from grampus.memory.summarizer import Summarizer
+        from grampus.memory.token_counter import TokenCounter
+        from grampus.memory.working import WorkingMemory
 
         store = fake_state_store
         emb = fake_embedding_service
@@ -154,17 +154,17 @@ class TestMemoryManagerIntegration:
         fake_embedding_service: FakeEmbeddingService,
         mock_model_client: MockModelClient,
     ) -> None:
-        from nexus.memory.consolidation import ConsolidationPipeline
-        from nexus.memory.episodic import EpisodicMemory
-        from nexus.memory.manager import MemoryManager
-        from nexus.memory.procedural import ProceduralMemory
-        from nexus.memory.retriever import EpisodicRetriever
-        from nexus.memory.semantic import SemanticMemory
-        from nexus.memory.semantic_retriever import SemanticRetriever
-        from nexus.memory.summarizer import Summarizer
-        from nexus.memory.token_counter import TokenCounter
-        from nexus.memory.validator import MemoryValidator
-        from nexus.memory.working import WorkingMemory
+        from grampus.memory.consolidation import ConsolidationPipeline
+        from grampus.memory.episodic import EpisodicMemory
+        from grampus.memory.manager import MemoryManager
+        from grampus.memory.procedural import ProceduralMemory
+        from grampus.memory.retriever import EpisodicRetriever
+        from grampus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic_retriever import SemanticRetriever
+        from grampus.memory.summarizer import Summarizer
+        from grampus.memory.token_counter import TokenCounter
+        from grampus.memory.validator import MemoryValidator
+        from grampus.memory.working import WorkingMemory
 
         store = fake_state_store
         emb = fake_embedding_service

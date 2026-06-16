@@ -1,8 +1,8 @@
-"""Tests for nexus.tools.library.calculator."""
+"""Tests for grampus.tools.library.calculator."""
 
 from __future__ import annotations
 
-from nexus.tools.library.calculator import calculator
+from grampus.tools.library.calculator import calculator
 
 
 class TestBasicArithmetic:

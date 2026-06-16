@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.vector.qdrant — QdrantVectorStore."""
+"""Tests for grampus.memory.vector.qdrant — QdrantVectorStore."""
 
 from __future__ import annotations
 
@@ -8,18 +8,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.core.errors import ToolError
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult
-from nexus.memory.vector.qdrant import QdrantVectorStore, _to_qdrant_uuid
+from grampus.core.errors import ToolError
+from grampus.memory.vector.base import VectorRecord, VectorSearchResult
+from grampus.memory.vector.qdrant import QdrantVectorStore, _to_qdrant_uuid
 
 FAKE_VECTOR = [0.1] * 8
 
 
-def _make_scored_point(nexus_id: str, score: float = 0.88) -> MagicMock:
+def _make_scored_point(grampus_id: str, score: float = 0.88) -> MagicMock:
     pt = MagicMock()
     pt.score = score
-    pt.payload = {"_nexus_id": nexus_id, "agent_id": "a1"}
-    pt.id = _to_qdrant_uuid(nexus_id)
+    pt.payload = {"_grampus_id": grampus_id, "agent_id": "a1"}
+    pt.id = _to_qdrant_uuid(grampus_id)
     return pt
 
 
@@ -51,7 +51,7 @@ def _make_qdrant_client(
 
 
 def _make_store(client: MagicMock) -> QdrantVectorStore:
-    return QdrantVectorStore(collection_name="nexus_memory", _client=client)
+    return QdrantVectorStore(collection_name="grampus_memory", _client=client)
 
 
 # ---------------------------------------------------------------------------
@@ -60,8 +60,8 @@ def _make_store(client: MagicMock) -> QdrantVectorStore:
 
 
 def test_to_qdrant_uuid_deterministic() -> None:
-    u1 = _to_qdrant_uuid("nexus-id-abc")
-    u2 = _to_qdrant_uuid("nexus-id-abc")
+    u1 = _to_qdrant_uuid("grampus-id-abc")
+    u2 = _to_qdrant_uuid("grampus-id-abc")
     assert u1 == u2
 
 
@@ -86,17 +86,17 @@ async def test_upsert_calls_upsert_with_point_structs() -> None:
     await store.upsert([VectorRecord(id="r1", vector=FAKE_VECTOR, payload={"k": "v"})])
     client.upsert.assert_called_once()
     call_kwargs = client.upsert.call_args[1]
-    assert call_kwargs["collection_name"] == "nexus_memory"
+    assert call_kwargs["collection_name"] == "grampus_memory"
     assert len(call_kwargs["points"]) == 1
 
 
-async def test_upsert_stores_nexus_id_in_payload() -> None:
+async def test_upsert_stores_grampus_id_in_payload() -> None:
     client = _make_qdrant_client()
     store = _make_store(client)
 
-    await store.upsert([VectorRecord(id="my-nexus-id", vector=FAKE_VECTOR)])
+    await store.upsert([VectorRecord(id="my-grampus-id", vector=FAKE_VECTOR)])
     points = client.upsert.call_args[1]["points"]
-    assert points[0].payload["_nexus_id"] == "my-nexus-id"
+    assert points[0].payload["_grampus_id"] == "my-grampus-id"
 
 
 async def test_upsert_uses_uuid5_for_point_id() -> None:
@@ -123,13 +123,13 @@ async def test_search_uses_query_points_not_search() -> None:
     client.search.assert_not_called()  # type: ignore[attr-defined]
 
 
-async def test_search_maps_nexus_id_from_payload() -> None:
-    pt = _make_scored_point("nexus-abc", score=0.9)
+async def test_search_maps_grampus_id_from_payload() -> None:
+    pt = _make_scored_point("grampus-abc", score=0.9)
     client = _make_qdrant_client(points=[pt])
     store = _make_store(client)
 
     results = await store.search(FAKE_VECTOR, top_k=5)
-    assert results[0].id == "nexus-abc"
+    assert results[0].id == "grampus-abc"
 
 
 async def test_search_returns_score() -> None:
@@ -162,7 +162,7 @@ async def test_delete_uses_point_ids_list() -> None:
     await store.delete(["r1", "r2"])
     client.delete.assert_called_once()
     call_kwargs = client.delete.call_args[1]
-    assert call_kwargs["collection_name"] == "nexus_memory"
+    assert call_kwargs["collection_name"] == "grampus_memory"
 
 
 async def test_delete_uses_uuid5_mapping() -> None:
@@ -187,12 +187,12 @@ async def test_ensure_collection_creates_if_missing() -> None:
     await store.ensure_collection(dimension=1536)
     client.create_collection.assert_called_once()
     call_kwargs = client.create_collection.call_args[1]
-    assert call_kwargs["collection_name"] == "nexus_memory"
+    assert call_kwargs["collection_name"] == "grampus_memory"
 
 
 async def test_ensure_collection_idempotent() -> None:
     """Already exists → create_collection should NOT be called."""
-    client = _make_qdrant_client(collections_names=["nexus_memory"])
+    client = _make_qdrant_client(collections_names=["grampus_memory"])
     store = _make_store(client)
 
     await store.ensure_collection(dimension=1536)
@@ -218,6 +218,6 @@ async def test_close_calls_client_close() -> None:
 
 
 async def test_missing_sdk_raises_tool_error() -> None:
-    store = QdrantVectorStore(collection_name="nexus_memory")
+    store = QdrantVectorStore(collection_name="grampus_memory")
     with patch.dict(sys.modules, {"qdrant_client": None}), pytest.raises(ToolError, match="qdrant"):
         await store.upsert([VectorRecord(id="r1", vector=FAKE_VECTOR)])

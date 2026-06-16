@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.evaluation.assertions import AssertionResult
-from nexus.evaluation.reporter import EvalReport, EvalReporter
-from nexus.evaluation.run_store import EvalRunStore
-from nexus.evaluation.suite import CaseResult, SuiteResult
+from grampus.evaluation.assertions import AssertionResult
+from grampus.evaluation.reporter import EvalReport, EvalReporter
+from grampus.evaluation.run_store import EvalRunStore
+from grampus.evaluation.suite import CaseResult, SuiteResult
 
 
 def _make_suite_result(
@@ -86,7 +86,7 @@ class TestEvalReporterPubsubTopic:
         mock_pubsub.publish = AsyncMock()
         reporter = EvalReporter(
             pubsub=mock_pubsub,
-            report_topic="nexus.eval.results",
+            report_topic="grampus.eval.results",
             pubsub_topic="eval.suite.completed",
         )
         report = EvalReport(suite_result=_make_suite_result())
@@ -94,7 +94,7 @@ class TestEvalReporterPubsubTopic:
 
         topics_called = [kw["topic"] for _, kw in mock_pubsub.publish.call_args_list]
         assert "eval.suite.completed" in topics_called
-        assert "nexus.eval.results" in topics_called
+        assert "grampus.eval.results" in topics_called
 
     @pytest.mark.asyncio
     async def test_pubsub_failure_does_not_propagate(self) -> None:

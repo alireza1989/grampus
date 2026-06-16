@@ -1,4 +1,4 @@
-"""Tests for nexus.tools.library.http_request."""
+"""Tests for grampus.tools.library.http_request."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ import json
 import httpx
 import pytest
 
-from nexus.tools.library.http_request import http_request
+from grampus.tools.library.http_request import http_request
 
-http_mod = importlib.import_module("nexus.tools.library.http_request")
+http_mod = importlib.import_module("grampus.tools.library.http_request")
 
 
 def _make_transport(

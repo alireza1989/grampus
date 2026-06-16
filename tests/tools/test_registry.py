@@ -1,12 +1,12 @@
-"""Tests for nexus.tools.registry — ToolRegistry."""
+"""Tests for grampus.tools.registry — ToolRegistry."""
 
 from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import ToolError, ToolNotFoundError
-from nexus.core.types import ToolDefinition, ToolParameter
-from nexus.tools.registry import RegisteredTool, ToolRegistry
+from grampus.core.errors import ToolError, ToolNotFoundError
+from grampus.core.types import ToolDefinition, ToolParameter
+from grampus.tools.registry import RegisteredTool, ToolRegistry
 
 
 def _add_greet(registry: ToolRegistry) -> RegisteredTool:

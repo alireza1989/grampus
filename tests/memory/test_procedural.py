@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.procedural — ProceduralMemory CRUD and record_outcome."""
+"""Tests for grampus.memory.procedural — ProceduralMemory CRUD and record_outcome."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.types import Procedure, ProcedureStep
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.types import Procedure, ProcedureStep
 
 
 def make_step(

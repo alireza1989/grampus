@@ -1,4 +1,4 @@
-"""Tests for NexusMetrics in-process Prometheus-compatible metrics collector."""
+"""Tests for GrampusMetrics in-process Prometheus-compatible metrics collector."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ import re
 
 import pytest
 
-from nexus.observability.metrics import MetricsSnapshot, NexusMetrics
+from grampus.observability.metrics import GrampusMetrics, MetricsSnapshot
 
 
-class TestNexusMetricsCounters:
+class TestGrampusMetricsCounters:
     def setup_method(self) -> None:
-        self.m = NexusMetrics(agent_id="agent-1")
+        self.m = GrampusMetrics(agent_id="agent-1")
 
     def test_record_llm_call_increments_total_tokens(self) -> None:
         self.m.record_llm_call(
@@ -74,14 +74,14 @@ class TestNexusMetricsCounters:
         assert snap.llm_call_count == 0
 
 
-class TestNexusMetricsSnapshot:
+class TestGrampusMetricsSnapshot:
     def test_snapshot_zero_initially(self) -> None:
-        m = NexusMetrics(agent_id="a")
+        m = GrampusMetrics(agent_id="a")
         snap = m.snapshot()
         assert snap == MetricsSnapshot()
 
     def test_snapshot_reflects_recorded_data(self) -> None:
-        m = NexusMetrics(agent_id="a")
+        m = GrampusMetrics(agent_id="a")
         m.record_llm_call(
             model="m1", input_tokens=10, output_tokens=5, cost_usd=0.002, latency_ms=80.0
         )
@@ -91,7 +91,7 @@ class TestNexusMetricsSnapshot:
         assert snap.total_tool_calls == 1
 
     def test_per_agent_cost_tracked(self) -> None:
-        m = NexusMetrics(agent_id="agent-99")
+        m = GrampusMetrics(agent_id="agent-99")
         m.record_llm_call(
             model="m", input_tokens=100, output_tokens=50, cost_usd=0.03, latency_ms=200.0
         )
@@ -99,9 +99,9 @@ class TestNexusMetricsSnapshot:
         assert snap.per_agent_cost["agent-99"] == pytest.approx(0.03)
 
 
-class TestNexusMetricsPrometheus:
+class TestGrampusMetricsPrometheus:
     def setup_method(self) -> None:
-        self.m = NexusMetrics(agent_id="agent-x")
+        self.m = GrampusMetrics(agent_id="agent-x")
         self.m.record_llm_call(
             model="claude", input_tokens=100, output_tokens=50, cost_usd=0.01, latency_ms=150.0
         )
@@ -110,15 +110,15 @@ class TestNexusMetricsPrometheus:
         self.text = self.m.to_prometheus_text()
 
     def test_to_prometheus_text_contains_metric_names(self) -> None:
-        assert "nexus_total_tokens" in self.text
-        assert "nexus_total_cost_usd" in self.text
-        assert "nexus_total_tool_calls" in self.text
+        assert "grampus_total_tokens" in self.text
+        assert "grampus_total_cost_usd" in self.text
+        assert "grampus_total_tool_calls" in self.text
 
     def test_to_prometheus_text_contains_agent_id_label(self) -> None:
         assert 'agent_id="agent-x"' in self.text
 
     def test_to_prometheus_text_contains_counter_type(self) -> None:
-        assert "# TYPE nexus_total_tokens counter" in self.text
+        assert "# TYPE grampus_total_tokens counter" in self.text
 
     def test_to_prometheus_text_contains_histogram_buckets(self) -> None:
         assert "_bucket{" in self.text

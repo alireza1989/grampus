@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.types import AgentDefinition
-from nexus.versioning.store import VersionStore
-from nexus.versioning.types import (
+from grampus.core.types import AgentDefinition
+from grampus.versioning.store import VersionStore
+from grampus.versioning.types import (
     AgentVersion,
     DeploymentRecord,
     VersionStatus,

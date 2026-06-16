@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.observability.alerts import (
+from grampus.observability.alerts import (
     AlertEvaluator,
     AlertEvent,
     AlertRule,
@@ -15,7 +15,7 @@ from nexus.observability.alerts import (
     AlertState,
     ThresholdType,
 )
-from nexus.observability.notification import (
+from grampus.observability.notification import (
     LogChannel,
     NotificationDispatcher,
     SlackChannel,
@@ -421,7 +421,7 @@ class TestWebhookChannel:
         call_args = mock_client.post.call_args
         body_bytes = call_args[1].get("content") or call_args[1].get("data") or b""
         headers = call_args[1].get("headers", {})
-        sig_header = headers.get("X-Nexus-Signature", "")
+        sig_header = headers.get("X-Grampus-Signature", "")
         assert sig_header.startswith("sha256=")
         expected = "sha256=" + _hmac.new(secret.encode(), body_bytes, hashlib.sha256).hexdigest()
         assert sig_header == expected
@@ -447,7 +447,7 @@ class TestWebhookChannel:
         channel = WebhookChannel(url="http://example.com/hook", _client=mock_client)
         await channel.send(_make_alert_event())
         headers = mock_client.post.call_args[1].get("headers", {})
-        assert "X-Nexus-Signature" not in headers
+        assert "X-Grampus-Signature" not in headers
 
 
 # ---------------------------------------------------------------------------
@@ -623,9 +623,9 @@ class TestLogChannel:
 class TestCostTrackerAlertIntegration:
     @pytest.mark.asyncio
     async def test_cost_tracker_triggers_alert_evaluator(self) -> None:
-        from nexus.core.types import TokenUsage
-        from nexus.orchestration.cost_tracker import CostTracker
-        from nexus.orchestration.model_router import ModelSpec, ModelTier
+        from grampus.core.types import TokenUsage
+        from grampus.orchestration.cost_tracker import CostTracker
+        from grampus.orchestration.model_router import ModelSpec, ModelTier
 
         mock_evaluator = MagicMock()
         mock_evaluator.evaluate = AsyncMock(return_value=[])
@@ -655,9 +655,9 @@ class TestCostTrackerAlertIntegration:
 
     @pytest.mark.asyncio
     async def test_cost_tracker_alert_failure_does_not_raise(self) -> None:
-        from nexus.core.types import TokenUsage
-        from nexus.orchestration.cost_tracker import CostTracker
-        from nexus.orchestration.model_router import ModelSpec, ModelTier
+        from grampus.core.types import TokenUsage
+        from grampus.orchestration.cost_tracker import CostTracker
+        from grampus.orchestration.model_router import ModelSpec, ModelTier
 
         mock_evaluator = MagicMock()
         mock_evaluator.evaluate = AsyncMock(side_effect=RuntimeError("alert boom"))

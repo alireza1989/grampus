@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.pubsub — DaprPubSub typed publish/subscribe."""
+"""Tests for grampus.dapr.pubsub — DaprPubSub typed publish/subscribe."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pydantic import BaseModel
 
-from nexus.dapr.pubsub import DaprPubSub
+from grampus.dapr.pubsub import DaprPubSub
 
 
 class OrderEvent(BaseModel):

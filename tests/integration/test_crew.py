@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.crew import Crew, CrewMember, CrewPattern
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.crew import Crew, CrewMember, CrewPattern
 from tests.integration.conftest import MockModelClient, make_session_id
 
 
 def _make_member(name: str, response: str) -> CrewMember:
-    from nexus.orchestration.runner import AgentRunner, RunnerConfig
-    from nexus.tools.executor import ToolExecutor
-    from nexus.tools.registry import ToolRegistry
+    from grampus.orchestration.runner import AgentRunner, RunnerConfig
+    from grampus.tools.executor import ToolExecutor
+    from grampus.tools.registry import ToolRegistry
 
     client = MockModelClient()
     client.add_response(response)
@@ -76,9 +76,9 @@ class TestCrewIntegration:
         for i in range(3):
             client = MockModelClient()
             client.add_response(f"output {i}")
-            from nexus.orchestration.runner import AgentRunner, RunnerConfig
-            from nexus.tools.executor import ToolExecutor
-            from nexus.tools.registry import ToolRegistry
+            from grampus.orchestration.runner import AgentRunner, RunnerConfig
+            from grampus.tools.executor import ToolExecutor
+            from grampus.tools.registry import ToolRegistry
 
             runner = AgentRunner(
                 client,
@@ -115,9 +115,9 @@ class TestCrewIntegration:
         )
         supervisor_client.add_response("Final consolidated output.")
 
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         sup_runner = AgentRunner(
             supervisor_client,
@@ -151,9 +151,9 @@ class TestCrewIntegration:
         assert "supervisor" in result.outputs
 
     async def test_crew_member_failure_wrapped_in_orchestration_error(self) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         good_client = MockModelClient()
         good_client.add_response("Good output.")

@@ -26,16 +26,16 @@ from typing import Any
 import pytest
 import pytest_asyncio
 
-from nexus.core.errors import ConcurrencyError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.errors import ConcurrencyError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     Message,
     TokenUsage,
     ToolCall,
     ToolParameter,
 )
-from nexus.tools.registry import ToolRegistry
+from grampus.tools.registry import ToolRegistry
 
 DAPR_HTTP_PORT = os.environ.get("DAPR_HTTP_PORT", "")
 skip_if_no_dapr = pytest.mark.skipif(
@@ -278,7 +278,7 @@ def mock_tool_registry() -> ToolRegistry:
 
 @pytest_asyncio.fixture()
 async def tool_executor(mock_tool_registry: ToolRegistry) -> Any:
-    from nexus.tools.executor import ToolExecutor
+    from grampus.tools.executor import ToolExecutor
 
     return ToolExecutor(mock_tool_registry, timeout_seconds=5.0, max_retries=1)
 
@@ -293,7 +293,7 @@ async def episodic_memory(
     fake_state_store: FakeStateStore,
     fake_embedding_service: FakeEmbeddingService,
 ) -> Any:
-    from nexus.memory.episodic import EpisodicMemory
+    from grampus.memory.episodic import EpisodicMemory
 
     return EpisodicMemory(
         fake_state_store,
@@ -304,7 +304,7 @@ async def episodic_memory(
 
 @pytest_asyncio.fixture()
 async def semantic_memory(fake_state_store: FakeStateStore) -> Any:
-    from nexus.memory.semantic import SemanticMemory
+    from grampus.memory.semantic import SemanticMemory
 
     return SemanticMemory(fake_state_store, agent_id="test-agent")
 
@@ -316,16 +316,16 @@ async def memory_manager(
     mock_model_client: MockModelClient,
 ) -> Any:
     """MemoryManager wired with all memory types and no security middleware."""
-    from nexus.memory.consolidation import ConsolidationPipeline
-    from nexus.memory.episodic import EpisodicMemory
-    from nexus.memory.manager import MemoryManager
-    from nexus.memory.procedural import ProceduralMemory
-    from nexus.memory.retriever import EpisodicRetriever
-    from nexus.memory.semantic import SemanticMemory
-    from nexus.memory.semantic_retriever import SemanticRetriever
-    from nexus.memory.summarizer import Summarizer
-    from nexus.memory.token_counter import TokenCounter
-    from nexus.memory.working import WorkingMemory
+    from grampus.memory.consolidation import ConsolidationPipeline
+    from grampus.memory.episodic import EpisodicMemory
+    from grampus.memory.manager import MemoryManager
+    from grampus.memory.procedural import ProceduralMemory
+    from grampus.memory.retriever import EpisodicRetriever
+    from grampus.memory.semantic import SemanticMemory
+    from grampus.memory.semantic_retriever import SemanticRetriever
+    from grampus.memory.summarizer import Summarizer
+    from grampus.memory.token_counter import TokenCounter
+    from grampus.memory.working import WorkingMemory
 
     store = fake_state_store
     emb = fake_embedding_service
@@ -334,7 +334,7 @@ async def memory_manager(
     semantic = SemanticMemory(store, agent_id="test-agent")
     procedural = ProceduralMemory(store, agent_id="test-agent")
 
-    from nexus.memory.summarizer import SummarizationStrategy
+    from grampus.memory.summarizer import SummarizationStrategy
 
     token_counter = TokenCounter("mock-model")
     summarizer = Summarizer(
@@ -382,7 +382,7 @@ async def agent_runner(
     mock_model_client: MockModelClient,
     tool_executor: Any,
 ) -> Any:
-    from nexus.orchestration.runner import AgentRunner, RunnerConfig
+    from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
     return AgentRunner(
         mock_model_client,
@@ -398,9 +398,9 @@ async def agent_runner(
 
 @pytest.fixture()
 def safety_pipeline() -> Any:
-    from nexus.safety.injection import DetectionLevel, PromptInjectionDetector
-    from nexus.safety.pii import PIIDetector
-    from nexus.safety.pipeline import SafetyPipeline
+    from grampus.safety.injection import DetectionLevel, PromptInjectionDetector
+    from grampus.safety.pii import PIIDetector
+    from grampus.safety.pipeline import SafetyPipeline
 
     return SafetyPipeline(
         injection_detector=PromptInjectionDetector(level=DetectionLevel.BALANCED),

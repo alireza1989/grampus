@@ -6,7 +6,7 @@ import uuid
 
 import pytest
 
-from nexus.memory.types import SemanticFact
+from grampus.memory.types import SemanticFact
 from tests.integration.conftest import FakeStateStore
 
 
@@ -30,7 +30,7 @@ def _make_fact(
 @pytest.mark.integration
 class TestSemanticMemoryIntegration:
     async def test_store_and_get_fact(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         fact = _make_fact()
@@ -44,7 +44,7 @@ class TestSemanticMemoryIntegration:
     async def test_deduplication_merges_same_subject_predicate(
         self, semantic_memory: object
     ) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         fact1 = _make_fact(object_value="JavaScript", confidence=0.7)
@@ -58,7 +58,7 @@ class TestSemanticMemoryIntegration:
         assert all_facts[0].object_value == "Python"
 
     async def test_higher_confidence_incoming_wins(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         low = _make_fact(object_value="low-conf", confidence=0.3)
@@ -75,7 +75,7 @@ class TestSemanticMemoryIntegration:
     async def test_lower_confidence_incoming_does_not_override(
         self, semantic_memory: object
     ) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         high = _make_fact(object_value="existing-high", confidence=0.9)
@@ -88,7 +88,7 @@ class TestSemanticMemoryIntegration:
         assert all_facts[0].object_value == "existing-high"
 
     async def test_source_episode_ids_merged_on_dedup(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         ep1 = str(uuid.uuid4())
@@ -105,7 +105,7 @@ class TestSemanticMemoryIntegration:
         assert ep2 in merged_ids
 
     async def test_find_by_subject_returns_correct_facts(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         await sm.store(_make_fact(subject="Alice", predicate="likes", object_value="Python"))
@@ -126,7 +126,7 @@ class TestSemanticMemoryIntegration:
         assert all(f.subject == "Alice" for f in alice_facts)
 
     async def test_find_by_predicate_returns_correct_facts(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         await sm.store(_make_fact(subject="Alice", predicate="likes", object_value="Python"))
@@ -146,7 +146,7 @@ class TestSemanticMemoryIntegration:
         assert results[0].predicate == "likes"
 
     async def test_delete_removes_from_index(self, semantic_memory: object) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm: SemanticMemory = semantic_memory  # type: ignore[assignment]
         fact = _make_fact()
@@ -161,7 +161,7 @@ class TestSemanticMemoryIntegration:
         self,
         fake_state_store: FakeStateStore,
     ) -> None:
-        from nexus.memory.semantic import SemanticMemory
+        from grampus.memory.semantic import SemanticMemory
 
         sm1 = SemanticMemory(fake_state_store, agent_id="persist-agent")
         fact = _make_fact()

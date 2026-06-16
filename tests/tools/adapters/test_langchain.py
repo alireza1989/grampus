@@ -1,4 +1,4 @@
-"""Tests for nexus.tools.adapters.langchain — LangChain tool adapter."""
+"""Tests for grampus.tools.adapters.langchain — LangChain tool adapter."""
 
 from __future__ import annotations
 
@@ -9,14 +9,14 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from nexus.core.errors import ToolError
-from nexus.tools.adapters.langchain import (
+from grampus.core.errors import ToolError
+from grampus.tools.adapters.langchain import (
     _extract_parameters,
     _map_type,
     from_langchain,
     register_langchain_tools,
 )
-from nexus.tools.registry import RegisteredTool, ToolRegistry
+from grampus.tools.registry import RegisteredTool, ToolRegistry
 
 # ---------------------------------------------------------------------------
 # Fake LangChain tool objects (no LangChain dependency)
@@ -278,14 +278,14 @@ class TestNoLangchainInstalled:
         removed = {
             k: sys.modules.pop(k)
             for k in list(sys.modules)
-            if k in {"nexus.tools.adapters.langchain", "nexus.tools.adapters"}
+            if k in {"grampus.tools.adapters.langchain", "grampus.tools.adapters"}
         }
         monkeypatch.setattr(builtins, "__import__", _track)
 
         try:
             import importlib
 
-            mod = importlib.import_module("nexus.tools.adapters.langchain")
+            mod = importlib.import_module("grampus.tools.adapters.langchain")
             assert callable(getattr(mod, "from_langchain", None))
             assert seen == [], f"Unexpected langchain imports at module level: {seen}"
         finally:

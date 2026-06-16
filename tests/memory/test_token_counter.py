@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.token_counter — model-aware token counting."""
+"""Tests for grampus.memory.token_counter — model-aware token counting."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from nexus.core.types import Message, Role, ToolCall, ToolResult
-from nexus.memory.token_counter import TokenCounter
+from grampus.core.types import Message, Role, ToolCall, ToolResult
+from grampus.memory.token_counter import TokenCounter
 
 
 @pytest.fixture()

@@ -1,11 +1,11 @@
-"""Tests for nexus.memory.types — EpisodicRecord, RetrievedRecord, SemanticFact."""
+"""Tests for grampus.memory.types — EpisodicRecord, RetrievedRecord, SemanticFact."""
 
 from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
 
-from nexus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
+from grampus.memory.types import EpisodicRecord, RetrievedRecord, SemanticFact
 
 
 def make_record(**kwargs: object) -> EpisodicRecord:

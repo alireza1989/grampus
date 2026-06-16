@@ -1,8 +1,8 @@
-"""Tests for nexus.tools.library — LIBRARY_REGISTRY integration."""
+"""Tests for grampus.tools.library — LIBRARY_REGISTRY integration."""
 
 from __future__ import annotations
 
-from nexus.tools.library import LIBRARY_REGISTRY, get_library_registry, get_tool_names
+from grampus.tools.library import LIBRARY_REGISTRY, get_library_registry, get_tool_names
 
 EXPECTED_TOOLS = {
     "calculator",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.observability.behavior import AnomalyType, BehaviorMonitor
+from grampus.observability.behavior import AnomalyType, BehaviorMonitor
 
 
 def _fill_window(monitor: BehaviorMonitor, n: int = 20) -> None:

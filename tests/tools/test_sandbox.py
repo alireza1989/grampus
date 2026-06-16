@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from nexus.core.errors import ToolTimeoutError
-from nexus.tools.registry import ToolRegistry
+from grampus.core.errors import ToolTimeoutError
+from grampus.tools.registry import ToolRegistry
 
 # ---------------------------------------------------------------------------
 # Helpers — force the local-fallback path by blocking `import docker`
@@ -20,11 +20,11 @@ def _import_sandbox_without_docker() -> Any:
     """Import sandbox module with docker unavailable."""
     # Remove cached module so re-import picks up the patch.
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
 
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox import manager  # type: ignore[import]
+        from grampus.tools.sandbox import manager  # type: ignore[import]
 
     return manager
 
@@ -36,10 +36,10 @@ def _import_sandbox_without_docker() -> Any:
 
 def test_sandbox_result_round_trips_json() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.manager import SandboxResult
+        from grampus.tools.sandbox.manager import SandboxResult
 
     result = SandboxResult(
         stdout="hi",
@@ -87,10 +87,10 @@ async def test_sandbox_nonzero_exit_for_runtime_error() -> None:
 @pytest.mark.asyncio
 async def test_sandbox_timeout_raises_tool_timeout_error() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.manager import SandboxConfig, SandboxManager
+        from grampus.tools.sandbox.manager import SandboxConfig, SandboxManager
 
     manager = SandboxManager(SandboxConfig(execution_timeout_seconds=1))
     with pytest.raises(ToolTimeoutError):
@@ -114,10 +114,10 @@ async def test_sandbox_duration_ms_is_positive() -> None:
 
 def test_code_execution_result_round_trips_json() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.code_executor import CodeExecutionResult
+        from grampus.tools.sandbox.code_executor import CodeExecutionResult
 
     result = CodeExecutionResult(
         stdout="out",
@@ -137,11 +137,11 @@ def test_code_execution_result_round_trips_json() -> None:
 @pytest.mark.asyncio
 async def test_code_executor_returns_result() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.code_executor import CodeExecutor
-        from nexus.tools.sandbox.manager import SandboxManager
+        from grampus.tools.sandbox.code_executor import CodeExecutor
+        from grampus.tools.sandbox.manager import SandboxManager
 
     registry = ToolRegistry()
     manager = SandboxManager()
@@ -155,11 +155,11 @@ async def test_code_executor_returns_result() -> None:
 @pytest.mark.asyncio
 async def test_code_executor_populates_tools_called() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.code_executor import CodeExecutor
-        from nexus.tools.sandbox.manager import SandboxManager
+        from grampus.tools.sandbox.code_executor import CodeExecutor
+        from grampus.tools.sandbox.manager import SandboxManager
 
     registry = ToolRegistry()
     registry.register(lambda: None, name="my_tool", description="A test tool")
@@ -179,11 +179,11 @@ async def test_code_executor_populates_tools_called() -> None:
 @pytest.mark.asyncio
 async def test_code_executor_sets_error_on_failure() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.code_executor import CodeExecutor
-        from nexus.tools.sandbox.manager import SandboxManager
+        from grampus.tools.sandbox.code_executor import CodeExecutor
+        from grampus.tools.sandbox.manager import SandboxManager
 
     registry = ToolRegistry()
     manager = SandboxManager()
@@ -197,11 +197,11 @@ async def test_code_executor_sets_error_on_failure() -> None:
 @pytest.mark.asyncio
 async def test_code_executor_tools_called_empty_when_no_match() -> None:
     for key in list(sys.modules.keys()):
-        if "nexus.tools.sandbox" in key:
+        if "grampus.tools.sandbox" in key:
             del sys.modules[key]
     with patch.dict("sys.modules", {"docker": None}):
-        from nexus.tools.sandbox.code_executor import CodeExecutor
-        from nexus.tools.sandbox.manager import SandboxManager
+        from grampus.tools.sandbox.code_executor import CodeExecutor
+        from grampus.tools.sandbox.manager import SandboxManager
 
     registry = ToolRegistry()
     registry.register(lambda: None, name="unused_tool", description="Never called")

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from nexus.cli.playground.renderer import Renderer
-from nexus.cli.playground.session import PlaygroundSession, PlaygroundTurn
-from nexus.core.types import TokenUsage
+from grampus.cli.playground.renderer import Renderer
+from grampus.cli.playground.session import PlaygroundSession, PlaygroundTurn
+from grampus.core.types import TokenUsage
 
 
 def _r() -> Renderer:

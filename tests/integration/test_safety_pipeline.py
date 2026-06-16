@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import SafetyError
-from nexus.core.types import ToolCall, ToolResult
-from nexus.safety.pipeline import SafetyPipeline
+from grampus.core.errors import SafetyError
+from grampus.core.types import ToolCall, ToolResult
+from grampus.safety.pipeline import SafetyPipeline
 
 
 @pytest.mark.integration
@@ -48,8 +48,8 @@ class TestSafetyPipelineIntegration:
         assert text != "" or len(violations) >= 0
 
     async def test_denied_tool_call_raises_safety_error(self) -> None:
-        from nexus.safety.action_guard import SafetyActionGuard
-        from nexus.safety.pipeline import SafetyPipeline
+        from grampus.safety.action_guard import SafetyActionGuard
+        from grampus.safety.pipeline import SafetyPipeline
 
         guard = SafetyActionGuard(
             allowed_tools=None,
@@ -63,8 +63,8 @@ class TestSafetyPipelineIntegration:
         assert exc_info.value.code == "ACTION_BLOCKED"
 
     async def test_max_consecutive_calls_blocked(self) -> None:
-        from nexus.safety.action_guard import SafetyActionGuard
-        from nexus.safety.pipeline import SafetyPipeline
+        from grampus.safety.action_guard import SafetyActionGuard
+        from grampus.safety.pipeline import SafetyPipeline
 
         guard = SafetyActionGuard(
             allowed_tools=None,
@@ -83,7 +83,7 @@ class TestSafetyPipelineIntegration:
 
         import yaml
 
-        from nexus.safety.policies import load_safety_policy
+        from grampus.safety.policies import load_safety_policy
 
         policy_file = pathlib.Path(str(tmp_path)) / "policy.yaml"
         policy_data = {
@@ -97,9 +97,9 @@ class TestSafetyPipelineIntegration:
         assert policy is not None
 
     async def test_violation_log_accumulates_across_checks(self) -> None:
-        from nexus.safety.injection import DetectionLevel, PromptInjectionDetector
-        from nexus.safety.pii import PIIDetector
-        from nexus.safety.pipeline import SafetyPipeline
+        from grampus.safety.injection import DetectionLevel, PromptInjectionDetector
+        from grampus.safety.pii import PIIDetector
+        from grampus.safety.pipeline import SafetyPipeline
 
         pipeline = SafetyPipeline(
             injection_detector=PromptInjectionDetector(level=DetectionLevel.BALANCED),

@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.lock — DaprLock async context manager."""
+"""Tests for grampus.dapr.lock — DaprLock async context manager."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.errors import LockAcquisitionError
-from nexus.dapr.lock import DaprLock
+from grampus.core.errors import LockAcquisitionError
+from grampus.dapr.lock import DaprLock
 
 
 @pytest.fixture()

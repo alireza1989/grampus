@@ -1,15 +1,15 @@
-"""Tests for nexus.server.models request/response schemas."""
+"""Tests for grampus.server.models request/response schemas."""
 
 from __future__ import annotations
 
 import json
 
-from nexus.core.types import AgentStatus, TokenUsage
+from grampus.core.types import AgentStatus, TokenUsage
 
 
 class TestRunRequest:
     def test_run_request_defaults(self) -> None:
-        from nexus.server.models import RunRequest
+        from grampus.server.models import RunRequest
 
         req = RunRequest(input="hello")
         assert req.session_id is None
@@ -18,7 +18,7 @@ class TestRunRequest:
         assert req.max_iterations is None
 
     def test_run_request_with_all_fields(self) -> None:
-        from nexus.server.models import RunRequest
+        from grampus.server.models import RunRequest
 
         req = RunRequest(
             input="hello",
@@ -39,7 +39,7 @@ class TestRunResponse:
         )
 
     def test_run_response_serializes(self) -> None:
-        from nexus.server.models import RunResponse
+        from grampus.server.models import RunResponse
 
         resp = RunResponse(
             output="hi",
@@ -56,7 +56,7 @@ class TestRunResponse:
         assert data["status"] == "completed"
 
     def test_run_response_roundtrip(self) -> None:
-        from nexus.server.models import RunResponse
+        from grampus.server.models import RunResponse
 
         resp = RunResponse(
             output=None,
@@ -75,7 +75,7 @@ class TestRunResponse:
 
 class TestStreamChunkResponse:
     def test_stream_chunk_response_token_event(self) -> None:
-        from nexus.server.models import StreamChunkResponse
+        from grampus.server.models import StreamChunkResponse
 
         chunk = StreamChunkResponse(event_type="token", delta="Hello")
         data = json.loads(chunk.model_dump_json())
@@ -84,7 +84,7 @@ class TestStreamChunkResponse:
         assert data["tool_name"] is None
 
     def test_stream_chunk_defaults(self) -> None:
-        from nexus.server.models import StreamChunkResponse
+        from grampus.server.models import StreamChunkResponse
 
         chunk = StreamChunkResponse(event_type="agent_start")
         assert chunk.delta == ""
@@ -94,7 +94,7 @@ class TestStreamChunkResponse:
 
 class TestHealthResponse:
     def test_health_response_fields(self) -> None:
-        from nexus.server.models import HealthResponse
+        from grampus.server.models import HealthResponse
 
         h = HealthResponse(status="ok", version="0.1.0", agent_name="my-agent")
         assert h.status == "ok"
@@ -104,7 +104,7 @@ class TestHealthResponse:
 
 class TestMemoryModels:
     def test_memory_recall_request_defaults(self) -> None:
-        from nexus.server.models import MemoryRecallRequest
+        from grampus.server.models import MemoryRecallRequest
 
         req = MemoryRecallRequest(query="what happened?")
         assert req.top_k == 5
@@ -112,7 +112,7 @@ class TestMemoryModels:
         assert "semantic" in req.memory_types
 
     def test_memory_recall_response_empty(self) -> None:
-        from nexus.server.models import MemoryRecallResponse
+        from grampus.server.models import MemoryRecallResponse
 
         resp = MemoryRecallResponse(query="q")
         assert resp.episodic == []

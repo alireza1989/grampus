@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.safety.injection import DetectionLevel, InjectionResult, PromptInjectionDetector
+from grampus.safety.injection import DetectionLevel, InjectionResult, PromptInjectionDetector
 
 
 class TestInjectionDetectorPatterns:

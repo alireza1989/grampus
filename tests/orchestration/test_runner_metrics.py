@@ -1,4 +1,4 @@
-"""Tests for NexusMetrics recording in AgentRunner."""
+"""Tests for GrampusMetrics recording in AgentRunner."""
 
 from __future__ import annotations
 
@@ -6,15 +6,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     TokenUsage,
     ToolCall,
     ToolResult,
 )
-from nexus.observability.metrics import NexusMetrics
-from nexus.orchestration.runner import AgentRunner
+from grampus.observability.metrics import GrampusMetrics
+from grampus.orchestration.runner import AgentRunner
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -72,8 +72,8 @@ def tool_executor() -> AsyncMock:
 
 
 @pytest.fixture
-def metrics() -> NexusMetrics:
-    return NexusMetrics(agent_id="test-agent")
+def metrics() -> GrampusMetrics:
+    return GrampusMetrics(agent_id="test-agent")
 
 
 # ---------------------------------------------------------------------------
@@ -86,9 +86,9 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Hello", session_id="s1")
         assert metrics.snapshot().llm_call_count == 1
 
@@ -96,9 +96,9 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Hello", session_id="s1")
         assert metrics.snapshot().total_tokens > 0
 
@@ -106,14 +106,14 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
         tc = _tool_call()
         model_client.complete.side_effect = [
             _model_response(content=None, tool_calls=[tc]),
             _model_response(content="Done"),
         ]
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Use a tool", session_id="s1")
         assert metrics.snapshot().total_tool_calls == 1
 
@@ -121,10 +121,10 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
         model_client.complete.side_effect = RuntimeError("boom")
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         with pytest.raises(RuntimeError):
             await runner.run(_agent_def(), "Fail please", session_id="s1")
         assert metrics.snapshot().total_errors == 1
@@ -134,7 +134,7 @@ class TestRunnerMetrics:
         model_client: AsyncMock,
         tool_executor: AsyncMock,
     ) -> None:
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=None)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=None)
         result = await runner.run(_agent_def(), "Hello", session_id="s1")
         assert result.output is not None
 
@@ -142,14 +142,14 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
         tc = _tool_call()
         model_client.complete.side_effect = [
             _model_response(content=None, tool_calls=[tc]),
             _model_response(content="Done"),
         ]
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Two LLM calls", session_id="s1")
         assert metrics.snapshot().llm_call_count == 2
 
@@ -157,14 +157,14 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
         tc = _tool_call()
         model_client.complete.side_effect = [
             _model_response(content=None, tool_calls=[tc]),
             _model_response(content="Done"),
         ]
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Use a tool", session_id="s1")
         snap = metrics.snapshot()
         assert snap.total_tool_calls == 1
@@ -173,8 +173,8 @@ class TestRunnerMetrics:
         self,
         model_client: AsyncMock,
         tool_executor: AsyncMock,
-        metrics: NexusMetrics,
+        metrics: GrampusMetrics,
     ) -> None:
-        runner = AgentRunner(model_client, tool_executor, nexus_metrics=metrics)
+        runner = AgentRunner(model_client, tool_executor, grampus_metrics=metrics)
         await runner.run(_agent_def(), "Hello", session_id="s1")
         assert metrics.snapshot().total_cost_usd > 0.0

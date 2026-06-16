@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.auditor — AuditReport, MemoryAuditor."""
+"""Tests for grampus.memory.auditor — AuditReport, MemoryAuditor."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.auditor import AuditReport, MemoryAuditor
-from nexus.memory.provenance import ProvenanceTracker, SourceType
-from nexus.memory.types import EpisodicRecord
+from grampus.memory.auditor import AuditReport, MemoryAuditor
+from grampus.memory.provenance import ProvenanceTracker, SourceType
+from grampus.memory.types import EpisodicRecord
 
 
 def _record(content: str = "normal content", provenance: str | None = None) -> EpisodicRecord:

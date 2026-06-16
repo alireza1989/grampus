@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from nexus.observability.events import AgentEvent, EventLog, EventType
+from grampus.observability.events import AgentEvent, EventLog, EventType
 
 
 class TestEventLogAppend:

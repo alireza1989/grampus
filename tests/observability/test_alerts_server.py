@@ -6,14 +6,14 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition
-from nexus.observability.alerts import (
+from grampus.core.types import AgentDefinition
+from grampus.observability.alerts import (
     AlertEvaluator,
     AlertEvent,
     AlertSeverity,
     ThresholdType,
 )
-from nexus.observability.notification import LogChannel, NotificationDispatcher
+from grampus.observability.notification import LogChannel, NotificationDispatcher
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -36,7 +36,7 @@ def _make_evaluator() -> AlertEvaluator:
 
 
 def _make_client(evaluator: AlertEvaluator | None = None) -> TestClient:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     runner = _make_runner()
     agent_def = _make_agent_def()
@@ -212,7 +212,7 @@ class TestAlertHistory:
         assert data["count"] == 0
 
     def test_alert_history_populated(self) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         runner = _make_runner()
         agent_def = _make_agent_def()
@@ -241,7 +241,7 @@ class TestAlertHistory:
         assert data["events"][0]["rule_id"] == "r1"
 
     def test_alert_history_limit_param(self) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         runner = _make_runner()
         agent_def = _make_agent_def()
@@ -269,7 +269,7 @@ class TestAlertHistory:
         assert len(data["events"]) == 3
 
     def test_alert_history_agent_id_filter(self) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         runner = _make_runner()
         agent_def = _make_agent_def()

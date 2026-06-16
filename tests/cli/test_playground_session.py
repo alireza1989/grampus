@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from nexus.cli.playground.session import PlaygroundSession, PlaygroundTurn
-from nexus.core.types import TokenUsage
+from grampus.cli.playground.session import PlaygroundSession, PlaygroundTurn
+from grampus.core.types import TokenUsage
 
 
 def _usage(cost: float = 0.01, tokens: int = 100) -> TokenUsage:

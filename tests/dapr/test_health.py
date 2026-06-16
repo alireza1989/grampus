@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.health — sidecar health checking."""
+"""Tests for grampus.dapr.health — sidecar health checking."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from nexus.core.errors import DaprConnectionError
-from nexus.dapr.health import is_sidecar_healthy, wait_for_sidecar
+from grampus.core.errors import DaprConnectionError
+from grampus.dapr.health import is_sidecar_healthy, wait_for_sidecar
 
 
 class TestIsSidecarHealthy:
     async def test_returns_true_on_200(self) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -28,7 +28,7 @@ class TestIsSidecarHealthy:
         # Dapr's /v1.0/healthz returns 204 No Content when healthy
         mock_resp = MagicMock()
         mock_resp.status_code = 204
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -40,7 +40,7 @@ class TestIsSidecarHealthy:
     async def test_returns_false_on_503(self) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 503
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -50,7 +50,7 @@ class TestIsSidecarHealthy:
         assert result is False
 
     async def test_returns_false_on_connect_error(self) -> None:
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -60,7 +60,7 @@ class TestIsSidecarHealthy:
         assert result is False
 
     async def test_returns_false_on_timeout(self) -> None:
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -72,7 +72,7 @@ class TestIsSidecarHealthy:
     async def test_hits_correct_healthz_url(self) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        with patch("nexus.dapr.health.httpx.AsyncClient") as mock_client_cls:
+        with patch("grampus.dapr.health.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -87,7 +87,7 @@ class TestIsSidecarHealthy:
 
 class TestWaitForSidecar:
     async def test_succeeds_immediately_when_healthy(self) -> None:
-        with patch("nexus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=True)):
+        with patch("grampus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=True)):
             await wait_for_sidecar("localhost", 3500, timeout_seconds=5.0)
 
     async def test_succeeds_after_retries(self) -> None:
@@ -102,16 +102,16 @@ class TestWaitForSidecar:
             return result
 
         with (
-            patch("nexus.dapr.health.is_sidecar_healthy", fake_healthy),
-            patch("nexus.dapr.health.asyncio.sleep", AsyncMock()),
+            patch("grampus.dapr.health.is_sidecar_healthy", fake_healthy),
+            patch("grampus.dapr.health.asyncio.sleep", AsyncMock()),
         ):
             await wait_for_sidecar("localhost", 3500, timeout_seconds=10.0)
         assert call_count == 3
 
     async def test_raises_on_timeout(self) -> None:
         with (
-            patch("nexus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=False)),
-            patch("nexus.dapr.health.asyncio.sleep", AsyncMock()),
+            patch("grampus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=False)),
+            patch("grampus.dapr.health.asyncio.sleep", AsyncMock()),
             pytest.raises(DaprConnectionError) as exc_info,
         ):
             await wait_for_sidecar("localhost", 3500, timeout_seconds=1.0)
@@ -126,7 +126,7 @@ class TestWaitForSidecar:
             return False
 
         with (
-            patch("nexus.dapr.health.is_sidecar_healthy", fake_healthy),
+            patch("grampus.dapr.health.is_sidecar_healthy", fake_healthy),
             pytest.raises(DaprConnectionError),
         ):
             await wait_for_sidecar("localhost", 3500, timeout_seconds=0.0)
@@ -134,8 +134,8 @@ class TestWaitForSidecar:
 
     async def test_error_contains_host_and_port(self) -> None:
         with (
-            patch("nexus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=False)),
-            patch("nexus.dapr.health.asyncio.sleep", AsyncMock()),
+            patch("grampus.dapr.health.is_sidecar_healthy", AsyncMock(return_value=False)),
+            patch("grampus.dapr.health.asyncio.sleep", AsyncMock()),
             pytest.raises(DaprConnectionError) as exc_info,
         ):
             await wait_for_sidecar("myhost", 1234, timeout_seconds=0.0)

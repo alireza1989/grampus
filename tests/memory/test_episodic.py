@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.episodic — EpisodicMemory CRUD."""
+"""Tests for grampus.memory.episodic — EpisodicMemory CRUD."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.episodic import EpisodicMemory
-from nexus.memory.types import EpisodicRecord
+from grampus.memory.episodic import EpisodicMemory
+from grampus.memory.types import EpisodicRecord
 
 FAKE_EMBEDDING = [0.1] * 10
 

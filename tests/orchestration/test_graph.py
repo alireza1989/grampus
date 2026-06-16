@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import AgentState, Message, Role
-from nexus.orchestration.graph import Graph, GraphCheckpoint
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import AgentState, Message, Role
+from grampus.orchestration.graph import Graph, GraphCheckpoint
 
 
 def _state(agent_id: str = "agent-1", session_id: str = "sess-1") -> AgentState:

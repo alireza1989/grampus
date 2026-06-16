@@ -1,23 +1,23 @@
-"""Tests for nexus.core.logging — structured logging with correlation IDs."""
+"""Tests for grampus.core.logging — structured logging with correlation IDs."""
 
 import json
 from io import StringIO
 
-from nexus.core.logging import bind_correlation_id, configure_logging, get_logger
+from grampus.core.logging import bind_correlation_id, configure_logging, get_logger
 
 
 class TestGetLogger:
     def test_returns_bound_logger(self) -> None:
-        logger = get_logger("nexus.test")
+        logger = get_logger("grampus.test")
         assert logger is not None
 
     def test_different_names_return_different_loggers(self) -> None:
-        a = get_logger("nexus.a")
-        b = get_logger("nexus.b")
+        a = get_logger("grampus.a")
+        b = get_logger("grampus.b")
         assert a is not b
 
     def test_logger_has_expected_methods(self) -> None:
-        logger = get_logger("nexus.test")
+        logger = get_logger("grampus.test")
         for method in ("info", "debug", "warning", "error", "critical"):
             assert callable(getattr(logger, method, None)), f"missing method: {method}"
 

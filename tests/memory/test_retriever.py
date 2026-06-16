@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.retriever — EpisodicRetriever hybrid search."""
+"""Tests for grampus.memory.retriever — EpisodicRetriever hybrid search."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from nexus.memory.episodic import EpisodicMemory
-from nexus.memory.retriever import EpisodicRetriever
-from nexus.memory.types import EpisodicRecord, RetrievedRecord
+from grampus.memory.episodic import EpisodicMemory
+from grampus.memory.retriever import EpisodicRetriever
+from grampus.memory.types import EpisodicRecord, RetrievedRecord
 
 
 def make_record(

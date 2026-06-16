@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.lifecycle — LifecycleTierManager and AdaptiveRetriever."""
+"""Tests for grampus.memory.lifecycle — LifecycleTierManager and AdaptiveRetriever."""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.memory.lifecycle.adaptive_router import AdaptiveRetriever
-from nexus.memory.lifecycle.tier_manager import LifecycleTierManager
-from nexus.memory.lifecycle.types import (
+from grampus.memory.lifecycle.adaptive_router import AdaptiveRetriever
+from grampus.memory.lifecycle.tier_manager import LifecycleTierManager
+from grampus.memory.lifecycle.types import (
     MemoryTier,
     MemoryType,
     QueryClassification,
     TierRecord,
 )
-from nexus.memory.manager import MemoryRecallResult
-from nexus.memory.types import EpisodicRecord, RetrievedRecord
+from grampus.memory.manager import MemoryRecallResult
+from grampus.memory.types import EpisodicRecord, RetrievedRecord
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -219,7 +219,7 @@ def _make_adaptive_router(
     sem_ret.retrieve_similar = AsyncMock(return_value=[])
 
     if with_graph:
-        from nexus.memory.graph.types import GraphQueryResult
+        from grampus.memory.graph.types import GraphQueryResult
 
         graph_ret = AsyncMock()
         graph_ret.query = AsyncMock(
@@ -335,7 +335,7 @@ async def test_retrieve_never_raises() -> None:
 
 @pytest.mark.asyncio
 async def test_retrieve_graph_falls_back_to_flat_on_empty_graph() -> None:
-    from nexus.memory.graph.types import GraphQueryResult
+    from grampus.memory.graph.types import GraphQueryResult
 
     ep_rec = _make_retrieved()
     ep_ret = AsyncMock()
@@ -369,16 +369,16 @@ def _build_memory_manager(
     *,
     adaptive_router: AdaptiveRetriever | None = None,
 ) -> object:
-    from nexus.memory.consolidation import ConsolidationPipeline
-    from nexus.memory.episodic import EpisodicMemory
-    from nexus.memory.manager import MemoryManager
-    from nexus.memory.procedural import ProceduralMemory
-    from nexus.memory.retriever import EpisodicRetriever
-    from nexus.memory.semantic import SemanticMemory
-    from nexus.memory.semantic_retriever import SemanticRetriever
-    from nexus.memory.summarizer import Summarizer
-    from nexus.memory.token_counter import TokenCounter
-    from nexus.memory.working import WorkingMemory
+    from grampus.memory.consolidation import ConsolidationPipeline
+    from grampus.memory.episodic import EpisodicMemory
+    from grampus.memory.manager import MemoryManager
+    from grampus.memory.procedural import ProceduralMemory
+    from grampus.memory.retriever import EpisodicRetriever
+    from grampus.memory.semantic import SemanticMemory
+    from grampus.memory.semantic_retriever import SemanticRetriever
+    from grampus.memory.summarizer import Summarizer
+    from grampus.memory.token_counter import TokenCounter
+    from grampus.memory.working import WorkingMemory
 
     store = AsyncMock()
     store.get = AsyncMock(return_value=(None, ""))
@@ -458,10 +458,10 @@ async def test_recall_suppresses_router_error_and_falls_back() -> None:
 
 
 def _build_runner(*, graph_builder: object | None = None) -> object:
-    from nexus.core.models.base import ModelResponse
-    from nexus.core.types import TokenUsage
-    from nexus.orchestration.runner import AgentRunner
-    from nexus.tools.executor import ToolExecutor
+    from grampus.core.models.base import ModelResponse
+    from grampus.core.types import TokenUsage
+    from grampus.orchestration.runner import AgentRunner
+    from grampus.tools.executor import ToolExecutor
 
     response = ModelResponse(
         content="done",
@@ -486,7 +486,7 @@ def _build_runner(*, graph_builder: object | None = None) -> object:
 
 @pytest.mark.asyncio
 async def test_runner_initializes_session_graph_on_run() -> None:
-    from nexus.core.types import AgentDefinition
+    from grampus.core.types import AgentDefinition
 
     graph_builder = MagicMock()
     graph_builder.init_session = MagicMock(return_value=MagicMock())
@@ -502,8 +502,8 @@ async def test_runner_initializes_session_graph_on_run() -> None:
 
 @pytest.mark.asyncio
 async def test_runner_consolidates_at_session_end() -> None:
-    from nexus.core.types import AgentDefinition
-    from nexus.memory.graph.types import EventGraph
+    from grampus.core.types import AgentDefinition
+    from grampus.memory.graph.types import EventGraph
 
     event_graph = EventGraph(session_id="sess1", agent_id="test-agent")
     graph_builder = MagicMock()
@@ -512,21 +512,21 @@ async def test_runner_consolidates_at_session_end() -> None:
     graph_builder.end_session = MagicMock(return_value=event_graph)
 
     consolidator = AsyncMock()
-    from nexus.memory.graph.types import MemoryGraph
+    from grampus.memory.graph.types import MemoryGraph
 
     consolidator.consolidate = AsyncMock(return_value=MemoryGraph(graph_id="test-agent"))
 
     # Build manager with graph_consolidator
-    from nexus.memory.consolidation import ConsolidationPipeline
-    from nexus.memory.episodic import EpisodicMemory
-    from nexus.memory.manager import MemoryManager
-    from nexus.memory.procedural import ProceduralMemory
-    from nexus.memory.retriever import EpisodicRetriever
-    from nexus.memory.semantic import SemanticMemory
-    from nexus.memory.semantic_retriever import SemanticRetriever
-    from nexus.memory.summarizer import Summarizer
-    from nexus.memory.token_counter import TokenCounter
-    from nexus.memory.working import WorkingMemory
+    from grampus.memory.consolidation import ConsolidationPipeline
+    from grampus.memory.episodic import EpisodicMemory
+    from grampus.memory.manager import MemoryManager
+    from grampus.memory.procedural import ProceduralMemory
+    from grampus.memory.retriever import EpisodicRetriever
+    from grampus.memory.semantic import SemanticMemory
+    from grampus.memory.semantic_retriever import SemanticRetriever
+    from grampus.memory.summarizer import Summarizer
+    from grampus.memory.token_counter import TokenCounter
+    from grampus.memory.working import WorkingMemory
 
     store = AsyncMock()
     store.get = AsyncMock(return_value=(None, ""))
@@ -564,10 +564,10 @@ async def test_runner_consolidates_at_session_end() -> None:
         graph_consolidator=consolidator,
     )
 
-    from nexus.core.models.base import ModelResponse
-    from nexus.core.types import TokenUsage
-    from nexus.orchestration.runner import AgentRunner
-    from nexus.tools.executor import ToolExecutor
+    from grampus.core.models.base import ModelResponse
+    from grampus.core.types import TokenUsage
+    from grampus.orchestration.runner import AgentRunner
+    from grampus.tools.executor import ToolExecutor
 
     response = ModelResponse(
         content="done",
@@ -597,7 +597,7 @@ async def test_runner_consolidates_at_session_end() -> None:
 
 @pytest.mark.asyncio
 async def test_runner_without_graph_builder_unchanged() -> None:
-    from nexus.core.types import AgentDefinition
+    from grampus.core.types import AgentDefinition
 
     runner = _build_runner(graph_builder=None)
     agent_def = AgentDefinition(name="test-agent", model="test")

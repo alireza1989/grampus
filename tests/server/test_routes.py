@@ -1,4 +1,4 @@
-"""Tests for nexus.server.routes endpoint handlers."""
+"""Tests for grampus.server.routes endpoint handlers."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import (
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ExecutionResult,
@@ -72,7 +72,7 @@ def mock_agent_def() -> AgentDefinition:
 
 @pytest.fixture
 def app(mock_runner: MagicMock, mock_agent_def: AgentDefinition) -> object:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     return create_app(mock_runner, mock_agent_def)
 
@@ -99,7 +99,7 @@ def app_with_memory(
     mock_agent_def: AgentDefinition,
     mock_memory_manager: MagicMock,
 ) -> object:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     return create_app(mock_runner, mock_agent_def, memory_manager=mock_memory_manager)
 
@@ -159,7 +159,7 @@ class TestRunEndpoint:
     def test_run_temperature_override_applied(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app)
@@ -171,7 +171,7 @@ class TestRunEndpoint:
     def test_run_max_iterations_override_applied(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app)
@@ -180,39 +180,39 @@ class TestRunEndpoint:
         called_def: AgentDefinition = call_args[0][0]
         assert called_def.max_iterations == 3
 
-    def test_run_nexus_error_returns_400(
+    def test_run_grampus_error_returns_400(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
         mock_runner.run = AsyncMock(
             side_effect=OrchestrationError("limit hit", code="MAX_ITER", hint="increase it")
         )
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app, raise_server_exceptions=False)
         resp = c.post("/run", json={"input": "hi"})
         assert resp.status_code == 400
 
-    def test_run_nexus_error_includes_code(
+    def test_run_grampus_error_includes_code(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
         mock_runner.run = AsyncMock(
             side_effect=OrchestrationError("limit hit", code="MAX_ITER", hint="increase it")
         )
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app, raise_server_exceptions=False)
         resp = c.post("/run", json={"input": "hi"})
         assert resp.json()["code"] == "MAX_ITER"
 
-    def test_run_nexus_error_includes_hint(
+    def test_run_grampus_error_includes_hint(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
         mock_runner.run = AsyncMock(
             side_effect=OrchestrationError("limit hit", code="MAX_ITER", hint="increase it")
         )
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         c = TestClient(app, raise_server_exceptions=False)

@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import MarketAllocationError
-from nexus.core.types import (
+from grampus.core.errors import MarketAllocationError
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ExecutionResult,
@@ -16,14 +16,14 @@ from nexus.core.types import (
     Role,
     TokenUsage,
 )
-from nexus.orchestration.crew import CrewMember
-from nexus.orchestration.market.allocator import MarketAllocator
-from nexus.orchestration.market.board import TaskBoard
-from nexus.orchestration.market.crew import MarketCrew
-from nexus.orchestration.market.registry import CapabilityRegistry
-from nexus.orchestration.market.reputation import ReputationTracker
-from nexus.orchestration.market.scorer import BidScorer
-from nexus.orchestration.market.types import (
+from grampus.orchestration.crew import CrewMember
+from grampus.orchestration.market.allocator import MarketAllocator
+from grampus.orchestration.market.board import TaskBoard
+from grampus.orchestration.market.crew import MarketCrew
+from grampus.orchestration.market.registry import CapabilityRegistry
+from grampus.orchestration.market.reputation import ReputationTracker
+from grampus.orchestration.market.scorer import BidScorer
+from grampus.orchestration.market.types import (
     AllocationStatus,
     Bid,
     CapabilityProfile,
@@ -128,7 +128,7 @@ def _member(agent_id: str, skills: list[str] | None = None) -> CrewMember:
 
 
 def _mock_model_client(json_response: str = "") -> MagicMock:
-    from nexus.core.types import TokenUsage
+    from grampus.core.types import TokenUsage
 
     mock = MagicMock()
     mock.default_model = "test-model"

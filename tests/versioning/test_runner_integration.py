@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
-from nexus.orchestration.runner import AgentRunner
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.orchestration.runner import AgentRunner
 
 
 def _make_def(prompt: str = "Original prompt.") -> AgentDefinition:
@@ -75,7 +75,7 @@ class TestRunnerWithoutVersionRouter:
         model_client = _make_mock_model_client()
         tool_executor = _make_mock_tool_executor()
 
-        with patch("nexus.observability.events.EventLog.open") as mock_open:
+        with patch("grampus.observability.events.EventLog.open") as mock_open:
             mock_open.return_value = _make_mock_event_log()
             runner = AgentRunner(model_client, tool_executor)
             defn = _make_def()
@@ -102,7 +102,7 @@ class TestRunnerWithVersionRouter:
         resolved_def = _make_def("Resolved prompt.")
         version_router.resolve = AsyncMock(return_value=resolved_def)
 
-        with patch("nexus.observability.events.EventLog.open") as mock_open:
+        with patch("grampus.observability.events.EventLog.open") as mock_open:
             mock_open.return_value = _make_mock_event_log()
             runner = AgentRunner(model_client, tool_executor, version_router=version_router)
             original_def = _make_def("Original prompt.")
@@ -120,7 +120,7 @@ class TestRunnerWithVersionRouter:
         version_router = MagicMock()
         version_router.resolve = AsyncMock(side_effect=RuntimeError("Router exploded"))
 
-        with patch("nexus.observability.events.EventLog.open") as mock_open:
+        with patch("grampus.observability.events.EventLog.open") as mock_open:
             mock_open.return_value = _make_mock_event_log()
             runner = AgentRunner(model_client, tool_executor, version_router=version_router)
             original_def = _make_def("Fallback prompt.")
@@ -137,7 +137,7 @@ class TestRunnerWithVersionRouter:
         version_router = MagicMock()
         version_router.resolve = AsyncMock(return_value=None)
 
-        with patch("nexus.observability.events.EventLog.open") as mock_open:
+        with patch("grampus.observability.events.EventLog.open") as mock_open:
             mock_open.return_value = _make_mock_event_log()
             runner = AgentRunner(model_client, tool_executor, version_router=version_router)
             original_def = _make_def("Original fallback.")

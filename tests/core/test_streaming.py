@@ -7,10 +7,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from nexus.core.errors import ModelError
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.models.openai import OpenAIClient
-from nexus.core.types import (
+from grampus.core.errors import ModelError
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.models.openai import OpenAIClient
+from grampus.core.types import (
     Message,
     Role,
     StreamChunk,

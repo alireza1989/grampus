@@ -1,4 +1,4 @@
-"""Tests for nexus.core.types — Pydantic v2 data models."""
+"""Tests for grampus.core.types — Pydantic v2 data models."""
 
 import json
 from datetime import datetime
@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from nexus.core.types import (
+from grampus.core.types import (
     AgentDefinition,
     AgentState,
     AgentStatus,

@@ -1,1 +1,1 @@
-"""Tests for nexus.tools.library."""
+"""Tests for grampus.tools.library."""

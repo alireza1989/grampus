@@ -44,7 +44,7 @@ def _make_mock_http_client(
 
 
 async def test_fetch_agent_card_returns_parsed_card() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     card_dict = _make_agent_card_dict("http://agent.test")
     mock_http = _make_mock_http_client(get_response=card_dict)
@@ -60,7 +60,7 @@ async def test_fetch_agent_card_returns_parsed_card() -> None:
 
 
 async def test_send_message_returns_response() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     # JSON-RPC response format: completed task
     rpc_response = {
@@ -85,7 +85,7 @@ async def test_send_message_returns_response() -> None:
 
 
 async def test_send_message_sets_bearer_token_when_api_key() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     rpc_response = {
         "jsonrpc": "2.0",
@@ -117,8 +117,8 @@ async def test_send_message_sets_bearer_token_when_api_key() -> None:
 
 
 async def test_send_message_raises_orchestration_error_on_http_error() -> None:
-    from nexus.core.errors import OrchestrationError
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.core.errors import OrchestrationError
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     mock_http = _make_mock_http_client(
         get_response=_make_agent_card_dict(),
@@ -135,7 +135,7 @@ async def test_send_message_raises_orchestration_error_on_http_error() -> None:
 
 
 async def test_get_task_returns_task() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     task_rpc = {
         "jsonrpc": "2.0",
@@ -158,7 +158,7 @@ async def test_get_task_returns_task() -> None:
 
 
 async def test_cancel_task_calls_tasks_cancel() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     cancel_rpc = {
         "jsonrpc": "2.0",
@@ -179,7 +179,7 @@ async def test_cancel_task_calls_tasks_cancel() -> None:
 
 
 async def test_wait_for_completion_polls_until_terminal() -> None:
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     working_rpc = {
         "jsonrpc": "2.0",
@@ -222,8 +222,8 @@ async def test_wait_for_completion_polls_until_terminal() -> None:
 
 
 async def test_wait_for_completion_times_out() -> None:
-    from nexus.core.errors import OrchestrationError
-    from nexus.orchestration.a2a.client import A2AAgentClient
+    from grampus.core.errors import OrchestrationError
+    from grampus.orchestration.a2a.client import A2AAgentClient
 
     working_rpc = {
         "jsonrpc": "2.0",
@@ -253,8 +253,8 @@ async def test_wait_for_completion_times_out() -> None:
 
 
 async def test_missing_sdk_raises_tool_error() -> None:
-    import nexus.orchestration.a2a.client as _mod
-    from nexus.core.errors import ToolError
+    import grampus.orchestration.a2a.client as _mod
+    from grampus.core.errors import ToolError
 
     orig = _mod._HAS_A2A
     try:
@@ -262,6 +262,6 @@ async def test_missing_sdk_raises_tool_error() -> None:
         with pytest.raises(ToolError) as exc_info:
             _mod.A2AAgentClient(base_url="http://x.test")
         assert exc_info.value.code == "A2A_SDK_MISSING"
-        assert "nexus-ai[a2a]" in exc_info.value.hint
+        assert "grampus-ai[a2a]" in exc_info.value.hint
     finally:
         _mod._HAS_A2A = orig  # type: ignore[attr-defined]

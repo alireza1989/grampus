@@ -1,4 +1,4 @@
-"""Tests for nexus.server.app FastAPI application factory."""
+"""Tests for grampus.server.app FastAPI application factory."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from nexus.core.errors import NexusError, OrchestrationError
-from nexus.core.types import AgentDefinition
+from grampus.core.errors import GrampusError, OrchestrationError
+from grampus.core.types import AgentDefinition
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ class TestCreateApp:
     ) -> None:
         from fastapi import FastAPI
 
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         assert isinstance(app, FastAPI)
@@ -34,7 +34,7 @@ class TestCreateApp:
     def test_app_stores_runner_on_state(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         assert app.state.runner is mock_runner
@@ -42,7 +42,7 @@ class TestCreateApp:
     def test_app_stores_agent_def_on_state(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         assert app.state.agent_def is mock_agent_def
@@ -50,7 +50,7 @@ class TestCreateApp:
     def test_app_stores_memory_manager_on_state(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         mm = MagicMock()
         app = create_app(mock_runner, mock_agent_def, memory_manager=mm)
@@ -59,17 +59,17 @@ class TestCreateApp:
     def test_app_memory_manager_none_by_default(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
         assert app.state.memory_manager is None
 
-    def test_app_has_nexus_error_handler(
+    def test_app_has_grampus_error_handler(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
         from fastapi.testclient import TestClient
 
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
 
@@ -84,18 +84,18 @@ class TestCreateApp:
         assert body["code"] == "TEST_CODE"
         assert body["hint"] == "fix it"
 
-    def test_app_nexus_error_includes_message(
+    def test_app_grampus_error_includes_message(
         self, mock_runner: MagicMock, mock_agent_def: AgentDefinition
     ) -> None:
         from fastapi.testclient import TestClient
 
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
 
         @app.get("/test-msg")
         async def _trigger2() -> None:
-            raise NexusError("something bad", code="BAD")
+            raise GrampusError("something bad", code="BAD")
 
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/test-msg")
@@ -107,7 +107,7 @@ class TestCreateApp:
     ) -> None:
         from fastapi.testclient import TestClient
 
-        from nexus.server.app import create_app
+        from grampus.server.app import create_app
 
         app = create_app(mock_runner, mock_agent_def)
 

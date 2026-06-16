@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.types import ToolCall, ToolDefinition, ToolParameter
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolCall, ToolDefinition, ToolParameter
+from grampus.tools.registry import ToolRegistry
 
 
 @pytest.fixture()

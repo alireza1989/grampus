@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.semantic_retriever — SemanticRetriever."""
+"""Tests for grampus.memory.semantic_retriever — SemanticRetriever."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexus.memory.semantic_retriever import SemanticRetriever
-from nexus.memory.types import SemanticFact
+from grampus.memory.semantic_retriever import SemanticRetriever
+from grampus.memory.types import SemanticFact
 
 
 def make_fact(

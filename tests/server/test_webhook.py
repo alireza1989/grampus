@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
-from nexus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.server.webhook import WebhookConfig, WebhookRegistry, extract_input, verify_signature
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -54,7 +54,7 @@ def mock_agent_def() -> AgentDefinition:
 
 @pytest.fixture
 def client(mock_runner: MagicMock, mock_agent_def: AgentDefinition) -> TestClient:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     app = create_app(mock_runner, mock_agent_def)
     return TestClient(app)
@@ -245,7 +245,7 @@ def test_trigger_sync_valid_signature(client: TestClient) -> None:
     resp = client.post(
         f"/webhooks/{wid}/trigger",
         content=body,
-        headers={"Content-Type": "application/json", "X-Nexus-Signature": sig},
+        headers={"Content-Type": "application/json", "X-Grampus-Signature": sig},
     )
     assert resp.status_code == 200
 
@@ -256,7 +256,7 @@ def test_trigger_sync_invalid_signature(client: TestClient) -> None:
     resp = client.post(
         f"/webhooks/{wid}/trigger",
         json={},
-        headers={"X-Nexus-Signature": "sha256=deadbeef"},
+        headers={"X-Grampus-Signature": "sha256=deadbeef"},
     )
     assert resp.status_code == 401
 
@@ -271,7 +271,7 @@ def test_trigger_sync_missing_signature(client: TestClient) -> None:
 def test_trigger_async_returns_202_accepted(client: TestClient) -> None:
     create_resp = client.post("/webhooks", json={"secret": "", "async_mode": True})
     wid = create_resp.json()["id"]
-    with patch("nexus.server.routes.asyncio.create_task") as mock_task:
+    with patch("grampus.server.routes.asyncio.create_task") as mock_task:
         resp = client.post(f"/webhooks/{wid}/trigger", json={})
     assert resp.status_code == 200
     data = resp.json()

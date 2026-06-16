@@ -1,4 +1,4 @@
-"""Tests for nexus cost command."""
+"""Tests for grampus cost command."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
+from grampus.cli.main import cli
 
 
 def _write_cost_log(path: Path, events: list[dict]) -> Path:  # type: ignore[type-arg]
-    log_dir = path / ".nexus"
+    log_dir = path / ".grampus"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "cost_log.jsonl"
     with log_file.open("w") as f:
@@ -43,7 +43,7 @@ def _make_events(
 
 
 class TestCostCommand:
-    """Tests for nexus cost command."""
+    """Tests for grampus cost command."""
 
     def test_cost_prints_table_from_log_file(self, tmp_path: Path) -> None:
         events = _make_events()
@@ -85,7 +85,7 @@ class TestCostCommand:
         runner = CliRunner()
         result = runner.invoke(
             cli,
-            ["cost", "--log-file", str(tmp_path / ".nexus" / "cost_log.jsonl")],
+            ["cost", "--log-file", str(tmp_path / ".grampus" / "cost_log.jsonl")],
         )
         assert result.exit_code == 0
         assert "No cost data" in result.output or "not found" in result.output.lower()

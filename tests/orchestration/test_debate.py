@@ -14,19 +14,19 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import AgentState, AgentStatus, Message, Role, TokenUsage
-from nexus.orchestration.debate.aggregator import (
+from grampus.core.errors import BudgetExceededError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import AgentState, AgentStatus, Message, Role, TokenUsage
+from grampus.orchestration.debate.aggregator import (
     JudgeAggregator,
     MajorityVoteAggregator,
     WeightedVoteAggregator,
 )
-from nexus.orchestration.debate.convergence import ConvergenceDetector
-from nexus.orchestration.debate.debater import Debater
-from nexus.orchestration.debate.orchestrator import DebateOrchestrator
-from nexus.orchestration.debate.router import DebateRouter
-from nexus.orchestration.debate.types import (
+from grampus.orchestration.debate.convergence import ConvergenceDetector
+from grampus.orchestration.debate.debater import Debater
+from grampus.orchestration.debate.orchestrator import DebateOrchestrator
+from grampus.orchestration.debate.router import DebateRouter
+from grampus.orchestration.debate.types import (
     AggregationStrategy,
     DebateConfig,
     DebaterConfig,
@@ -35,8 +35,8 @@ from nexus.orchestration.debate.types import (
     DebaterPosition,
     RoutingDecision,
 )
-from nexus.orchestration.graph import Graph
-from nexus.orchestration.nodes import debate_node, human_node
+from grampus.orchestration.graph import Graph
+from grampus.orchestration.nodes import debate_node, human_node
 
 # ---------------------------------------------------------------------------
 # Test fixtures and helpers

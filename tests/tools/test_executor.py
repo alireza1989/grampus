@@ -1,4 +1,4 @@
-"""Tests for nexus.tools.executor — ToolExecutor."""
+"""Tests for grampus.tools.executor — ToolExecutor."""
 
 from __future__ import annotations
 
@@ -6,15 +6,15 @@ import asyncio
 
 import pytest
 
-from nexus.core.errors import (
+from grampus.core.errors import (
     ToolError,
     ToolNotFoundError,
     ToolTimeoutError,
     ToolValidationError,
 )
-from nexus.core.types import ToolCall, ToolParameter
-from nexus.tools.executor import ToolExecutionRecord, ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolCall, ToolParameter
+from grampus.tools.executor import ToolExecutionRecord, ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def _make_executor(

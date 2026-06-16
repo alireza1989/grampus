@@ -1,4 +1,4 @@
-"""Tests for nexus init command."""
+"""Tests for grampus init command."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
+from grampus.cli.main import cli
 
 
 class TestInitCommand:
-    """Tests for the nexus init command."""
+    """Tests for the grampus init command."""
 
     def test_init_creates_project_directory(self, tmp_path: Path) -> None:
         runner = CliRunner()
@@ -18,10 +18,10 @@ class TestInitCommand:
         assert result.exit_code == 0, result.output
         assert (tmp_path / "my-agent").is_dir()
 
-    def test_init_creates_nexus_yaml(self, tmp_path: Path) -> None:
+    def test_init_creates_grampus_yaml(self, tmp_path: Path) -> None:
         runner = CliRunner()
         runner.invoke(cli, ["init", "--name", "my-agent", "--output-dir", str(tmp_path)])
-        assert (tmp_path / "my-agent" / "nexus.yaml").exists()
+        assert (tmp_path / "my-agent" / "grampus.yaml").exists()
 
     def test_init_creates_agent_py(self, tmp_path: Path) -> None:
         runner = CliRunner()
@@ -69,8 +69,8 @@ class TestInitCommand:
     def test_init_custom_name_used_in_files(self, tmp_path: Path) -> None:
         runner = CliRunner()
         runner.invoke(cli, ["init", "--name", "cool-bot", "--output-dir", str(tmp_path)])
-        nexus_yaml = (tmp_path / "cool-bot" / "nexus.yaml").read_text()
-        assert "cool-bot" in nexus_yaml
+        grampus_yaml = (tmp_path / "cool-bot" / "grampus.yaml").read_text()
+        assert "cool-bot" in grampus_yaml
 
     def test_init_prompts_on_existing_non_empty_dir(self, tmp_path: Path) -> None:
         project_dir = tmp_path / "my-agent"
@@ -95,7 +95,7 @@ class TestInitCommand:
             input="y\n",
         )
         assert result.exit_code == 0, result.output
-        assert (tmp_path / "my-agent" / "nexus.yaml").exists()
+        assert (tmp_path / "my-agent" / "grampus.yaml").exists()
 
     def test_init_overwrite_no_aborts(self, tmp_path: Path) -> None:
         project_dir = tmp_path / "my-agent"
@@ -108,11 +108,11 @@ class TestInitCommand:
             input="n\n",
         )
         assert result.exit_code == 0
-        assert not (tmp_path / "my-agent" / "nexus.yaml").exists()
+        assert not (tmp_path / "my-agent" / "grampus.yaml").exists()
 
     def test_init_prints_created_files(self, tmp_path: Path) -> None:
         runner = CliRunner()
         result = runner.invoke(cli, ["init", "--name", "my-agent", "--output-dir", str(tmp_path)])
         assert result.exit_code == 0
-        assert "nexus.yaml" in result.output
+        assert "grampus.yaml" in result.output
         assert "agent.py" in result.output

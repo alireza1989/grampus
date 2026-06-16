@@ -7,7 +7,7 @@ import pytest
 
 class TestPromptVersionManager:
     def test_register_creates_version(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         v = mgr.register("1.0.0", "You are a helpful assistant")
@@ -16,7 +16,7 @@ class TestPromptVersionManager:
         assert v.agent_id == "agent-1"
 
     def test_register_duplicate_raises_value_error(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "prompt v1")
@@ -24,7 +24,7 @@ class TestPromptVersionManager:
             mgr.register("1.0.0", "prompt v1 duplicate")
 
     def test_activate_sets_active_flag(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "prompt v1")
@@ -32,7 +32,7 @@ class TestPromptVersionManager:
         assert v.is_active is True
 
     def test_activate_deactivates_previous(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "v1")
@@ -44,13 +44,13 @@ class TestPromptVersionManager:
         assert mgr.get("1.1.0").is_active is True  # type: ignore[union-attr]
 
     def test_active_returns_none_initially(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         assert mgr.active() is None
 
     def test_history_sorted_by_created_at(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "v1")
@@ -61,7 +61,7 @@ class TestPromptVersionManager:
         assert history[1].version == "2.0.0"
 
     def test_diff_shows_added_lines(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "Line A\nLine B")
@@ -70,7 +70,7 @@ class TestPromptVersionManager:
         assert "Line C" in diff.added_lines
 
     def test_diff_shows_removed_lines(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "Line A\nLine B\nLine C")
@@ -79,7 +79,7 @@ class TestPromptVersionManager:
         assert "Line C" in diff.removed_lines
 
     def test_diff_similarity_ratio_1_for_identical(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "Same prompt text")
@@ -88,7 +88,7 @@ class TestPromptVersionManager:
         assert diff.similarity_ratio == pytest.approx(1.0)
 
     def test_rollback_activates_previous_version(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "v1")
@@ -100,7 +100,7 @@ class TestPromptVersionManager:
         assert prev.is_active is True
 
     def test_rollback_raises_when_insufficient_history(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "v1")
@@ -108,7 +108,7 @@ class TestPromptVersionManager:
             mgr.rollback()
 
     def test_record_eval_score_attaches_score(self) -> None:
-        from nexus.evaluation.prompt_versions import PromptVersionManager
+        from grampus.evaluation.prompt_versions import PromptVersionManager
 
         mgr = PromptVersionManager(agent_id="agent-1")
         mgr.register("1.0.0", "v1")

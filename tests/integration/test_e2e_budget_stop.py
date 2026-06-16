@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import BudgetExceededError
-from nexus.core.types import AgentDefinition, TokenUsage, ToolCall, ToolParameter
-from nexus.orchestration.cost_tracker import CostTracker
-from nexus.orchestration.model_router import ModelSpec, ModelTier
+from grampus.core.errors import BudgetExceededError
+from grampus.core.types import AgentDefinition, TokenUsage, ToolCall, ToolParameter
+from grampus.orchestration.cost_tracker import CostTracker
+from grampus.orchestration.model_router import ModelSpec, ModelTier
 
 
 @pytest.mark.integration
 class TestBudgetEnforcementE2E:
     async def test_budget_stops_agent_mid_loop(self) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
         from tests.integration.conftest import MockModelClient
 
         registry = ToolRegistry()

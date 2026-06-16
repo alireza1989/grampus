@@ -1,10 +1,10 @@
-"""Tests for nexus.memory.validator — ValidationResult, MemoryValidator."""
+"""Tests for grampus.memory.validator — ValidationResult, MemoryValidator."""
 
 from __future__ import annotations
 
 import pytest
 
-from nexus.memory.validator import MemoryValidator, ValidationResult
+from grampus.memory.validator import MemoryValidator, ValidationResult
 
 
 class TestValidationResult:

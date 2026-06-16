@@ -6,14 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from nexus.plugins import (
+from grampus.plugins import (
     AgentEndContext,
     AgentStartContext,
     ErrorContext,
+    GrampusPlugin,
     HookBlockedError,
     LLMCallContext,
     MemoryWriteContext,
-    NexusPlugin,
     PluginManager,
     ToolCallContext,
     ToolResultContext,
@@ -51,7 +51,7 @@ _ERR_CTX = ErrorContext(agent_id="a1", session_id="s1", error=ValueError("oops")
 # ---------------------------------------------------------------------------
 
 
-class TrackingPlugin(NexusPlugin):
+class TrackingPlugin(GrampusPlugin):
     """Records every hook invocation for assertion."""
 
     def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
@@ -147,7 +147,7 @@ async def test_call_pre_llm_returns_messages_unchanged_when_plugin_returns_none(
 
 
 async def test_call_pre_llm_returns_modified_messages_when_plugin_returns_list() -> None:
-    class ModPlugin(NexusPlugin):
+    class ModPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             return [{"role": "system", "content": "injected"}] + messages
 
@@ -159,11 +159,11 @@ async def test_call_pre_llm_returns_modified_messages_when_plugin_returns_list()
 
 
 async def test_call_pre_llm_chains_through_multiple_plugins() -> None:
-    class PluginA(NexusPlugin):
+    class PluginA(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             return list(messages) + ["from_A"]
 
-    class PluginB(NexusPlugin):
+    class PluginB(GrampusPlugin):
         def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
             super().__init__(**kwargs)
             self.received: list = []
@@ -181,7 +181,7 @@ async def test_call_pre_llm_chains_through_multiple_plugins() -> None:
 
 
 async def test_call_pre_llm_hook_blocked_error_propagates() -> None:
-    class BlockPlugin(NexusPlugin):
+    class BlockPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             raise HookBlockedError("blocked by compliance policy")
 
@@ -191,11 +191,11 @@ async def test_call_pre_llm_hook_blocked_error_propagates() -> None:
 
 
 async def test_call_pre_llm_non_blocked_exception_suppressed_continues_to_next_plugin() -> None:
-    class ErrorPlugin(NexusPlugin):
+    class ErrorPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             raise ValueError("unexpected failure")
 
-    class ContinuePlugin(NexusPlugin):
+    class ContinuePlugin(GrampusPlugin):
         def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
             super().__init__(**kwargs)
             self.called = False
@@ -219,7 +219,7 @@ async def test_call_pre_tool_returns_arguments_unchanged_when_none() -> None:
 
 
 async def test_call_pre_tool_returns_modified_arguments() -> None:
-    class ArgPlugin(NexusPlugin):
+    class ArgPlugin(GrampusPlugin):
         async def pre_tool_call(self, ctx, arguments):  # type: ignore[override]
             return {**arguments, "extra": "added"}
 
@@ -235,7 +235,7 @@ async def test_call_pre_memory_write_returns_content_unchanged() -> None:
 
 
 async def test_call_pre_memory_write_returns_modified_content() -> None:
-    class RedactPlugin(NexusPlugin):
+    class RedactPlugin(GrampusPlugin):
         async def pre_memory_write(self, ctx, content):  # type: ignore[override]
             return content.replace("secret", "[REDACTED]")
 
@@ -252,11 +252,11 @@ async def test_call_pre_memory_write_returns_modified_content() -> None:
 async def test_pre_hooks_called_in_priority_order() -> None:
     """Lower priority number runs first; the second plugin sees the first's output."""
 
-    class FirstPlugin(NexusPlugin):
+    class FirstPlugin(GrampusPlugin):
         async def pre_llm_call(self, ctx, messages, tools):  # type: ignore[override]
             return list(messages) + ["first"]
 
-    class SecondPlugin(NexusPlugin):
+    class SecondPlugin(GrampusPlugin):
         def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
             super().__init__(**kwargs)
             self.saw_first = False
@@ -289,7 +289,7 @@ async def test_observational_hooks_called_for_all_plugins() -> None:
 
 
 async def test_observational_hook_failure_does_not_propagate() -> None:
-    class BrokenPlugin(NexusPlugin):
+    class BrokenPlugin(GrampusPlugin):
         async def on_agent_end(self, ctx: AgentEndContext) -> None:
             raise RuntimeError("plugin crashed hard")
 
@@ -319,10 +319,10 @@ async def test_empty_plugin_list_all_hooks_are_no_ops() -> None:
 
 
 async def test_load_entry_point_plugins_returns_empty_when_no_plugins_registered() -> None:
-    # Real call — "nexus.plugins" entry-point group is empty in the test environment
+    # Real call — "grampus.plugins" entry-point group is empty in the test environment
     plugins = load_entry_point_plugins()
     assert isinstance(plugins, list)
-    assert all(isinstance(p, NexusPlugin) for p in plugins)
+    assert all(isinstance(p, GrampusPlugin) for p in plugins)
 
 
 async def test_load_entry_point_plugins_skips_bad_entry_point() -> None:
@@ -336,7 +336,7 @@ async def test_load_entry_point_plugins_skips_bad_entry_point() -> None:
     assert plugins == []
 
 
-async def test_load_entry_point_plugins_skips_non_nexus_plugin_class() -> None:
+async def test_load_entry_point_plugins_skips_non_grampus_plugin_class() -> None:
     class NotAPlugin:
         pass
 

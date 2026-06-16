@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
 
 
 def _make_execution_result(
@@ -52,7 +52,7 @@ def _make_agent_def() -> AgentDefinition:
 class TestEvalSuiteBasic:
     @pytest.mark.asyncio
     async def test_add_case_returns_self(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         suite = EvalSuite(
             "test",
@@ -65,7 +65,7 @@ class TestEvalSuiteBasic:
 
     @pytest.mark.asyncio
     async def test_run_empty_suite_returns_zero_results(self) -> None:
-        from nexus.evaluation.suite import EvalSuite
+        from grampus.evaluation.suite import EvalSuite
 
         suite = EvalSuite(
             "empty",
@@ -78,8 +78,8 @@ class TestEvalSuiteBasic:
 
     @pytest.mark.asyncio
     async def test_run_single_case_passing(self) -> None:
-        from nexus.evaluation.assertions import contains
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.assertions import contains
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(output="Hello world")
         suite = EvalSuite(
@@ -97,8 +97,8 @@ class TestEvalSuiteBasic:
 
     @pytest.mark.asyncio
     async def test_run_single_case_failing(self) -> None:
-        from nexus.evaluation.assertions import contains
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.assertions import contains
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(output="Hello world")
         suite = EvalSuite(
@@ -114,8 +114,8 @@ class TestEvalSuiteBasic:
 
     @pytest.mark.asyncio
     async def test_suite_result_pass_rate_computed(self) -> None:
-        from nexus.evaluation.assertions import contains
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.assertions import contains
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(output="Hello world")
         suite = EvalSuite(
@@ -134,8 +134,8 @@ class TestEvalSuiteBasic:
 
     @pytest.mark.asyncio
     async def test_suite_result_totals_correct(self) -> None:
-        from nexus.evaluation.assertions import contains
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.assertions import contains
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(output="Hello world")
         suite = EvalSuite(
@@ -159,8 +159,8 @@ class TestEvalSuiteBasic:
 class TestEvalSuiteFiltering:
     @pytest.mark.asyncio
     async def test_tag_filter_runs_only_matching_cases(self) -> None:
-        from nexus.evaluation.assertions import contains
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.assertions import contains
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(output="ok")
         suite = EvalSuite(
@@ -180,7 +180,7 @@ class TestEvalSuiteFiltering:
 
     @pytest.mark.asyncio
     async def test_tag_filter_empty_intersection_skips_all(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner()
         suite = EvalSuite(
@@ -200,7 +200,7 @@ class TestEvalSuiteFiltering:
 
     @pytest.mark.asyncio
     async def test_no_tag_filter_runs_all(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner()
         suite = EvalSuite(
@@ -221,7 +221,7 @@ class TestEvalSuiteFiltering:
 class TestEvalSuiteConcurrency:
     @pytest.mark.asyncio
     async def test_concurrency_1_runs_sequentially(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner()
         suite = EvalSuite(
@@ -236,7 +236,7 @@ class TestEvalSuiteConcurrency:
 
     @pytest.mark.asyncio
     async def test_concurrency_n_runs_all_cases(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner()
         suite = EvalSuite(
@@ -253,7 +253,7 @@ class TestEvalSuiteConcurrency:
 class TestEvalSuiteErrors:
     @pytest.mark.asyncio
     async def test_agent_exception_captured_in_case_result(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(raises=RuntimeError("agent exploded"))
         suite = EvalSuite(
@@ -268,7 +268,7 @@ class TestEvalSuiteErrors:
 
     @pytest.mark.asyncio
     async def test_failed_case_does_not_abort_suite(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(raises=RuntimeError("boom"))
         suite = EvalSuite(
@@ -287,7 +287,7 @@ class TestEvalSuiteErrors:
 
     @pytest.mark.asyncio
     async def test_error_counted_in_suite_result(self) -> None:
-        from nexus.evaluation.suite import EvalCase, EvalSuite
+        from grampus.evaluation.suite import EvalCase, EvalSuite
 
         runner = _make_runner(raises=RuntimeError("boom"))
         suite = EvalSuite(

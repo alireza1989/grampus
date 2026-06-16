@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
 
-from nexus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
+from grampus.core.types import AgentDefinition, AgentStatus, ExecutionResult, TokenUsage
 
 
 def _make_agent_def() -> AgentDefinition:
@@ -40,16 +40,16 @@ def _make_runner(output: str = "ok") -> MagicMock:
 
 
 def _make_app_with_a2a(api_key: str | None = None) -> Any:
-    from nexus.orchestration.a2a.executor import NexusA2AExecutor
-    from nexus.orchestration.a2a.registry import AgentRegistry
-    from nexus.orchestration.a2a.task_store import NexusTaskStore
-    from nexus.server.app import create_app
+    from grampus.orchestration.a2a.executor import GrampusA2AExecutor
+    from grampus.orchestration.a2a.registry import AgentRegistry
+    from grampus.orchestration.a2a.task_store import GrampusTaskStore
+    from grampus.server.app import create_app
 
     runner = _make_runner()
     agent_def = _make_agent_def()
 
-    executor = NexusA2AExecutor(runner=runner, agent_def=agent_def)
-    task_store = NexusTaskStore()
+    executor = GrampusA2AExecutor(runner=runner, agent_def=agent_def)
+    task_store = GrampusTaskStore()
     registry = AgentRegistry()
     registry.register_local(
         name="test-agent",
@@ -112,7 +112,7 @@ def test_a2a_message_send_returns_task() -> None:
 
 
 def test_a2a_message_send_no_executor_returns_503() -> None:
-    from nexus.server.app import create_app
+    from grampus.server.app import create_app
 
     runner = _make_runner()
     agent_def = _make_agent_def()

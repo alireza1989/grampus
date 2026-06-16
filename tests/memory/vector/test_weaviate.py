@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.vector.weaviate — WeaviateVectorStore."""
+"""Tests for grampus.memory.vector.weaviate — WeaviateVectorStore."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.core.errors import ToolError
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult
-from nexus.memory.vector.weaviate import WeaviateVectorStore, _to_weaviate_uuid
+from grampus.core.errors import ToolError
+from grampus.memory.vector.base import VectorRecord, VectorSearchResult
+from grampus.memory.vector.weaviate import WeaviateVectorStore, _to_weaviate_uuid
 
 FAKE_VECTOR = [0.1] * 8
 
@@ -21,8 +21,8 @@ FAKE_VECTOR = [0.1] * 8
 
 
 def test_to_weaviate_uuid_deterministic() -> None:
-    uid1 = _to_weaviate_uuid("nexus-id-123")
-    uid2 = _to_weaviate_uuid("nexus-id-123")
+    uid1 = _to_weaviate_uuid("grampus-id-123")
+    uid2 = _to_weaviate_uuid("grampus-id-123")
     assert uid1 == uid2
 
 
@@ -44,13 +44,13 @@ def test_to_weaviate_uuid_is_valid_uuid() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_weaviate_obj(nexus_id: str, score: float = 0.85) -> MagicMock:
+def _make_weaviate_obj(grampus_id: str, score: float = 0.85) -> MagicMock:
     obj = MagicMock()
-    obj.properties = {"_nexus_id": nexus_id, "agent_id": "a1"}
+    obj.properties = {"_grampus_id": grampus_id, "agent_id": "a1"}
     obj.metadata = MagicMock()
     obj.metadata.score = score
     obj.metadata.distance = None
-    obj.uuid = _to_weaviate_uuid(nexus_id)
+    obj.uuid = _to_weaviate_uuid(grampus_id)
     return obj
 
 
@@ -84,7 +84,7 @@ def _make_weaviate_client(col: MagicMock, exists: bool = False) -> MagicMock:
 
 
 def _make_store(client: MagicMock) -> WeaviateVectorStore:
-    return WeaviateVectorStore(collection_name="NexusMemory", _client=client)
+    return WeaviateVectorStore(collection_name="GrampusMemory", _client=client)
 
 
 # ---------------------------------------------------------------------------
@@ -121,17 +121,17 @@ async def test_upsert_replaces_existing_objects() -> None:
     col.data.replace.assert_called_once()
 
 
-async def test_upsert_stores_nexus_id_in_payload() -> None:
+async def test_upsert_stores_grampus_id_in_payload() -> None:
     col = _make_collection()
     client = _make_weaviate_client(col)
     store = _make_store(client)
 
-    records = [VectorRecord(id="my-nexus-id", vector=FAKE_VECTOR)]
+    records = [VectorRecord(id="my-grampus-id", vector=FAKE_VECTOR)]
     await store.upsert(records)
 
     call_args = col.data.insert_many.call_args
     data_objects = call_args[0][0]  # first positional arg
-    assert any(obj.properties.get("_nexus_id") == "my-nexus-id" for obj in data_objects)
+    assert any(obj.properties.get("_grampus_id") == "my-grampus-id" for obj in data_objects)
 
 
 # ---------------------------------------------------------------------------
@@ -139,15 +139,15 @@ async def test_upsert_stores_nexus_id_in_payload() -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_search_maps_nexus_id_from_payload() -> None:
-    obj = _make_weaviate_obj("nexus-id-99", score=0.9)
+async def test_search_maps_grampus_id_from_payload() -> None:
+    obj = _make_weaviate_obj("grampus-id-99", score=0.9)
     col = _make_collection(objects=[obj])
     client = _make_weaviate_client(col)
     store = _make_store(client)
 
     results = await store.search(FAKE_VECTOR, top_k=5)
     assert len(results) == 1
-    assert results[0].id == "nexus-id-99"
+    assert results[0].id == "grampus-id-99"
 
 
 async def test_search_returns_score() -> None:
@@ -229,6 +229,6 @@ async def test_ensure_collection_idempotent() -> None:
 
 
 async def test_missing_sdk_raises_tool_error() -> None:
-    store = WeaviateVectorStore(collection_name="NexusMemory")
+    store = WeaviateVectorStore(collection_name="GrampusMemory")
     with patch.dict(sys.modules, {"weaviate": None}), pytest.raises(ToolError, match="weaviate"):
         await store.upsert([VectorRecord(id="r1", vector=FAKE_VECTOR)])

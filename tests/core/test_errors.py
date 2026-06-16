@@ -1,14 +1,14 @@
-"""Tests for nexus.core.errors — the exception hierarchy."""
+"""Tests for grampus.core.errors — the exception hierarchy."""
 
 import pytest
 
-from nexus.core.errors import (
+from grampus.core.errors import (
     BudgetExceededError,
     ConfigError,
+    GrampusError,
     MemoryError,
     MemorySecurityError,
     ModelError,
-    NexusError,
     OrchestrationError,
     SafetyError,
     ToolError,
@@ -16,78 +16,78 @@ from nexus.core.errors import (
 )
 
 
-class TestNexusError:
-    def test_nexus_error_is_exception(self) -> None:
-        err = NexusError("something broke", code="E001")
+class TestGrampusError:
+    def test_grampus_error_is_exception(self) -> None:
+        err = GrampusError("something broke", code="E001")
         assert isinstance(err, Exception)
 
-    def test_nexus_error_stores_message(self) -> None:
-        err = NexusError("test message", code="E001")
+    def test_grampus_error_stores_message(self) -> None:
+        err = GrampusError("test message", code="E001")
         assert str(err) == "test message"
 
-    def test_nexus_error_stores_code(self) -> None:
-        err = NexusError("msg", code="NEXUS_001")
-        assert err.code == "NEXUS_001"
+    def test_grampus_error_stores_code(self) -> None:
+        err = GrampusError("msg", code="GRAMPUS_001")
+        assert err.code == "GRAMPUS_001"
 
-    def test_nexus_error_details_default_empty(self) -> None:
-        err = NexusError("msg", code="E001")
+    def test_grampus_error_details_default_empty(self) -> None:
+        err = GrampusError("msg", code="E001")
         assert err.details == {}
 
-    def test_nexus_error_stores_details(self) -> None:
+    def test_grampus_error_stores_details(self) -> None:
         details = {"key": "value", "count": 42}
-        err = NexusError("msg", code="E001", details=details)
+        err = GrampusError("msg", code="E001", details=details)
         assert err.details == details
 
-    def test_nexus_error_can_be_raised_and_caught(self) -> None:
-        with pytest.raises(NexusError) as exc_info:
-            raise NexusError("boom", code="E001")
+    def test_grampus_error_can_be_raised_and_caught(self) -> None:
+        with pytest.raises(GrampusError) as exc_info:
+            raise GrampusError("boom", code="E001")
         assert exc_info.value.code == "E001"
 
 
 class TestErrorHierarchy:
-    """All subclasses must be NexusError instances."""
+    """All subclasses must be GrampusError instances."""
 
-    def test_config_error_is_nexus_error(self) -> None:
+    def test_config_error_is_grampus_error(self) -> None:
         err = ConfigError("bad config", code="CONFIG_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
-    def test_memory_error_is_nexus_error(self) -> None:
+    def test_memory_error_is_grampus_error(self) -> None:
         err = MemoryError("memory fail", code="MEM_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
-    def test_memory_security_error_is_nexus_error(self) -> None:
+    def test_memory_security_error_is_grampus_error(self) -> None:
         err = MemorySecurityError("poisoning detected", code="MEMSEC_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
     def test_memory_security_error_is_memory_error(self) -> None:
         err = MemorySecurityError("poisoning detected", code="MEMSEC_001")
         assert isinstance(err, MemoryError)
 
-    def test_tool_error_is_nexus_error(self) -> None:
+    def test_tool_error_is_grampus_error(self) -> None:
         err = ToolError("tool failed", code="TOOL_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
     def test_tool_timeout_error_is_tool_error(self) -> None:
         err = ToolTimeoutError("timed out", code="TOOL_TIMEOUT")
         assert isinstance(err, ToolError)
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
-    def test_orchestration_error_is_nexus_error(self) -> None:
+    def test_orchestration_error_is_grampus_error(self) -> None:
         err = OrchestrationError("graph failed", code="ORCH_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
     def test_budget_exceeded_error_is_orchestration_error(self) -> None:
         err = BudgetExceededError("over budget", code="BUDGET_001")
         assert isinstance(err, OrchestrationError)
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
-    def test_safety_error_is_nexus_error(self) -> None:
+    def test_safety_error_is_grampus_error(self) -> None:
         err = SafetyError("injection detected", code="SAFETY_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
-    def test_model_error_is_nexus_error(self) -> None:
+    def test_model_error_is_grampus_error(self) -> None:
         err = ModelError("api error", code="MODEL_001")
-        assert isinstance(err, NexusError)
+        assert isinstance(err, GrampusError)
 
 
 class TestErrorDetails:
@@ -111,11 +111,11 @@ class TestErrorDetails:
 
 class TestErrorCatching:
     def test_catch_subclass_as_parent(self) -> None:
-        with pytest.raises(NexusError):
+        with pytest.raises(GrampusError):
             raise ToolTimeoutError("timeout", code="TOOL_TIMEOUT")
 
-    def test_catch_budget_as_nexus(self) -> None:
-        with pytest.raises(NexusError):
+    def test_catch_budget_as_grampus(self) -> None:
+        with pytest.raises(GrampusError):
             raise BudgetExceededError("budget exceeded", code="BUDGET_001")
 
     def test_catch_memory_security_as_memory(self) -> None:

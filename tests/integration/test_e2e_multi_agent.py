@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.crew import Crew, CrewMember, CrewPattern
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.crew import Crew, CrewMember, CrewPattern
 from tests.integration.conftest import MockModelClient, make_session_id
 
 
 def _make_crew_member(name: str, response: str) -> CrewMember:
-    from nexus.orchestration.runner import AgentRunner, RunnerConfig
-    from nexus.tools.executor import ToolExecutor
-    from nexus.tools.registry import ToolRegistry
+    from grampus.orchestration.runner import AgentRunner, RunnerConfig
+    from grampus.tools.executor import ToolExecutor
+    from grampus.tools.registry import ToolRegistry
 
     client = MockModelClient()
     client.add_response(response)
@@ -82,9 +82,9 @@ class TestMultiAgentCrewE2E:
         assert result.outputs.get("gamma") is not None
 
     async def test_crew_member_failure_does_not_silently_swallow(self) -> None:
-        from nexus.orchestration.runner import AgentRunner, RunnerConfig
-        from nexus.tools.executor import ToolExecutor
-        from nexus.tools.registry import ToolRegistry
+        from grampus.orchestration.runner import AgentRunner, RunnerConfig
+        from grampus.tools.executor import ToolExecutor
+        from grampus.tools.registry import ToolRegistry
 
         class _FailClient:
             async def complete(self, **_: object) -> None:

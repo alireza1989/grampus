@@ -1,4 +1,4 @@
-"""Tests for nexus.memory.vector.pgvector — PgVectorStore."""
+"""Tests for grampus.memory.vector.pgvector — PgVectorStore."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.memory.vector.base import VectorRecord, VectorSearchResult
-from nexus.memory.vector.pgvector import PgVectorStore
+from grampus.memory.vector.base import VectorRecord, VectorSearchResult
+from grampus.memory.vector.pgvector import PgVectorStore
 
 FAKE_VECTOR = [0.1, 0.2, 0.3]
 

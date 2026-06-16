@@ -11,9 +11,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import UncertaintyError
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import (
+from grampus.core.errors import UncertaintyError
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import (
     AgentDefinition,
     AgentState,
     AgentStatus,
@@ -23,8 +23,8 @@ from nexus.core.types import (
     ToolCall,
     ToolResult,
 )
-from nexus.orchestration.runner import AgentRunner
-from nexus.orchestration.uncertainty import (
+from grampus.orchestration.runner import AgentRunner
+from grampus.orchestration.uncertainty import (
     StepUncertainty,
     UncertaintyAction,
     UncertaintyEstimator,
@@ -718,7 +718,7 @@ async def test_runner_proceed_with_log_does_not_pause() -> None:
 
 
 async def test_uncertainty_guard_node_escalates() -> None:
-    from nexus.orchestration.nodes import uncertainty_guard_node
+    from grampus.orchestration.nodes import uncertainty_guard_node
 
     mock_monitor = MagicMock()
     mock_monitor.observe_llm_response = AsyncMock(
@@ -741,7 +741,7 @@ async def test_uncertainty_guard_node_escalates() -> None:
 
 
 async def test_uncertainty_guard_node_proceeds() -> None:
-    from nexus.orchestration.nodes import uncertainty_guard_node
+    from grampus.orchestration.nodes import uncertainty_guard_node
 
     mock_monitor = MagicMock()
     mock_monitor.observe_llm_response = AsyncMock(

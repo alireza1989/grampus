@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from nexus.causal.inference import SimpleCausalInference
-from nexus.causal.types import InterventionQuery, WorldModelGraph
+from grampus.causal.inference import SimpleCausalInference
+from grampus.causal.types import InterventionQuery, WorldModelGraph
 
 
 def _make_graph(

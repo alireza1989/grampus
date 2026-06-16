@@ -2,22 +2,21 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 
-from nexus.core.errors import EmbeddingError
-from nexus.memory.embedding_providers import (
+from grampus.core.errors import EmbeddingError
+from grampus.memory.embedding_providers import (
     CohereEmbeddingProvider,
     EmbeddingProvider,
     EmbeddingRouter,
     OllamaEmbeddingProvider,
     OpenAIEmbeddingProvider,
 )
-from nexus.memory.embeddings import EmbeddingService, _cache_key
+from grampus.memory.embeddings import EmbeddingService, _cache_key
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -85,9 +84,7 @@ class TestOpenAIEmbeddingProvider:
     def mock_openai(self) -> AsyncMock:
         client = AsyncMock()
         client.embeddings = AsyncMock()
-        client.embeddings.create = AsyncMock(
-            return_value=_make_openai_response(FAKE_EMBEDDING)
-        )
+        client.embeddings.create = AsyncMock(return_value=_make_openai_response(FAKE_EMBEDDING))
         return client
 
     def test_openai_dimensions_small(self, mock_openai: AsyncMock) -> None:
@@ -98,9 +95,7 @@ class TestOpenAIEmbeddingProvider:
         p = OpenAIEmbeddingProvider(mock_openai, model="text-embedding-3-large")
         assert p.dimensions == 3072
 
-    def test_openai_dimensions_unknown_model_defaults_1536(
-        self, mock_openai: AsyncMock
-    ) -> None:
+    def test_openai_dimensions_unknown_model_defaults_1536(self, mock_openai: AsyncMock) -> None:
         p = OpenAIEmbeddingProvider(mock_openai, model="some-future-model")
         assert p.dimensions == 1536
 
@@ -122,9 +117,7 @@ class TestOpenAIEmbeddingProvider:
         call_kwargs = mock_openai.embeddings.create.call_args.kwargs
         assert "input_type" not in call_kwargs
 
-    async def test_openai_api_error_raises_embedding_error(
-        self, mock_openai: AsyncMock
-    ) -> None:
+    async def test_openai_api_error_raises_embedding_error(self, mock_openai: AsyncMock) -> None:
         mock_openai.embeddings.create.side_effect = RuntimeError("API down")
         p = OpenAIEmbeddingProvider(mock_openai)
         with pytest.raises(EmbeddingError) as exc_info:
@@ -156,9 +149,7 @@ class TestCohereEmbeddingProvider:
         p = CohereEmbeddingProvider(mock_cohere)
         assert p.provider_name == "cohere"
 
-    async def test_cohere_embed_batch_passes_input_type(
-        self, mock_cohere: AsyncMock
-    ) -> None:
+    async def test_cohere_embed_batch_passes_input_type(self, mock_cohere: AsyncMock) -> None:
         p = CohereEmbeddingProvider(mock_cohere)
         await p.embed_batch(["hello"], input_type="search_query")
         call_kwargs = mock_cohere.embed.call_args.kwargs
@@ -180,9 +171,7 @@ class TestCohereEmbeddingProvider:
         result = await p.embed_batch(["hello"])
         assert result == [[0.1, 0.2]]
 
-    async def test_cohere_api_error_raises_embedding_error(
-        self, mock_cohere: AsyncMock
-    ) -> None:
+    async def test_cohere_api_error_raises_embedding_error(self, mock_cohere: AsyncMock) -> None:
         mock_cohere.embed.side_effect = RuntimeError("quota exceeded")
         p = CohereEmbeddingProvider(mock_cohere)
         with pytest.raises(EmbeddingError) as exc_info:
@@ -219,9 +208,7 @@ class TestOllamaEmbeddingProvider:
         p = OllamaEmbeddingProvider()
         assert p.provider_name == "ollama"
 
-    async def test_ollama_embed_batch_posts_to_api_embed(
-        self, mock_http: AsyncMock
-    ) -> None:
+    async def test_ollama_embed_batch_posts_to_api_embed(self, mock_http: AsyncMock) -> None:
         p = OllamaEmbeddingProvider(model="nomic-embed-text", http_client=mock_http)
         await p.embed_batch(["hello", "world"])
         mock_http.post.assert_called_once()
@@ -237,17 +224,13 @@ class TestOllamaEmbeddingProvider:
         posted_json = mock_http.post.call_args.kwargs["json"]
         assert "input_type" not in posted_json
 
-    async def test_ollama_parses_embeddings_from_response(
-        self, mock_http: AsyncMock
-    ) -> None:
+    async def test_ollama_parses_embeddings_from_response(self, mock_http: AsyncMock) -> None:
         mock_http.post.return_value = _make_httpx_response([[0.1, 0.2]])
         p = OllamaEmbeddingProvider(http_client=mock_http)
         result = await p.embed_batch(["hello"])
         assert result == [[0.1, 0.2]]
 
-    async def test_ollama_http_error_raises_embedding_error(
-        self, mock_http: AsyncMock
-    ) -> None:
+    async def test_ollama_http_error_raises_embedding_error(self, mock_http: AsyncMock) -> None:
         mock_http.post.side_effect = httpx.HTTPStatusError(
             "404 Not Found",
             request=MagicMock(spec=httpx.Request),
@@ -302,9 +285,7 @@ class TestEmbeddingServiceWithProvider:
         await service.embed("hello", input_type="search_query")
         assert provider._calls[0][1] == "search_query"
 
-    async def test_service_embed_caches_result(
-        self, provider: MockProvider
-    ) -> None:
+    async def test_service_embed_caches_result(self, provider: MockProvider) -> None:
         cached_data: bytes | None = None
 
         async def fake_get(entity_type: str, key: str, cls: type) -> tuple[Any, str]:
@@ -372,9 +353,7 @@ class TestEmbeddingRouter:
     ) -> EmbeddingService:
         return EmbeddingService(semantic_provider, mock_cache)
 
-    def test_router_requires_default_route(
-        self, semantic_svc: EmbeddingService
-    ) -> None:
+    def test_router_requires_default_route(self, semantic_svc: EmbeddingService) -> None:
         with pytest.raises(ValueError, match="default"):
             EmbeddingRouter({"semantic": semantic_svc})
 
@@ -390,9 +369,7 @@ class TestEmbeddingRouter:
         router = EmbeddingRouter({"default": default_svc, "semantic": semantic_svc})
         assert router.service_for("semantic") is semantic_svc
 
-    def test_router_dimensions_from_default_service(
-        self, default_svc: EmbeddingService
-    ) -> None:
+    def test_router_dimensions_from_default_service(self, default_svc: EmbeddingService) -> None:
         router = EmbeddingRouter({"default": default_svc})
         assert router.dimensions == 5
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from nexus.causal.tracer import _DATA_DEP_MIN_OVERLAP_CHARS, _MAX_BACKWARD_DEPTH, CausalTracer
-from nexus.causal.types import CausalDiagnosis, CausalGraph, EdgeType
+from grampus.causal.tracer import _DATA_DEP_MIN_OVERLAP_CHARS, _MAX_BACKWARD_DEPTH, CausalTracer
+from grampus.causal.types import CausalDiagnosis, CausalGraph, EdgeType
 
 
 def _make_event(

@@ -6,13 +6,11 @@ import ast
 import textwrap
 from pathlib import Path
 
-import pytest
-
-from nexus.tools.library.code_analysis_types import (
+from grampus.tools.library.code_analysis_types import (
     ComplexityRating,
     ImportKind,
 )
-from nexus.tools.library.code_analyzer import (
+from grampus.tools.library.code_analyzer import (
     CodeAnalyzer,
     analyze_file,
     classify_import,
@@ -98,9 +96,7 @@ COMPLEX_MODULE = textwrap.dedent("""\
 def _parse_func(src: str) -> ast.FunctionDef | ast.AsyncFunctionDef:
     tree = ast.parse(src)
     return next(  # type: ignore[return-value]
-        n
-        for n in ast.walk(tree)
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
     )
 
 
@@ -241,9 +237,9 @@ def test_classify_relative_import_is_local() -> None:
     assert classify_import(".utils") == ImportKind.LOCAL
 
 
-def test_classify_nexus_is_third_party() -> None:
-    # nexus is not in sys.stdlib_module_names
-    assert classify_import("nexus") == ImportKind.THIRD_PARTY
+def test_classify_grampus_is_third_party() -> None:
+    # grampus is not in sys.stdlib_module_names
+    assert classify_import("grampus") == ImportKind.THIRD_PARTY
 
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from nexus.evaluation.run_store import EvalRunRecord, EvalRunStore
+from grampus.evaluation.run_store import EvalRunRecord, EvalRunStore
 
 
 def _make_record(

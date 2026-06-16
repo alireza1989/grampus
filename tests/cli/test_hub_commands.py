@@ -1,4 +1,4 @@
-"""Tests for nexus hub CLI commands."""
+"""Tests for grampus hub CLI commands."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
+from grampus.cli.main import cli
 
 
 class TestHubList:
@@ -171,14 +171,14 @@ class TestHubPull:
         )
         assert result.exit_code == 0, result.output
         assert "simple-agent" in result.output
-        assert "nexus run" in result.output or "Next steps" in result.output
+        assert "grampus run" in result.output or "Next steps" in result.output
 
 
 class TestHubValidate:
     def _create_valid_template(self, base: Path) -> Path:
         tdir = base / "my-template"
         tdir.mkdir(parents=True)
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: my-template
@@ -208,7 +208,7 @@ class TestHubValidate:
     def test_hub_validate_missing_file(self, tmp_path: Path) -> None:
         tdir = tmp_path / "missing-file-template"
         tdir.mkdir()
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: missing-file-template
@@ -229,7 +229,7 @@ class TestHubValidate:
     def test_hub_validate_undeclared_variable(self, tmp_path: Path) -> None:
         tdir = tmp_path / "undeclared-var-template"
         tdir.mkdir()
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: undeclared-var-template

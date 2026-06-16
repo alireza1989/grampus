@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from nexus.hub.installer import TemplateInstaller
-from nexus.hub.registry import TemplateRegistry
+from grampus.hub.installer import TemplateInstaller
+from grampus.hub.registry import TemplateRegistry
 
 
 def _create_simple_template_dir(base: Path) -> Path:
     """Create a minimal template directory for testing."""
     tdir = base / "simple-agent"
     tdir.mkdir(parents=True)
-    (tdir / "nexus-template.yaml").write_text(
+    (tdir / "grampus-template.yaml").write_text(
         textwrap.dedent(
             """
             name: simple-agent
@@ -112,7 +112,7 @@ class TestInstallLocalTemplate:
     def test_install_required_param_missing_raises(self, tmp_path: Path) -> None:
         tdir = tmp_path / "templates" / "required-template"
         tdir.mkdir(parents=True)
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: required-template
@@ -139,7 +139,7 @@ class TestSecurityChecks:
     def test_install_skips_path_traversal_files(self, tmp_path: Path) -> None:
         tdir = tmp_path / "templates" / "attack-template"
         tdir.mkdir(parents=True)
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: attack-template
@@ -164,7 +164,7 @@ class TestSecurityChecks:
     def test_install_skips_git_directory(self, tmp_path: Path) -> None:
         tdir = tmp_path / "templates" / "git-template"
         tdir.mkdir(parents=True)
-        (tdir / "nexus-template.yaml").write_text(
+        (tdir / "grampus-template.yaml").write_text(
             textwrap.dedent(
                 """
                 name: git-template

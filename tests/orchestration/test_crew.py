@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus.core.errors import OrchestrationError
-from nexus.core.types import (
+from grampus.core.errors import OrchestrationError
+from grampus.core.types import (
     AgentDefinition,
     AgentStatus,
     ExecutionResult,
@@ -17,7 +17,7 @@ from nexus.core.types import (
     Role,
     TokenUsage,
 )
-from nexus.orchestration.crew import Crew, CrewMember, CrewPattern, CrewResult
+from grampus.orchestration.crew import Crew, CrewMember, CrewPattern, CrewResult
 
 # ---------------------------------------------------------------------------
 # Helpers

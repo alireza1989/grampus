@@ -1,4 +1,4 @@
-"""Tests for nexus dev command."""
+"""Tests for grampus dev command."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from nexus.cli.main import cli
+from grampus.cli.main import cli
 
 
-def _write_nexus_yaml(path: Path) -> Path:
-    cfg = path / "nexus.yaml"
+def _write_grampus_yaml(path: Path) -> Path:
+    cfg = path / "grampus.yaml"
     cfg.write_text(
         "agent:\n  name: dev-agent\n  model: claude-sonnet-4-6\n"
         "  system_prompt: null\n  max_iterations: 5\n"
@@ -21,22 +21,22 @@ def _write_nexus_yaml(path: Path) -> Path:
 
 
 class TestDevCommand:
-    """Tests for nexus dev command."""
+    """Tests for grampus dev command."""
 
     def test_dev_prints_startup_banner(self, tmp_path: Path) -> None:
-        cfg = _write_nexus_yaml(tmp_path)
+        cfg = _write_grampus_yaml(tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.dev._run_dev_loop") as mock_loop:
+        with patch("grampus.cli.commands.dev._run_dev_loop") as mock_loop:
             mock_loop.return_value = None
             result = runner.invoke(cli, ["dev", "--config", str(cfg)])
         assert result.exit_code == 0, result.output
         output_lower = result.output.lower()
-        assert "nexus" in output_lower or "dev" in output_lower
+        assert "grampus" in output_lower or "dev" in output_lower
 
     def test_dev_validates_config_on_start(self, tmp_path: Path) -> None:
-        cfg = _write_nexus_yaml(tmp_path)
+        cfg = _write_grampus_yaml(tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.dev._run_dev_loop") as mock_loop:
+        with patch("grampus.cli.commands.dev._run_dev_loop") as mock_loop:
             mock_loop.return_value = None
             result = runner.invoke(cli, ["dev", "--config", str(cfg)])
         assert result.exit_code == 0, result.output
@@ -50,9 +50,9 @@ class TestDevCommand:
         assert "not found" in result.output.lower() or "error" in result.output.lower()
 
     def test_dev_prints_config_summary(self, tmp_path: Path) -> None:
-        cfg = _write_nexus_yaml(tmp_path)
+        cfg = _write_grampus_yaml(tmp_path)
         runner = CliRunner()
-        with patch("nexus.cli.commands.dev._run_dev_loop") as mock_loop:
+        with patch("grampus.cli.commands.dev._run_dev_loop") as mock_loop:
             mock_loop.return_value = None
             result = runner.invoke(cli, ["dev", "--config", str(cfg)])
         assert result.exit_code == 0, result.output

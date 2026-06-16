@@ -13,7 +13,7 @@ class TestEpisodicMemoryIntegration:
         self,
         episodic_memory: object,
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store("Alice likes Python.", session_id="s1")
@@ -29,7 +29,7 @@ class TestEpisodicMemoryIntegration:
         fake_state_store: FakeStateStore,
         fake_embedding_service: FakeEmbeddingService,
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em1 = EpisodicMemory(fake_state_store, fake_embedding_service, agent_id="agent-x")
         record = await em1.store("User prefers dark mode.", session_id="s1")
@@ -40,7 +40,7 @@ class TestEpisodicMemoryIntegration:
         assert fetched.content == "User prefers dark mode."
 
     async def test_update_metadata_marks_consolidated(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store("Some content.", session_id="s1")
@@ -51,7 +51,7 @@ class TestEpisodicMemoryIntegration:
         assert updated.metadata.get("consolidated") is True
 
     async def test_list_all_returns_all_stored(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         for i in range(4):
@@ -60,7 +60,7 @@ class TestEpisodicMemoryIntegration:
         assert len(records) == 4
 
     async def test_delete_removes_record(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store("To be deleted.", session_id="s1")
@@ -71,7 +71,7 @@ class TestEpisodicMemoryIntegration:
         assert all(r.id != record.id for r in remaining)
 
     async def test_importance_score_reflects_word_count(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         short = await em.store("Hi.", session_id="s1")
@@ -83,7 +83,7 @@ class TestEpisodicMemoryIntegration:
         self,
         episodic_memory: object,
     ) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store("Python async uses async/await.", session_id="s1")
@@ -91,7 +91,7 @@ class TestEpisodicMemoryIntegration:
         assert len(record.embedding) > 0
 
     async def test_access_count_increments_on_update_access(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store("Accessed record.", session_id="s1")
@@ -103,7 +103,7 @@ class TestEpisodicMemoryIntegration:
         assert updated.access_count == 1
 
     async def test_store_with_provenance(self, episodic_memory: object) -> None:
-        from nexus.memory.episodic import EpisodicMemory
+        from grampus.memory.episodic import EpisodicMemory
 
         em: EpisodicMemory = episodic_memory  # type: ignore[assignment]
         record = await em.store(

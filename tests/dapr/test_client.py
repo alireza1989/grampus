@@ -1,4 +1,4 @@
-"""Tests for nexus.dapr.client — DaprGateway async wrapper."""
+"""Tests for grampus.dapr.client — DaprGateway async wrapper."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexus.dapr.client import DaprGateway
+from grampus.dapr.client import DaprGateway
 
 
 def make_state_response(data: bytes = b"", etag: str = "1") -> MagicMock:
@@ -70,7 +70,7 @@ class TestDaprGatewayInit:
         assert gw is not None
 
     def test_default_client_created_without_injection(self) -> None:
-        with patch("nexus.dapr.client.DaprSDKClient") as mock_cls:
+        with patch("grampus.dapr.client.DaprSDKClient") as mock_cls:
             mock_cls.return_value = MagicMock()
             gw = DaprGateway()
             _ = gw._client  # trigger lazy instantiation
@@ -243,16 +243,18 @@ class TestDaprGatewayUnlock:
 
 class TestDaprGatewayIsHealthy:
     async def test_returns_true_when_healthy(self, gateway: DaprGateway) -> None:
-        with patch("nexus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=True)):
+        with patch("grampus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=True)):
             result = await gateway.is_healthy("localhost", 3500)
         assert result is True
 
     async def test_returns_false_when_unhealthy(self, gateway: DaprGateway) -> None:
-        with patch("nexus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=False)):
+        with patch("grampus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=False)):
             result = await gateway.is_healthy("localhost", 3500)
         assert result is False
 
     async def test_default_host_port_used(self, gateway: DaprGateway) -> None:
-        with patch("nexus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=True)) as mock_fn:
+        with patch(
+            "grampus.dapr.client.is_sidecar_healthy", AsyncMock(return_value=True)
+        ) as mock_fn:
             await gateway.is_healthy()
             mock_fn.assert_called_once()
