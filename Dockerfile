@@ -22,14 +22,14 @@ RUN pip install --no-cache-dir "/tmp/$(ls /tmp/*.whl)[anthropic,openai]" && rm /
 # Dapr sidecar communicates via localhost — no special networking required
 ENV DAPR_HTTP_PORT=3500
 ENV DAPR_GRPC_PORT=50001
-ENV NEXUS_ENV=production
+ENV GRAMPUS_ENV=production
 
 # Non-root user for security
-RUN useradd --create-home --shell /bin/bash nexus
-USER nexus
+RUN useradd --create-home --shell /bin/bash grampus
+USER grampus
 
 # Agent code is volume-mounted at runtime, not baked into the image
-WORKDIR /home/nexus/agent
+WORKDIR /home/grampus/agent
 
-ENTRYPOINT ["nexus"]
+ENTRYPOINT ["grampus"]
 CMD ["--help"]

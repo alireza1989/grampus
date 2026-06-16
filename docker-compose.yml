@@ -3,21 +3,21 @@ services:
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: nexus
-      POSTGRES_DB: nexus
+      POSTGRES_PASSWORD: grampus
+      POSTGRES_DB: grampus
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d nexus"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d grampus"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
     networks:
-      - nexus-net
+      - grampus-net
 
   redis:
     image: redis:8-alpine
@@ -30,7 +30,7 @@ services:
       retries: 10
       start_period: 5s
     networks:
-      - nexus-net
+      - grampus-net
 
   dapr-placement:
     image: daprio/placement:1.17.5
@@ -38,11 +38,11 @@ services:
     ports:
       - "50005:50005"
     networks:
-      - nexus-net
+      - grampus-net
 
 volumes:
   postgres_data:
 
 networks:
-  nexus-net:
+  grampus-net:
     driver: bridge

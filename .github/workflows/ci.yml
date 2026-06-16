@@ -74,7 +74,7 @@ jobs:
         run: uv sync --all-extras --group dev
 
       - name: Run unit tests
-        run: uv run pytest -m "not integration" -v --cov=src/nexus --cov-report=xml
+        run: uv run pytest -m "not integration" -v --cov=src/grampus --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -107,7 +107,7 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for postgres..."
-          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U postgres -d nexus; do sleep 2; done'
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U postgres -d grampus; do sleep 2; done'
           echo "Waiting for redis..."
           timeout 30 bash -c 'until docker compose exec -T redis redis-cli ping | grep -q PONG; do sleep 2; done'
           echo "All services healthy"
@@ -120,7 +120,7 @@ jobs:
             -v $(pwd)/dapr/components:/components:ro \
             daprio/daprd:1.17.5 \
             ./daprd \
-              --app-id nexus-test \
+              --app-id grampus-test \
               --resources-path /components \
               --dapr-http-port 3500 \
               --dapr-grpc-port 50001 \

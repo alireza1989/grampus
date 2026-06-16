@@ -126,7 +126,7 @@ jobs:
             ## Installation
 
             ```bash
-            pip install nexus-ai==${{ github.ref_name }}
+            pip install grampus-ai==${{ github.ref_name }}
             ```
 
             See [CHANGELOG.md](CHANGELOG.md) for full details.

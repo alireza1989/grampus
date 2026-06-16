@@ -11,4 +11,4 @@ spec:
     - name: redisPassword
       value: ""
     - name: keyPrefix
-      value: "nexus"
+      value: "grampus"

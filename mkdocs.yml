@@ -1,7 +1,7 @@
-site_name: Nexus — Agentic AI Framework
+site_name: Grampus — Agentic AI Framework
 site_description: Production-grade agentic AI framework built on Dapr
-site_url: https://nexus-ai.dev
-repo_url: https://github.com/your-org/nexus-agentic-platform
+site_url: https://grampus-ai.dev
+repo_url: https://github.com/grampus-ai/nexus-agentic-platform
 repo_name: nexus-agentic-platform
 edit_uri: edit/main/docs/
 

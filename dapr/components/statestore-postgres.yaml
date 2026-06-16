@@ -7,7 +7,7 @@ spec:
   version: v1
   metadata:
     - name: connectionString
-      value: "host=localhost user=postgres password=nexus port=5432 connect_timeout=10 database=nexus sslmode=disable"
+      value: "host=localhost user=postgres password=grampus port=5432 connect_timeout=10 database=grampus sslmode=disable"
     - name: schema
       value: "public"
     - name: cleanupInterval

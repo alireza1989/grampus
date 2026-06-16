@@ -12,11 +12,11 @@ services:
     volumes:
       - phoenix_data:/phoenix
     networks:
-      - nexus-net
+      - grampus-net
 
 volumes:
   phoenix_data:
 
 networks:
-  nexus-net:
+  grampus-net:
     external: true    # attaches to the network created by docker-compose.yml

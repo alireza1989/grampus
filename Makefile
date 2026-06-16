@@ -25,10 +25,10 @@ check: lint typecheck test
 dev:
 	docker compose up -d
 	dapr run \
-		--app-id nexus \
+		--app-id grampus \
 		--resources-path ./dapr/components \
 		--config ./dapr/config.yaml \
-		-- uv run python -m nexus
+		-- uv run python -m grampus
 
 clean:
 	rm -rf .venv .mypy_cache .ruff_cache .pytest_cache dist htmlcov coverage.xml

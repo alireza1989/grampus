@@ -1,7 +1,7 @@
 apiVersion: dapr.io/v1alpha1
 kind: Configuration
 metadata:
-  name: nexus-config
+  name: grampus-config
 spec:
   tracing:
     samplingRate: "1"
