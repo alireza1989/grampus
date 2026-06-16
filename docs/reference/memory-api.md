@@ -4,7 +4,7 @@
 
 The unified interface to all four memory types. This is what `AgentRunner` interacts with — you rarely need to call individual memory stores directly.
 
-::: nexus.memory.manager.MemoryManager
+::: grampus.memory.manager.MemoryManager
     options:
       show_source: false
       members: [remember, recall, forget, consolidate, add_message, get_messages]
@@ -13,7 +13,7 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Working memory
 
-::: nexus.memory.working.WorkingMemory
+::: grampus.memory.working.WorkingMemory
     options:
       show_source: false
       members: [add_message, get_messages, current_token_count, clear]
@@ -22,12 +22,12 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Episodic memory
 
-::: nexus.memory.episodic.EpisodicMemory
+::: grampus.memory.episodic.EpisodicMemory
     options:
       show_source: false
       members: [store, get, list_by_agent, delete]
 
-::: nexus.memory.retriever.EpisodicRetriever
+::: grampus.memory.retriever.EpisodicRetriever
     options:
       show_source: false
       members: [retrieve]
@@ -36,12 +36,12 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Semantic memory
 
-::: nexus.memory.semantic.SemanticMemory
+::: grampus.memory.semantic.SemanticMemory
     options:
       show_source: false
       members: [store_fact, get_by_subject, get_by_predicate, search, delete_fact]
 
-::: nexus.memory.semantic_retriever.SemanticRetriever
+::: grampus.memory.semantic_retriever.SemanticRetriever
     options:
       show_source: false
       members: [retrieve]
@@ -50,7 +50,7 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Procedural memory
 
-::: nexus.memory.procedural.ProceduralMemory
+::: grampus.memory.procedural.ProceduralMemory
     options:
       show_source: false
       members: [store, get, search, delete]
@@ -59,7 +59,7 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Consolidation
 
-::: nexus.memory.consolidation.ConsolidationPipeline
+::: grampus.memory.consolidation.ConsolidationPipeline
     options:
       show_source: false
       members: [run]
@@ -68,22 +68,22 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Memory security
 
-::: nexus.memory.provenance.ProvenanceTracker
+::: grampus.memory.provenance.ProvenanceTracker
     options:
       show_source: false
       members: [create_provenance, verify]
 
-::: nexus.memory.validator.MemoryValidator
+::: grampus.memory.validator.MemoryValidator
     options:
       show_source: false
       members: [validate]
 
-::: nexus.memory.trust.TrustScorer
+::: grampus.memory.trust.TrustScorer
     options:
       show_source: false
       members: [score, decay]
 
-::: nexus.memory.auditor.MemoryAuditor
+::: grampus.memory.auditor.MemoryAuditor
     options:
       show_source: false
       members: [audit, report]
@@ -92,22 +92,22 @@ The unified interface to all four memory types. This is what `AgentRunner` inter
 
 ## Types
 
-::: nexus.memory.types.EpisodicRecord
+::: grampus.memory.types.EpisodicRecord
     options:
       show_source: false
       members: []
 
-::: nexus.memory.types.SemanticFact
+::: grampus.memory.types.SemanticFact
     options:
       show_source: false
       members: []
 
-::: nexus.memory.types.Procedure
+::: grampus.memory.types.Procedure
     options:
       show_source: false
       members: []
 
-::: nexus.memory.types.ProcedureStep
+::: grampus.memory.types.ProcedureStep
     options:
       show_source: false
       members: []
@@ -127,7 +127,7 @@ The `SourceType` enum determines the default trust level assigned to a memory wr
 | `EXTERNAL_DATA` | 0.3 | Data from external APIs, web scraping, etc. |
 
 ```python
-from nexus.memory.provenance import SourceType
+from grampus.memory.provenance import SourceType
 
 await manager.remember(
     "API returned rate limit error.",

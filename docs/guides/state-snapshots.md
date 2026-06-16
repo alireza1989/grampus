@@ -10,13 +10,13 @@ Snapshots let you export a full agent session as a portable JSON file. Use them 
 
     ```bash
     # Export by agent ID (latest session)
-    nexus state export research-bot --output snapshot.json
+    grampus state export research-bot --output snapshot.json
 
     # Export a specific session
-    nexus state export research-bot --session ses_abc123 --output snapshot.json
+    grampus state export research-bot --session ses_abc123 --output snapshot.json
 
     # Tag the snapshot for later filtering
-    nexus state export research-bot --session ses_abc123 \
+    grampus state export research-bot --session ses_abc123 \
       --tag env=production --tag reason=incident-2026-06-01 \
       --output snapshot.json
     ```
@@ -24,8 +24,8 @@ Snapshots let you export a full agent session as a portable JSON file. Use them 
 === "Python API"
 
     ```python
-    from nexus.dapr.state import DaprStateStore
-    from nexus.orchestration.snapshot import SnapshotManager
+    from grampus.dapr.state import DaprStateStore
+    from grampus.orchestration.snapshot import SnapshotManager
 
     state_store = DaprStateStore(dapr_client, namespace="research")
     mgr = SnapshotManager(state_store=state_store)
@@ -45,10 +45,10 @@ Snapshots let you export a full agent session as a portable JSON file. Use them 
 
 ```bash
 # Human-readable table view
-nexus state show snapshot.json --format table
+grampus state show snapshot.json --format table
 
 # Raw JSON
-nexus state show snapshot.json --format json
+grampus state show snapshot.json --format json
 ```
 
 Table output:
@@ -78,7 +78,7 @@ tags                 env=production, reason=incident-2026-06-01
 | `state.status` | Final `AgentStatus` at export time |
 | `event_log_count` | Number of immutable events captured |
 | `tags` | Arbitrary key=value metadata attached at export |
-| `source_environment` | Where the snapshot was taken (`NEXUS_ENVIRONMENT` env var) |
+| `source_environment` | Where the snapshot was taken (`GRAMPUS_ENVIRONMENT` env var) |
 
 ---
 
@@ -86,10 +86,10 @@ tags                 env=production, reason=incident-2026-06-01
 
 ```bash
 # Preview what would be restored (no writes)
-nexus state import snapshot.json --dry-run
+grampus state import snapshot.json --dry-run
 
 # Restore to the current environment
-nexus state import snapshot.json
+grampus state import snapshot.json
 ```
 
 !!! warning "Restore overwrites current state"
@@ -131,6 +131,6 @@ curl -X POST http://localhost:8000/agents/snapshot/restore \
 
 ## See also
 
-- **[CLI reference →](../reference/cli.md)** — Full `nexus state` command reference
+- **[CLI reference →](../reference/cli.md)** — Full `grampus state` command reference
 - **[Observability guide →](observability.md)** — Event log and session replay
 - **[Evaluation guide →](evaluation.md)** — Creating eval baselines from real sessions

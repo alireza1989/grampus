@@ -4,7 +4,7 @@
 
 The main safety middleware. Compose injection detection, PII detection, and action guard into a unified check pipeline.
 
-::: nexus.safety.pipeline.SafetyPipeline
+::: grampus.safety.pipeline.SafetyPipeline
     options:
       show_source: false
       members: [check_input, check_tool_result, check_llm_output, check_tool_call, get_violations]
@@ -14,7 +14,7 @@ The main safety middleware. Compose injection detection, PII detection, and acti
 ## SafetyPipelineConfig
 
 ```python
-from nexus.safety.pipeline import SafetyPipelineConfig
+from grampus.safety.pipeline import SafetyPipelineConfig
 
 config = SafetyPipelineConfig(
     check_user_input=True,       # run injection + PII on user input
@@ -29,7 +29,7 @@ config = SafetyPipelineConfig(
 
 ## Injection detector
 
-::: nexus.safety.injection.PromptInjectionDetector
+::: grampus.safety.injection.PromptInjectionDetector
     options:
       show_source: false
       members: [check]
@@ -49,7 +49,7 @@ class InjectionCheckResult:
 
 ## PII detector
 
-::: nexus.safety.pii.PIIDetector
+::: grampus.safety.pii.PIIDetector
     options:
       show_source: false
       members: [check]
@@ -69,7 +69,7 @@ class PIICheckResult:
 
 ## Action guard
 
-::: nexus.safety.action_guard.SafetyActionGuard
+::: grampus.safety.action_guard.SafetyActionGuard
     options:
       show_source: false
       members: [check]
@@ -77,7 +77,7 @@ class PIICheckResult:
 ### ActionPolicy
 
 ```python
-from nexus.safety.action_guard import ActionPolicy
+from grampus.safety.action_guard import ActionPolicy
 
 policy = ActionPolicy(
     allowed_tools=["web_search", "calculate"],  # explicit allowlist (None = allow all)
@@ -108,7 +108,7 @@ class SafetyViolation:
 
 ## Policy loader
 
-::: nexus.safety.policies.PolicyLoader
+::: grampus.safety.policies.PolicyLoader
     options:
       show_source: false
       members: [load, from_file]
@@ -147,8 +147,8 @@ pipeline:
 Loading:
 
 ```python
-from nexus.safety.policies import load_safety_policy
-from nexus.safety.pipeline import SafetyPipeline
+from grampus.safety.policies import load_safety_policy
+from grampus.safety.pipeline import SafetyPipeline
 
 safety_config = load_safety_policy("safety_policy.yaml")
 pipeline = SafetyPipeline.from_config(safety_config)

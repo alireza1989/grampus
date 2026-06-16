@@ -2,7 +2,7 @@
 
 ## Threat model
 
-Nexus agents face a distinct threat landscape from traditional web applications. The primary risks are:
+Grampus agents face a distinct threat landscape from traditional web applications. The primary risks are:
 
 ### Memory injection (MINJA)
 
@@ -34,7 +34,7 @@ LLM-generated code that attempts to access the host filesystem, network, or envi
 
 ## Defense in depth
 
-Nexus uses four defensive layers, applied in order:
+Grampus uses four defensive layers, applied in order:
 
 ```mermaid
 graph TB
@@ -174,7 +174,7 @@ graph TB
 - Resources: CPU and memory hard limits prevent resource exhaustion
 - Time: execution timeout kills containers that run too long
 
-**Container pooling**: Nexus maintains a pool of warm containers to reduce cold-start latency from ~200ms to ~10ms for subsequent tool calls in the same session.
+**Container pooling**: Grampus maintains a pool of warm containers to reduce cold-start latency from ~200ms to ~10ms for subsequent tool calls in the same session.
 
 ---
 
@@ -244,7 +244,7 @@ pipeline:
 - [ ] Configure explicit `allowed_tools` for each agent (principle of least privilege)
 - [ ] Set `cost_budget_usd` in `AgentDefinition` to cap per-run costs
 - [ ] Run `MemoryAuditor` on a scheduled interval (hourly for sensitive agents)
-- [ ] Store API keys in Kubernetes Secrets or Dapr Secret Store — never in `nexus.yaml`
+- [ ] Store API keys in Kubernetes Secrets or Dapr Secret Store — never in `grampus.yaml`
 - [ ] Enable mTLS in Dapr for all inter-service communication
 - [ ] Restrict Dapr state store access to the agent's namespace only
 - [ ] Monitor `safety.violation` events in your OTEL traces for attack pattern detection

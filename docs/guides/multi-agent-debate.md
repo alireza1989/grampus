@@ -19,7 +19,7 @@ Multi-agent debate runs the same question past several LLMs simultaneously, lets
 ## Prerequisites
 
 ```bash
-pip install "nexus-ai[anthropic]"   # or openai, gemini
+pip install "grampus-ai[anthropic]"   # or openai, gemini
 ```
 
 Debate uses whatever model clients you already configure — no additional dependencies.
@@ -32,8 +32,8 @@ Debate uses whatever model clients you already configure — no additional depen
 import asyncio
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.orchestration.debate import (
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.orchestration.debate import (
     AggregationStrategy,
     DebateConfig,
     DebaterConfig,
@@ -42,7 +42,7 @@ from nexus.orchestration.debate import (
 
 
 async def main() -> None:
-    client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
 
     cfg = DebateConfig(
         debaters=[
@@ -123,7 +123,7 @@ cfg = DebateConfig(
 
 ### Sycophancy resistance
 
-A known failure mode in multi-agent debate is *sycophancy*: agents flip their position not because of logic, but because of social pressure from peers (ACL 2025 CONSENSAGENT). Nexus mitigates this with a mandatory three-step prompt for rounds 2+:
+A known failure mode in multi-agent debate is *sycophancy*: agents flip their position not because of logic, but because of social pressure from peers (ACL 2025 CONSENSAGENT). Grampus mitigates this with a mandatory three-step prompt for rounds 2+:
 
 1. **Restate** your previous answer verbatim
 2. **Critique** each peer position based on evidence
@@ -171,7 +171,7 @@ Scores each cluster by `sum(debater.weight × position.confidence)`. Picks the h
 ### Judge model (highest quality)
 
 ```python
-from nexus.orchestration.debate import DebaterConfig, AggregationStrategy
+from grampus.orchestration.debate import DebaterConfig, AggregationStrategy
 
 judge_cfg = DebaterConfig(
     model_client=opus_client,
@@ -195,7 +195,7 @@ After all rounds, a separate judge model receives all final-round positions verb
 `debate_node()` wraps a `DebateOrchestrator` as a graph node, and optionally routes low-confidence results to a human review node:
 
 ```python
-from nexus.orchestration import Graph, debate_node, human_node
+from grampus.orchestration import Graph, debate_node, human_node
 
 orch = DebateOrchestrator(cfg)
 
@@ -229,7 +229,7 @@ message.metadata["debate_routing"]     # "debate" or "single_agent"
 Pass a `CostTracker` to cap total spend across all debate rounds:
 
 ```python
-from nexus.orchestration import CostTracker
+from grampus.orchestration import CostTracker
 
 tracker = CostTracker(agent_id="qa-agent", session_id="s1", budget_usd=0.05)
 orch = DebateOrchestrator(cfg, cost_tracker=tracker)
@@ -254,9 +254,9 @@ Every debate emits structured OTEL spans:
 Pass any tracer with a `span(name, **attrs)` context manager interface:
 
 ```python
-from nexus.observability.tracer import NexusTracer
+from grampus.observability.tracer import GrampusTracer
 
-tracer = NexusTracer(service_name="my-agent", otlp_endpoint="http://localhost:4317")
+tracer = GrampusTracer(service_name="my-agent", otlp_endpoint="http://localhost:4317")
 orch = DebateOrchestrator(cfg, tracer=tracer)
 ```
 
@@ -284,7 +284,7 @@ orch = DebateOrchestrator(cfg, tracer=tracer)
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `model_client` | `ModelClient` | required | Any Nexus model client |
+| `model_client` | `ModelClient` | required | Any Grampus model client |
 | `model_id` | `str` | required | Model identifier string |
 | `temperature` | `float` | `0.7` | Sampling temperature |
 | `role_hint` | `str` | `""` | Appended to the system prompt — use for adversarial personas |

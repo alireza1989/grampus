@@ -1,26 +1,26 @@
 # CLI Reference
 
-The `nexus` CLI is the primary interface for initializing, running, evaluating, and monitoring Nexus agents.
+The `grampus` CLI is the primary interface for initializing, running, evaluating, and monitoring Grampus agents.
 
 ```bash
-nexus --version    # nexus 0.1.0
-nexus --help       # show all commands
+grampus --version    # grampus 0.1.0
+grampus --help       # show all commands
 ```
 
 ---
 
-## nexus init
+## grampus init
 
-Scaffold a new Nexus project.
+Scaffold a new Grampus project.
 
 ```bash
-nexus init [OPTIONS] [NAME]
+grampus init [OPTIONS] [NAME]
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `NAME` | (prompted) | Project directory name |
-| `--name TEXT` | `"nexus-agent"` | Agent name used in config |
+| `--name TEXT` | `"grampus-agent"` | Agent name used in config |
 | `--template TEXT` | `"simple"` | Project template: `simple`, `crew`, `rag` |
 | `--output-dir TEXT` | `"."` | Parent directory for the new project |
 
@@ -28,7 +28,7 @@ nexus init [OPTIONS] [NAME]
 
 | Template | Creates | Best for |
 |----------|---------|----------|
-| `simple` | Single agent with one tool | Getting started, learning Nexus |
+| `simple` | Single agent with one tool | Getting started, learning Grampus |
 | `crew` | Three-agent crew (researcher, critic, writer) | Multi-agent workflows |
 | `rag` | RAG agent with document retrieval tool | Question answering over documents |
 
@@ -36,13 +36,13 @@ nexus init [OPTIONS] [NAME]
 
 ```bash
 # Create a simple agent in the current directory
-nexus init my-agent
+grampus init my-agent
 
 # Create a crew agent in a specific directory
-nexus init --template crew --output-dir ~/projects research-crew
+grampus init --template crew --output-dir ~/projects research-crew
 
 # Non-interactive (all defaults)
-nexus init --name my-agent --template simple --output-dir .
+grampus init --name my-agent --template simple --output-dir .
 ```
 
 ### Generated files
@@ -50,7 +50,7 @@ nexus init --name my-agent --template simple --output-dir .
 ```
 my-agent/
 ├── agent.py              # Agent code with create_runner() and create_agent_def()
-├── nexus.yaml            # Configuration
+├── grampus.yaml            # Configuration
 ├── docker-compose.yml    # Local infrastructure
 ├── dapr/
 │   ├── config.yaml       # Dapr tracing config
@@ -68,18 +68,18 @@ my-agent/
 
 ---
 
-## nexus run
+## grampus run
 
 Start an agent. Without `--input`, starts an interactive REPL. With `--input`, runs once and exits.
 
 ```bash
-nexus run [OPTIONS] AGENT_FILE
+grampus run [OPTIONS] AGENT_FILE
 ```
 
 | Argument/Option | Default | Description |
 |-----------------|---------|-------------|
 | `AGENT_FILE` | (required) | Path to agent Python file |
-| `--config TEXT` | `"nexus.yaml"` | Path to nexus.yaml configuration file |
+| `--config TEXT` | `"grampus.yaml"` | Path to grampus.yaml configuration file |
 | `--session-id TEXT` | (auto-generated UUID) | Session identifier for memory persistence |
 | `--input TEXT` | `None` | Single-shot input; omit for interactive REPL |
 
@@ -92,16 +92,16 @@ The agent file must export two functions:
 
 ```bash
 # Interactive REPL
-nexus run agent.py
+grampus run agent.py
 
 # Single-shot (useful in scripts and CI)
-nexus run agent.py --input "What is the capital of France?"
+grampus run agent.py --input "What is the capital of France?"
 
 # Use a specific config file
-nexus run agent.py --config config/production.yaml --input "Hello"
+grampus run agent.py --config config/production.yaml --input "Hello"
 
 # Persist memory across runs using a fixed session ID
-nexus run agent.py --session-id user-123 --input "What did we discuss last time?"
+grampus run agent.py --session-id user-123 --input "What did we discuss last time?"
 ```
 
 ### REPL commands
@@ -118,8 +118,8 @@ When running interactively:
 ### Output format
 
 ```
-[nexus] Session: abc12345
-[nexus] Agent: research-agent | Model: claude-sonnet-4-6
+[grampus] Session: abc12345
+[grampus] Agent: research-agent | Model: claude-sonnet-4-6
 > What is the capital of Brazil?
 Brasília is the capital of Brazil, established in 1960.
 
@@ -137,12 +137,12 @@ Brasília is the capital of Brazil, established in 1960.
 
 ---
 
-## nexus eval
+## grampus eval
 
 Run an evaluation suite and report results.
 
 ```bash
-nexus eval [OPTIONS] SUITE_FILE
+grampus eval [OPTIONS] SUITE_FILE
 ```
 
 | Argument/Option | Default | Description |
@@ -158,16 +158,16 @@ The suite file must export a function `create_suite() -> EvalSuite`.
 
 ```bash
 # Run suite with text output
-nexus eval tests/eval_suite.py
+grampus eval tests/eval_suite.py
 
 # JSON output to file
-nexus eval tests/eval_suite.py --format json --output results.json
+grampus eval tests/eval_suite.py --format json --output results.json
 
 # JUnit XML for CI
-nexus eval tests/eval_suite.py --format junit --output results.xml
+grampus eval tests/eval_suite.py --format junit --output results.xml
 
 # Fail if pass rate below 90% (CI gate)
-nexus eval tests/eval_suite.py --fail-under 0.9
+grampus eval tests/eval_suite.py --fail-under 0.9
 echo $?   # 0 = passed, 1 = below threshold
 ```
 
@@ -199,20 +199,20 @@ Avg duration: 0.94s
 
 ---
 
-## nexus memory
+## grampus memory
 
 Inspect and manage agent memory.
 
 ```bash
-nexus memory COMMAND [OPTIONS] AGENT_ID
+grampus memory COMMAND [OPTIONS] AGENT_ID
 ```
 
-### nexus memory inspect
+### grampus memory inspect
 
 Show stored memories for an agent.
 
 ```bash
-nexus memory inspect [OPTIONS] AGENT_ID
+grampus memory inspect [OPTIONS] AGENT_ID
 ```
 
 | Option | Default | Description |
@@ -223,13 +223,13 @@ nexus memory inspect [OPTIONS] AGENT_ID
 
 ```bash
 # All memories for an agent
-nexus memory inspect research-agent
+grampus memory inspect research-agent
 
 # Episodic memories for a specific session
-nexus memory inspect research-agent --session session-42 --type episodic
+grampus memory inspect research-agent --session session-42 --type episodic
 
 # Semantic facts
-nexus memory inspect research-agent --type semantic
+grampus memory inspect research-agent --type semantic
 ```
 
 Output:
@@ -247,12 +247,12 @@ Type: episodic  Session: session-42
 2 episodic records found.
 ```
 
-### nexus memory clear
+### grampus memory clear
 
 Delete stored memories.
 
 ```bash
-nexus memory clear [OPTIONS] AGENT_ID
+grampus memory clear [OPTIONS] AGENT_ID
 ```
 
 | Option | Default | Description |
@@ -264,18 +264,18 @@ nexus memory clear [OPTIONS] AGENT_ID
 
 ```bash
 # Clear all memories (with confirmation)
-nexus memory clear research-agent
+grampus memory clear research-agent
 
 # Clear episodic memories for one session (no confirmation)
-nexus memory clear research-agent --session session-42 --type episodic --yes
+grampus memory clear research-agent --session session-42 --type episodic --yes
 ```
 
-### nexus memory stats
+### grampus memory stats
 
 Show summary statistics.
 
 ```bash
-nexus memory stats AGENT_ID
+grampus memory stats AGENT_ID
 ```
 
 Output:
@@ -299,12 +299,12 @@ Agent: research-agent
 
 ---
 
-## nexus cost
+## grampus cost
 
 Show cost summary for recent agent runs.
 
 ```bash
-nexus cost [OPTIONS]
+grampus cost [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -312,19 +312,19 @@ nexus cost [OPTIONS]
 | `--agent TEXT` | `None` | Filter by agent ID |
 | `--session TEXT` | `None` | Filter by session ID |
 | `--last INT` | `20` | Show last N cost events |
-| `--log-file TEXT` | `".nexus/cost_log.jsonl"` | Path to JSONL cost log |
+| `--log-file TEXT` | `".grampus/cost_log.jsonl"` | Path to JSONL cost log |
 
 ### Examples
 
 ```bash
 # Show last 20 cost events
-nexus cost
+grampus cost
 
 # Show costs for a specific agent
-nexus cost --agent research-agent --last 50
+grampus cost --agent research-agent --last 50
 
 # Show costs for a specific session
-nexus cost --session session-42
+grampus cost --session session-42
 ```
 
 Output:
@@ -350,27 +350,27 @@ Avg per run:     $0.0012
 
 ---
 
-## nexus dev
+## grampus dev
 
 Start agent in development mode with auto-reload and live cost/trace output.
 
 ```bash
-nexus dev [OPTIONS]
+grampus dev [OPTIONS]
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--config TEXT` | `"nexus.yaml"` | Path to nexus.yaml |
+| `--config TEXT` | `"grampus.yaml"` | Path to grampus.yaml |
 | `--port INT` | `8000` | Agent HTTP server port |
 
-`nexus dev` validates `nexus.yaml` on startup and on every file change.
+`grampus dev` validates `grampus.yaml` on startup and on every file change.
 
 ```bash
 # Start dev mode (watches current directory)
-nexus dev
+grampus dev
 
 # Use custom config and port
-nexus dev --config staging.yaml --port 8001
+grampus dev --config staging.yaml --port 8001
 ```
 
 ### Exit codes
@@ -382,20 +382,20 @@ nexus dev --config staging.yaml --port 8001
 
 ---
 
-## nexus state
+## grampus state
 
 Manage agent state snapshots — export, inspect, and restore full session state.
 
 ```bash
-nexus state COMMAND [OPTIONS]
+grampus state COMMAND [OPTIONS]
 ```
 
-### nexus state export
+### grampus state export
 
 Export the state of an agent session to a portable JSON snapshot.
 
 ```bash
-nexus state export [OPTIONS] AGENT_ID
+grampus state export [OPTIONS] AGENT_ID
 ```
 
 | Argument/Option | Default | Description |
@@ -407,22 +407,22 @@ nexus state export [OPTIONS] AGENT_ID
 
 ```bash
 # Export the latest session for research-bot
-nexus state export research-bot --output snapshot.json
+grampus state export research-bot --output snapshot.json
 
 # Export a specific session with tags
-nexus state export research-bot \
+grampus state export research-bot \
   --session ses_abc123 \
   --output snapshot.json \
   --tag env=production \
   --tag reason=incident-review
 ```
 
-### nexus state import
+### grampus state import
 
 Restore a previously exported snapshot into Dapr state.
 
 ```bash
-nexus state import [OPTIONS] FILE
+grampus state import [OPTIONS] FILE
 ```
 
 | Argument/Option | Default | Description |
@@ -432,18 +432,18 @@ nexus state import [OPTIONS] FILE
 
 ```bash
 # Preview changes without writing
-nexus state import snapshot.json --dry-run
+grampus state import snapshot.json --dry-run
 
 # Restore the snapshot
-nexus state import snapshot.json
+grampus state import snapshot.json
 ```
 
-### nexus state show
+### grampus state show
 
 Inspect a snapshot file without restoring it.
 
 ```bash
-nexus state show [OPTIONS] [FILE]
+grampus state show [OPTIONS] [FILE]
 ```
 
 | Argument/Option | Default | Description |
@@ -453,10 +453,10 @@ nexus state show [OPTIONS] [FILE]
 
 ```bash
 # Human-readable summary
-nexus state show snapshot.json --format table
+grampus state show snapshot.json --format table
 
 # Full JSON dump
-nexus state show snapshot.json --format json
+grampus state show snapshot.json --format json
 ```
 
 ### Exit codes
@@ -469,20 +469,20 @@ nexus state show snapshot.json --format json
 
 ---
 
-## nexus alerts
+## grampus alerts
 
 Manage cost alert rules and notification channels.
 
 ```bash
-nexus alerts COMMAND [OPTIONS]
+grampus alerts COMMAND [OPTIONS]
 ```
 
-### nexus alerts list
+### grampus alerts list
 
 Show all configured alert rules.
 
 ```bash
-nexus alerts list
+grampus alerts list
 ```
 
 Output:
@@ -494,12 +494,12 @@ rule_def456  daily-spend         $5.00            per_day_usd       critical   y
 rule_ghi789  per-run-spike       $0.25            per_run_usd       warning    no
 ```
 
-### nexus alerts add
+### grampus alerts add
 
 Create a new alert rule.
 
 ```bash
-nexus alerts add [OPTIONS]
+grampus alerts add [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -512,7 +512,7 @@ nexus alerts add [OPTIONS]
 | `--cooldown INT` | `3600` | Minimum seconds between repeated fires for this rule |
 
 ```bash
-nexus alerts add \
+grampus alerts add \
   --name "daily-spend" \
   --threshold-usd 5.00 \
   --threshold-type per_day_usd \
@@ -521,42 +521,42 @@ nexus alerts add \
   --cooldown 86400
 ```
 
-### nexus alerts remove
+### grampus alerts remove
 
 Delete an alert rule by ID.
 
 ```bash
-nexus alerts remove RULE_ID
+grampus alerts remove RULE_ID
 ```
 
 ```bash
-nexus alerts remove rule_abc123
+grampus alerts remove rule_abc123
 ```
 
-### nexus alerts enable / disable
+### grampus alerts enable / disable
 
 Enable or disable a rule without deleting it.
 
 ```bash
-nexus alerts enable  RULE_ID
-nexus alerts disable RULE_ID
+grampus alerts enable  RULE_ID
+grampus alerts disable RULE_ID
 ```
 
 ```bash
-nexus alerts disable rule_ghi789   # pause a noisy rule temporarily
-nexus alerts enable  rule_ghi789   # re-enable it
+grampus alerts disable rule_ghi789   # pause a noisy rule temporarily
+grampus alerts enable  rule_ghi789   # re-enable it
 ```
 
-### nexus alerts test
+### grampus alerts test
 
 Fire a test notification for a rule to verify your notification channels are working.
 
 ```bash
-nexus alerts test RULE_ID
+grampus alerts test RULE_ID
 ```
 
 ```bash
-nexus alerts test rule_abc123
+grampus alerts test rule_abc123
 # Sends a test alert to all configured notification channels
 # Prints: "Test alert sent to 2 channels (slack, log)"
 ```
@@ -571,20 +571,20 @@ nexus alerts test rule_abc123
 
 ---
 
-## nexus playground
+## grampus playground
 
 Interactive prompt playground for testing and comparing LLM responses.
 
 ```bash
-nexus playground COMMAND [OPTIONS]
+grampus playground COMMAND [OPTIONS]
 ```
 
-### nexus playground start
+### grampus playground start
 
 Launch the interactive REPL.
 
 ```bash
-nexus playground start [OPTIONS]
+grampus playground start [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -596,23 +596,23 @@ nexus playground start [OPTIONS]
 
 ```bash
 # Start with defaults
-nexus playground start
+grampus playground start
 
 # Start with a specific model and system prompt
-nexus playground start --model gpt-4o-mini --system "You are a Python tutor."
+grampus playground start --model gpt-4o-mini --system "You are a Python tutor."
 
 # Resume a saved session
-nexus playground start --load python-tutor
+grampus playground start --load python-tutor
 ```
 
 Inside the REPL, use `/help` to list all available commands.
 
-### nexus playground run
+### grampus playground run
 
 Run a single prompt and exit (non-interactive).
 
 ```bash
-nexus playground run [OPTIONS] MESSAGE
+grampus playground run [OPTIONS] MESSAGE
 ```
 
 | Argument/Option | Default | Description |
@@ -623,16 +623,16 @@ nexus playground run [OPTIONS] MESSAGE
 | `--no-stream` | `False` | Disable streaming output |
 
 ```bash
-nexus playground run "What is the capital of France?" --model claude-haiku-4-5
-nexus playground run "Explain recursion." --model gpt-4o-mini --no-stream
+grampus playground run "What is the capital of France?" --model claude-haiku-4-5
+grampus playground run "Explain recursion." --model gpt-4o-mini --no-stream
 ```
 
-### nexus playground compare
+### grampus playground compare
 
 Run the same message against multiple models simultaneously.
 
 ```bash
-nexus playground compare [OPTIONS] MESSAGE
+grampus playground compare [OPTIONS] MESSAGE
 ```
 
 | Argument/Option | Default | Description |
@@ -642,16 +642,16 @@ nexus playground compare [OPTIONS] MESSAGE
 | `--system TEXT` | `None` | System prompt applied to all models |
 
 ```bash
-nexus playground compare "Explain async/await." \
+grampus playground compare "Explain async/await." \
   --models claude-haiku-4-5,gpt-4o-mini,llama3.2
 ```
 
-### nexus playground sessions
+### grampus playground sessions
 
 List all saved playground sessions.
 
 ```bash
-nexus playground sessions
+grampus playground sessions
 ```
 
 Output:
@@ -662,12 +662,12 @@ python-tutor     claude-haiku-4-5   8      $0.0012   2026-06-01 14:22
 billing-tests    gpt-4o-mini        3      $0.0003   2026-05-30 09:15
 ```
 
-### nexus playground show
+### grampus playground show
 
 Display the contents of a saved session.
 
 ```bash
-nexus playground show [OPTIONS] NAME
+grampus playground show [OPTIONS] NAME
 ```
 
 | Option | Default | Description |
@@ -676,8 +676,8 @@ nexus playground show [OPTIONS] NAME
 | `--format TEXT` | `"transcript"` | Output format: `transcript`, `json` |
 
 ```bash
-nexus playground show python-tutor
-nexus playground show python-tutor --format json
+grampus playground show python-tutor
+grampus playground show python-tutor --format json
 ```
 
 ### Exit codes
@@ -689,12 +689,12 @@ nexus playground show python-tutor --format json
 
 ---
 
-## nexus redteam
+## grampus redteam
 
 Run an adversarial red-team campaign against an agent to find security vulnerabilities before attackers do.
 
 ```bash
-nexus redteam [OPTIONS] AGENT_FILE
+grampus redteam [OPTIONS] AGENT_FILE
 ```
 
 | Argument/Option | Default | Description |
@@ -715,19 +715,19 @@ The agent file must expose two functions:
 
 ```bash
 # Full campaign, all categories, text output
-nexus redteam agents/my_agent.py
+grampus redteam agents/my_agent.py
 
 # Specific categories only
-nexus redteam agents/my_agent.py --categories prompt_injection jailbreak
+grampus redteam agents/my_agent.py --categories prompt_injection jailbreak
 
 # Fast CI scan: 3 payloads per strategy, stop on CRITICAL
-nexus redteam agents/my_agent.py --stop-on-critical --count 3
+grampus redteam agents/my_agent.py --stop-on-critical --count 3
 
 # Thorough pre-release audit with LLM judge
-nexus redteam agents/my_agent.py --model claude-sonnet-4-6 --count 10
+grampus redteam agents/my_agent.py --model claude-sonnet-4-6 --count 10
 
 # JSON output for downstream processing
-nexus redteam agents/my_agent.py --output json > redteam-report.json
+grampus redteam agents/my_agent.py --output json > redteam-report.json
 ```
 
 ### Attack categories

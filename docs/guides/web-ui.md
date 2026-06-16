@@ -1,30 +1,30 @@
 # Web UI
 
-Nexus includes a built-in web interface at `/ui/` for visual inspection and monitoring of your agents. No separate installation is required — the UI ships with `nexus-ai[server]` and is served directly from the Nexus FastAPI server.
+Nexus includes a built-in web interface at `/ui/` for visual inspection and monitoring of your agents. No separate installation is required — the UI ships with `grampus-ai[server]` and is served directly from the Grampus FastAPI server.
 
 ---
 
 ## Starting the UI
 
-=== "nexus serve"
+=== "grampus serve"
 
     ```bash
-    pip install "nexus-ai[server]"
-    nexus serve
+    pip install "grampus-ai[server]"
+    grampus serve
     # Open http://localhost:8000/ui/
     ```
 
 === "uvicorn directly"
 
     ```bash
-    uv run uvicorn nexus.server.app:create_app --factory --host 0.0.0.0 --port 8000
+    uv run uvicorn grampus.server.app:create_app --factory --host 0.0.0.0 --port 8000
     # Open http://localhost:8000/ui/
     ```
 
-=== "nexus dev (includes UI)"
+=== "grampus dev (includes UI)"
 
     ```bash
-    nexus dev
+    grampus dev
     # Open http://localhost:8000/ui/
     ```
 

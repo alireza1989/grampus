@@ -1,6 +1,6 @@
 # Model Providers
 
-Nexus supports multiple LLM providers through a unified `ModelClient` interface — switch providers by changing one line of configuration without touching the rest of your agent code.
+Grampus supports multiple LLM providers through a unified `ModelClient` interface — switch providers by changing one line of configuration without touching the rest of your agent code.
 
 ---
 
@@ -8,11 +8,11 @@ Nexus supports multiple LLM providers through a unified `ModelClient` interface 
 
 | Provider | Class | Extra | Example models |
 |----------|-------|-------|---------------|
-| Anthropic | `AnthropicClient` | `nexus-ai[anthropic]` | `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5` |
-| OpenAI | `OpenAIClient` | `nexus-ai[openai]` | `gpt-4o`, `gpt-4o-mini`, `o1`, `o3` |
-| Google Gemini | `GeminiClient` | `nexus-ai[gemini]` | `gemini-2.0-flash`, `gemini-1.5-pro` |
-| Cohere | `CohereClient` | `nexus-ai[cohere]` | `command-a-03-2025`, `command-r-plus-08-2024`, `command-r-08-2024`, `command-r7b-12-2024` |
-| Ollama (local) | `OllamaClient` | `nexus-ai[ollama]` | `llama3.2`, `mistral`, `qwen2.5`, `phi4`, `deepseek-r1`, any pulled model |
+| Anthropic | `AnthropicClient` | `grampus-ai[anthropic]` | `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5` |
+| OpenAI | `OpenAIClient` | `grampus-ai[openai]` | `gpt-4o`, `gpt-4o-mini`, `o1`, `o3` |
+| Google Gemini | `GeminiClient` | `grampus-ai[gemini]` | `gemini-2.0-flash`, `gemini-1.5-pro` |
+| Cohere | `CohereClient` | `grampus-ai[cohere]` | `command-a-03-2025`, `command-r-plus-08-2024`, `command-r-08-2024`, `command-r7b-12-2024` |
+| Ollama (local) | `OllamaClient` | `grampus-ai[ollama]` | `llama3.2`, `mistral`, `qwen2.5`, `phi4`, `deepseek-r1`, any pulled model |
 
 ---
 
@@ -21,72 +21,72 @@ Nexus supports multiple LLM providers through a unified `ModelClient` interface 
 ### Anthropic
 
 ```bash
-pip install "nexus-ai[anthropic]"
+pip install "grampus-ai[anthropic]"
 ```
 
 ```python
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
+from grampus.core.models.anthropic import AnthropicClient
 
-client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
 ```
 
-Environment variable: `NEXUS_MODEL__ANTHROPIC_API_KEY`
+Environment variable: `GRAMPUS_MODEL__ANTHROPIC_API_KEY`
 
 ---
 
 ### OpenAI
 
 ```bash
-pip install "nexus-ai[openai]"
+pip install "grampus-ai[openai]"
 ```
 
 ```python
 import os
 
-from nexus.core.models.openai import OpenAIClient
+from grampus.core.models.openai import OpenAIClient
 
-client = OpenAIClient(api_key=os.environ["NEXUS_MODEL__OPENAI_API_KEY"])
+client = OpenAIClient(api_key=os.environ["GRAMPUS_MODEL__OPENAI_API_KEY"])
 ```
 
-Environment variable: `NEXUS_MODEL__OPENAI_API_KEY`
+Environment variable: `GRAMPUS_MODEL__OPENAI_API_KEY`
 
 ---
 
 ### Google Gemini
 
 ```bash
-pip install "nexus-ai[gemini]"
+pip install "grampus-ai[gemini]"
 ```
 
 ```python
 import os
 
-from nexus.core.models.gemini import GeminiClient
+from grampus.core.models.gemini import GeminiClient
 
-client = GeminiClient(api_key=os.environ["NEXUS_MODEL__GEMINI_API_KEY"])
+client = GeminiClient(api_key=os.environ["GRAMPUS_MODEL__GEMINI_API_KEY"])
 ```
 
-Environment variable: `NEXUS_MODEL__GEMINI_API_KEY`
+Environment variable: `GRAMPUS_MODEL__GEMINI_API_KEY`
 
 ---
 
 ### Cohere
 
 ```bash
-pip install "nexus-ai[cohere]"
+pip install "grampus-ai[cohere]"
 ```
 
 ```python
 import os
 
-from nexus.core.models.cohere import CohereClient
+from grampus.core.models.cohere import CohereClient
 
-client = CohereClient(api_key=os.environ["NEXUS_MODEL__COHERE_API_KEY"])
+client = CohereClient(api_key=os.environ["GRAMPUS_MODEL__COHERE_API_KEY"])
 ```
 
-Environment variable: `NEXUS_MODEL__COHERE_API_KEY`
+Environment variable: `GRAMPUS_MODEL__COHERE_API_KEY`
 
 **Available models:**
 
@@ -98,7 +98,7 @@ Environment variable: `NEXUS_MODEL__COHERE_API_KEY`
 | `command-r7b-12-2024` | 128K | $0.0375 / $0.15 | High-throughput, budget-constrained |
 
 !!! note "Cohere SDK version"
-    Requires Cohere Python SDK v5.1.8+. Nexus uses the v2 client (`AsyncClientV2`) which accepts the same OpenAI-compatible message format, including tool calls.
+    Requires Cohere Python SDK v5.1.8+. Grampus uses the v2 client (`AsyncClientV2`) which accepts the same OpenAI-compatible message format, including tool calls.
 
 ---
 
@@ -107,7 +107,7 @@ Environment variable: `NEXUS_MODEL__COHERE_API_KEY`
 Ollama lets you run open-weight models locally with no API cost or data leaving your machine.
 
 ```bash
-pip install "nexus-ai[ollama]"
+pip install "grampus-ai[ollama]"
 ```
 
 **Step 1 — Install Ollama:**
@@ -140,10 +140,10 @@ ollama pull mistral
 ollama pull qwen2.5
 ```
 
-**Step 4 — Use with Nexus:**
+**Step 4 — Use with Grampus:**
 
 ```python
-from nexus.core.models.ollama import OllamaClient
+from grampus.core.models.ollama import OllamaClient
 
 # Default: connects to http://localhost:11434
 client = OllamaClient(host="http://localhost:11434")
@@ -162,15 +162,15 @@ Pass a client directly to `AgentRunner`, or set `model` in `AgentDefinition` —
 import asyncio
 import os
 
-from nexus.core.models.gemini import GeminiClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.gemini import GeminiClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 async def main() -> None:
-    client = GeminiClient(api_key=os.environ["NEXUS_MODEL__GEMINI_API_KEY"])
+    client = GeminiClient(api_key=os.environ["GRAMPUS_MODEL__GEMINI_API_KEY"])
     registry = ToolRegistry()
     executor = ToolExecutor(registry)
     config = RunnerConfig(max_iterations=5, enable_memory=False)
@@ -192,7 +192,7 @@ asyncio.run(main())
 Switching from Gemini to Ollama is one-line:
 
 ```python
-from nexus.core.models.ollama import OllamaClient
+from grampus.core.models.ollama import OllamaClient
 
 client = OllamaClient(host="http://localhost:11434")
 agent_def = AgentDefinition(
@@ -214,7 +214,7 @@ For production deployments, the `ModelRouter` automatically selects the cheapest
 | `balanced` | `claude-sonnet-4-6`, `gpt-4o-mini`, `command-r-08-2024`, `qwen2.5` | Most tasks |
 | `powerful` | `claude-opus-4-7`, `gpt-4o`, `command-a-03-2025`, `o1` | Complex reasoning, synthesis |
 
-Configure routing in `nexus.yaml`:
+Configure routing in `grampus.yaml`:
 
 ```yaml
 model:

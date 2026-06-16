@@ -14,8 +14,8 @@
 
 ```mermaid
 graph LR
-    Agent["Nexus Agent"] --> Tracer["NexusTracer\n(OTEL SDK)"]
-    Agent --> Metrics["NexusMetrics\n(Prometheus)"]
+    Agent["Grampus Agent"] --> Tracer["GrampusTracer\n(OTEL SDK)"]
+    Agent --> Metrics["GrampusMetrics\n(Prometheus)"]
     Agent --> EventLog["EventLog\n(append-only)"]
     Agent --> Monitor["BehaviorMonitor\n(anomaly detection)"]
 
@@ -36,9 +36,9 @@ graph LR
 ### Setup
 
 ```python
-from nexus.observability.tracer import NexusTracer
+from grampus.observability.tracer import GrampusTracer
 
-tracer = NexusTracer(
+tracer = GrampusTracer(
     service_name="research-agent",
     otel_endpoint="http://localhost:4317",   # OTEL Collector gRPC
     enabled=True,
@@ -85,9 +85,9 @@ agent.run  (session-42, 2.3s)
 ### Expose the metrics endpoint
 
 ```python
-from nexus.observability.metrics import NexusMetrics
+from grampus.observability.metrics import GrampusMetrics
 
-metrics = NexusMetrics(port=9090)
+metrics = GrampusMetrics(port=9090)
 await metrics.start()   # starts /metrics HTTP server
 ```
 
@@ -107,21 +107,21 @@ await metrics.start()   # starts /metrics HTTP server
 
 | Metric | Labels | Description |
 |--------|--------|-------------|
-| `nexus_active_agents` | `agent_name` | Currently running agents |
+| `grampus_active_agents` | `agent_name` | Currently running agents |
 
 **Histograms** (latency distributions):
 
 | Metric | Labels | Description |
 |--------|--------|-------------|
-| `nexus_llm_latency_seconds` | `model`, `agent_name` | LLM call duration |
-| `nexus_tool_latency_seconds` | `tool_name`, `agent_name` | Tool execution duration |
+| `grampus_llm_latency_seconds` | `model`, `agent_name` | LLM call duration |
+| `grampus_tool_latency_seconds` | `tool_name`, `agent_name` | Tool execution duration |
 | `nexus_agent_run_duration_seconds` | `agent_name` | Full agent run duration |
 
 ### Sample Grafana queries
 
 ```promql
 # Average LLM latency per model (last 5 minutes)
-rate(nexus_llm_latency_seconds_sum[5m]) / rate(nexus_llm_latency_seconds_count[5m])
+rate(grampus_llm_latency_seconds_sum[5m]) / rate(grampus_llm_latency_seconds_count[5m])
 
 # Token cost rate (USD per hour)
 rate(nexus_cost_usd_total[1h]) * 3600
@@ -140,7 +140,7 @@ histogram_quantile(0.99, rate(nexus_agent_run_duration_seconds_bucket[5m]))
 The event log captures every agent action as an immutable, append-only record. It provides full audit trails and supports forensic debugging ("why did the agent do X at step 5?").
 
 ```python
-from nexus.observability.events import EventLog
+from grampus.observability.events import EventLog
 
 event_log = EventLog(state_store=state_store)
 
@@ -186,7 +186,7 @@ print(f"Messages at step 3: {len(state_at_step_3.messages)}")
 The `BehaviorMonitor` tracks agent behavior patterns over time and alerts on anomalies.
 
 ```python
-from nexus.observability.behavior import BehaviorMonitor
+from grampus.observability.behavior import BehaviorMonitor
 
 monitor = BehaviorMonitor(
     agent_name="research-agent",
@@ -232,10 +232,10 @@ services:
       COLLECTOR_OTLP_ENABLED: "true"
 ```
 
-Then configure Nexus to send traces:
+Then configure Grampus to send traces:
 
 ```yaml
-# nexus.yaml
+# grampus.yaml
 observability:
   otel_enabled: true
   otel_endpoint: http://localhost:4317
@@ -255,12 +255,12 @@ Open the Jaeger UI at `http://localhost:16686`.
 
 ## Grafana dashboard
 
-A pre-built 14-panel Grafana dashboard is included at `grafana/dashboards/nexus-overview.json`. It auto-provisions when you start the Grafana stack:
+A pre-built 14-panel Grafana dashboard is included at `grafana/dashboards/grampus-overview.json`. It auto-provisions when you start the Grafana stack:
 
 ```bash
 docker compose -f grafana/docker-compose.grafana.yml up -d
 # Open http://localhost:3000  (default login: admin / admin)
-# Dashboard auto-provisions under the "Nexus" folder
+# Dashboard auto-provisions under the "Grampus" folder
 ```
 
 ### Dashboard panels
@@ -293,12 +293,12 @@ The dashboard includes two template variables you can use to filter all panels:
 
 ## Prometheus metrics endpoint
 
-The Nexus server exposes a Prometheus-compatible metrics endpoint at `GET /metrics`. Point your Prometheus scrape config at it:
+The Grampus server exposes a Prometheus-compatible metrics endpoint at `GET /metrics`. Point your Prometheus scrape config at it:
 
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: nexus
+  - job_name: grampus
     static_configs:
       - targets: ["localhost:8000"]
     metrics_path: /metrics
@@ -319,19 +319,19 @@ scrape_configs:
 
 | Metric | Labels | Description |
 |--------|--------|-------------|
-| `nexus_active_agents` | — | Number of currently running agent sessions |
+| `grampus_active_agents` | — | Number of currently running agent sessions |
 
 **Histograms** (latency distributions with `_bucket`, `_sum`, `_count` suffixes):
 
 | Metric | Labels | Description |
 |--------|--------|-------------|
-| `nexus_llm_latency_seconds` | `agent_id`, `model` | LLM API call duration |
-| `nexus_tool_latency_seconds` | `agent_id`, `tool_name` | Tool execution duration |
+| `grampus_llm_latency_seconds` | `agent_id`, `model` | LLM API call duration |
+| `grampus_tool_latency_seconds` | `agent_id`, `tool_name` | Tool execution duration |
 
 ---
 
 ## Next steps
 
-- **[Observability API reference →](../reference/observability-api.md)** — Full `NexusTracer` and `NexusMetrics` reference
+- **[Observability API reference →](../reference/observability-api.md)** — Full `GrampusTracer` and `GrampusMetrics` reference
 - **[Evaluation guide →](evaluation.md)** — Correlate eval results with traces
 - **[Deployment guide →](deployment.md)** — Configure OTEL for Kubernetes

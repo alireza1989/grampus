@@ -16,7 +16,7 @@ analysis tools reduce agent token usage by 10x and tool call count by 2.1x versu
 grep+file-read exploration patterns.
 
 All five tools are zero-dependency (stdlib `ast` only for the AST engine; `ruff` and `mypy`
-are already in the Nexus dev toolchain). They never raise — all errors are returned as
+are already in the Grampus dev toolchain). They never raise — all errors are returned as
 `{"ok": false, "code": "..."}` payloads.
 
 ---
@@ -27,7 +27,7 @@ Returns all functions, classes, imports, and their metadata for a single `.py` f
 
 **Input:**
 ```json
-{"path": "src/nexus/tools/library/calculator.py"}
+{"path": "src/grampus/tools/library/calculator.py"}
 ```
 
 **Output (compact):**
@@ -36,7 +36,7 @@ Returns all functions, classes, imports, and their metadata for a single `.py` f
   "ok": true,
   "result": {
     "path": "/abs/path/calculator.py",
-    "module_name": "nexus.tools.library.calculator",
+    "module_name": "grampus.tools.library.calculator",
     "docstring": "AST-based safe calculator tool.",
     "imports": [{"module": "ast", "names": [], "kind": "stdlib", "line": 3}],
     "functions": [
@@ -95,7 +95,7 @@ not raw text.
 
 **Input:**
 ```json
-{"path": "src/nexus/tools/library/calculator.py", "select": ["E", "F"]}
+{"path": "src/grampus/tools/library/calculator.py", "select": ["E", "F"]}
 ```
 
 **Output:**
@@ -133,7 +133,7 @@ Runs mypy on a `.py` file and returns structured type errors.
 
 **Input:**
 ```json
-{"path": "src/nexus/tools/library/calculator.py"}
+{"path": "src/grampus/tools/library/calculator.py"}
 ```
 
 **Output:**
@@ -161,7 +161,7 @@ Runs mypy on a `.py` file and returns structured type errors.
 **Graceful degradation:** Same as `lint_code` — `available=false` + `hint` when mypy is absent.
 
 **Note:** In production environments where mypy is not installed as a dev dependency, this tool
-will return `available=false`. Install with `pip install mypy` or use the `nexus-ai[dev]` extras.
+will return `available=false`. Install with `pip install mypy` or use the `grampus-ai[dev]` extras.
 
 ---
 
@@ -171,7 +171,7 @@ Scans all `.py` files in a directory tree for a function, class, or method with 
 
 **Input:**
 ```json
-{"name": "EpisodicMemory", "directory": "src/nexus/memory", "max_files": 200}
+{"name": "EpisodicMemory", "directory": "src/grampus/memory", "max_files": 200}
 ```
 
 **Output:**
@@ -183,7 +183,7 @@ Scans all `.py` files in a directory tree for a function, class, or method with 
     "total": 1,
     "matches": [
       {
-        "path": "/abs/path/src/nexus/memory/episodic.py",
+        "path": "/abs/path/src/grampus/memory/episodic.py",
         "line": 34,
         "kind": "class",
         "qualname": "EpisodicMemory",
@@ -207,7 +207,7 @@ calling `analyze_file` on every module.
 
 **Input:**
 ```json
-{"directory": "src/nexus/memory", "max_files": 200}
+{"directory": "src/grampus/memory", "max_files": 200}
 ```
 
 **Output:**
@@ -218,8 +218,8 @@ calling `analyze_file` on every module.
     "total_modules": 5,
     "modules": [
       {
-        "path": "/abs/path/src/nexus/memory/episodic.py",
-        "module_name": "nexus.memory.episodic",
+        "path": "/abs/path/src/grampus/memory/episodic.py",
+        "module_name": "grampus.memory.episodic",
         "public_functions": ["store", "retrieve", "delete"],
         "public_classes": ["EpisodicMemory", "EpisodicRecord"],
         "import_count": 8,
@@ -241,20 +241,20 @@ Pseudocode for an agent investigating a bug in an unknown codebase:
 
 ```python
 # Step 1: Get the lay of the land
-structure = await summarize_structure_tool(directory="src/nexus/memory")
+structure = await summarize_structure_tool(directory="src/grampus/memory")
 # → learn which files expose EpisodicMemory, store, retrieve
 
 # Step 2: Find where the specific class is defined
-matches = await find_symbol_tool(name="EpisodicMemory", directory="src/nexus/memory")
-# → src/nexus/memory/episodic.py, line 34
+matches = await find_symbol_tool(name="EpisodicMemory", directory="src/grampus/memory")
+# → src/grampus/memory/episodic.py, line 34
 
 # Step 3: Deep-dive the specific file
-detail = await analyze_file_tool(path="src/nexus/memory/episodic.py")
+detail = await analyze_file_tool(path="src/grampus/memory/episodic.py")
 # → all methods, their complexity, parameters, return types
 
 # Step 4: Check for lint / type issues in the same file
-lint = await lint_code_tool(path="src/nexus/memory/episodic.py")
-types = await check_types_tool(path="src/nexus/memory/episodic.py")
+lint = await lint_code_tool(path="src/grampus/memory/episodic.py")
+types = await check_types_tool(path="src/grampus/memory/episodic.py")
 # → structured findings rather than raw text output
 ```
 

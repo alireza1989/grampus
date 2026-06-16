@@ -1,6 +1,6 @@
 # Cost Management & Alerts
 
-Nexus tracks cost at every level — individual model calls, tool steps, sessions, and agent lifetime — and can enforce hard budgets that stop an agent before it overspends. For production deployments, cost alerts fire notifications to Slack, email, or webhooks when thresholds are crossed.
+Grampus tracks cost at every level — individual model calls, tool steps, sessions, and agent lifetime — and can enforce hard budgets that stop an agent before it overspends. For production deployments, cost alerts fire notifications to Slack, email, or webhooks when thresholds are crossed.
 
 ---
 
@@ -27,8 +27,8 @@ Cost events are also published to the Dapr pub/sub bus, where the `BehaviorMonit
 Set `cost_budget_usd` on `AgentDefinition` to stop the agent before it exceeds a per-run limit. When the budget is reached, `AgentRunner` raises `BudgetExceededError` before the next LLM call:
 
 ```python
-from nexus.core.errors import BudgetExceededError
-from nexus.core.types import AgentDefinition
+from grampus.core.errors import BudgetExceededError
+from grampus.core.types import AgentDefinition
 
 agent_def = AgentDefinition(
     name="research-bot",
@@ -45,7 +45,7 @@ except BudgetExceededError as e:
     print(f"Limit:           ${e.details['budget_usd']:.4f}")
 ```
 
-Use `nexus cost` on the CLI to review recent spending across all agents. See the [CLI reference](../reference/cli.md).
+Use `grampus cost` on the CLI to review recent spending across all agents. See the [CLI reference](../reference/cli.md).
 
 ---
 
@@ -56,8 +56,8 @@ Cost alerts let you react to spending patterns before they become surprises. Def
 ### Defining alert rules
 
 ```python
-from nexus.observability.alerts import AlertEvaluator, AlertRule, AlertSeverity, ThresholdType
-from nexus.observability.notification import (
+from grampus.observability.alerts import AlertEvaluator, AlertRule, AlertSeverity, ThresholdType
+from grampus.observability.notification import (
     LogChannel,
     NotificationDispatcher,
     SlackChannel,
@@ -140,7 +140,7 @@ runner = AgentRunner(
 
 ## Alert rules via REST API
 
-When the Nexus server is running (`nexus serve`), manage alert rules over HTTP:
+When the Grampus server is running (`grampus serve`), manage alert rules over HTTP:
 
 ```bash
 # Create a rule
@@ -175,10 +175,10 @@ curl "http://localhost:8000/alerts/history?limit=50"
 
 ```bash
 # List all configured rules
-nexus alerts list
+grampus alerts list
 
 # Add a new rule interactively
-nexus alerts add \
+grampus alerts add \
   --name "daily-spend" \
   --threshold-usd 5.00 \
   --threshold-type per_day_usd \
@@ -187,14 +187,14 @@ nexus alerts add \
   --cooldown 86400
 
 # Enable or disable a rule
-nexus alerts enable  <rule_id>
-nexus alerts disable <rule_id>
+grampus alerts enable  <rule_id>
+grampus alerts disable <rule_id>
 
 # Remove a rule
-nexus alerts remove <rule_id>
+grampus alerts remove <rule_id>
 
 # Fire a test notification for a rule (verify channels work)
-nexus alerts test <rule_id>
+grampus alerts test <rule_id>
 ```
 
 See the [CLI reference](../reference/cli.md) for all flags.
@@ -204,5 +204,5 @@ See the [CLI reference](../reference/cli.md) for all flags.
 ## See also
 
 - **[Observability guide →](observability.md)** — Prometheus metrics for cost, Grafana dashboard
-- **[CLI reference →](../reference/cli.md)** — `nexus cost` and `nexus alerts` commands
-- **[Configuration reference →](../reference/config.md)** — Cost alert config in `nexus.yaml`
+- **[CLI reference →](../reference/cli.md)** — `grampus cost` and `nexus alerts` commands
+- **[Configuration reference →](../reference/config.md)** — Cost alert config in `grampus.yaml`

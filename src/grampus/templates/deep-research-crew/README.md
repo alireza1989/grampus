@@ -14,7 +14,7 @@ A {{max_search_rounds}}-round multi-agent research pipeline.
 ## Usage
 
 ```bash
-nexus run agent.py "What are the competitive dynamics of the vector database market in 2026?"
+grampus run agent.py "What are the competitive dynamics of the vector database market in 2026?"
 ```
 
 ## Configuration

@@ -1,6 +1,6 @@
 # Streaming
 
-Token streaming enables progressive display and real-time UX — users see the first word of a response within milliseconds instead of waiting for the complete generation. Nexus streams at two levels: agent execution output and eval assertions that measure streaming quality.
+Token streaming enables progressive display and real-time UX — users see the first word of a response within milliseconds instead of waiting for the complete generation. Grampus streams at two levels: agent execution output and eval assertions that measure streaming quality.
 
 ---
 
@@ -12,15 +12,15 @@ Use `runner.stream()` to iterate over chunks as they arrive:
 import asyncio
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 async def main() -> None:
-    client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
     runner = AgentRunner(
         model_client=client,
         tool_executor=ToolExecutor(ToolRegistry()),
@@ -58,7 +58,7 @@ asyncio.run(main())
 
 ## Streaming through the REST API
 
-When the Nexus server is running (`nexus serve`), send streaming requests to `POST /stream`:
+When the Grampus server is running (`grampus serve`), send streaming requests to `POST /stream`:
 
 ```python
 import asyncio
@@ -103,7 +103,7 @@ Testing streaming requires specialized assertions that measure not just *what* w
 ```python
 import asyncio
 
-from nexus.evaluation.streaming import (
+from grampus.evaluation.streaming import (
     StreamingEvalCase,
     StreamingEvalSuite,
     chunk_count_between,

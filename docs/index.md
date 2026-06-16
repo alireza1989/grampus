@@ -1,22 +1,22 @@
-# Nexus — Agentic AI Framework
+# Grampus — Agentic AI Framework
 
 **As simple as CrewAI to start. As powerful as LangGraph for production.**
 
-Nexus is an open-source agentic AI framework built on [Dapr's](https://dapr.io) distributed runtime. It provides agent intelligence — memory, orchestration, safety, observability, and evaluation — while Dapr handles the infrastructure: state, pub/sub, workflows, security, and scaling.
+Grampus is an open-source agentic AI framework built on [Dapr's](https://dapr.io) distributed runtime. It provides agent intelligence — memory, orchestration, safety, observability, and evaluation — while Dapr handles the infrastructure: state, pub/sub, workflows, security, and scaling.
 
 ---
 
 ## Quick Install
 
 ```bash
-pip install nexus-ai
-nexus init my-agent
-cd my-agent && nexus run agent.py --input "Hello"
+pip install grampus-ai
+grampus init my-agent
+cd my-agent && grampus run agent.py --input "Hello"
 ```
 
 ---
 
-## Why Nexus?
+## Why Grampus?
 
 <div class="grid cards" markdown>
 
@@ -83,13 +83,13 @@ graph TB
 | **Tool Sandboxing** | Docker-isolated execution, resource limits, network control |
 | **MCP Client** | Discover and invoke tools from any MCP-compatible server |
 | **Eval Framework** | 16 assertion types, streaming quality assertions, LLM-as-judge, A/B prompt testing, regression detection |
-| **Adversarial Red-Teaming** | Six OWASP Agentic Top 10 attack strategies (ASI01/ASI02/ASI06), LLM+rule-based judge, adaptive mutation, `nexus redteam` CLI with CI exit-code support |
+| **Adversarial Red-Teaming** | Six OWASP Agentic Top 10 attack strategies (ASI01/ASI02/ASI06), LLM+rule-based judge, adaptive mutation, `grampus redteam` CLI with CI exit-code support |
 | **Cost Tracking** | Per-model, per-agent, per-session budget enforcement with Slack/email/webhook alerts |
 | **Google Gemini** | Native Gemini client (`gemini-2.0-flash`, `gemini-1.5-pro`) alongside Anthropic and OpenAI |
 | **Local Models** | Ollama client for zero-cost local inference with any pulled model |
 | **Agent State Snapshots** | Export/import full session state for debugging, migration, and eval baselines |
 | **Grafana Dashboard** | Pre-built 14-panel dashboard for agent throughput, latency, cost, and errors |
-| **Prompt Playground** | Interactive CLI REPL for testing prompts and comparing models (`nexus playground`) |
+| **Prompt Playground** | Interactive CLI REPL for testing prompts and comparing models (`grampus playground`) |
 | **Web UI** | Built-in HTMX interface at `/ui/` for memory inspection and monitoring |
 
 ---

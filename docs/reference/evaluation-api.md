@@ -4,7 +4,7 @@
 
 Runs a collection of `EvalCase` objects against an `AgentRunner`.
 
-::: nexus.evaluation.suite.EvalSuite
+::: grampus.evaluation.suite.EvalSuite
     options:
       show_source: false
       members: [add_case, add_cases, run, run_case]
@@ -13,7 +13,7 @@ Runs a collection of `EvalCase` objects against an `AgentRunner`.
 
 ## EvalCase
 
-::: nexus.evaluation.suite.EvalCase
+::: grampus.evaluation.suite.EvalCase
     options:
       show_source: false
       members: []
@@ -24,14 +24,14 @@ Runs a collection of `EvalCase` objects against an `AgentRunner`.
 
 ### SuiteResult
 
-::: nexus.evaluation.suite.SuiteResult
+::: grampus.evaluation.suite.SuiteResult
     options:
       show_source: false
       members: []
 
 ### CaseResult
 
-::: nexus.evaluation.suite.CaseResult
+::: grampus.evaluation.suite.CaseResult
     options:
       show_source: false
       members: []
@@ -57,77 +57,77 @@ All assertion factories return `Assertion` objects (async callables).
 
 ### Output content
 
-::: nexus.evaluation.assertions.contains
+::: grampus.evaluation.assertions.contains
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.not_contains
+::: grampus.evaluation.assertions.not_contains
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.matches_regex
+::: grampus.evaluation.assertions.matches_regex
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.output_length
+::: grampus.evaluation.assertions.output_length
     options:
       show_source: false
 
 ### Tool calls
 
-::: nexus.evaluation.assertions.tool_was_called
+::: grampus.evaluation.assertions.tool_was_called
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.tool_not_called
+::: grampus.evaluation.assertions.tool_not_called
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.tool_call_count
+::: grampus.evaluation.assertions.tool_call_count
     options:
       show_source: false
 
 ### Structured output
 
-::: nexus.evaluation.assertions.json_schema_valid
+::: grampus.evaluation.assertions.json_schema_valid
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.status_is
+::: grampus.evaluation.assertions.status_is
     options:
       show_source: false
 
 ### Budget and performance
 
-::: nexus.evaluation.assertions.max_cost
+::: grampus.evaluation.assertions.max_cost
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.max_duration
+::: grampus.evaluation.assertions.max_duration
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.max_steps
+::: grampus.evaluation.assertions.max_steps
     options:
       show_source: false
 
 ### LLM-as-judge
 
-::: nexus.evaluation.assertions.semantic_similarity
+::: grampus.evaluation.assertions.semantic_similarity
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.llm_judge
+::: grampus.evaluation.assertions.llm_judge
     options:
       show_source: false
 
 ### Safety
 
-::: nexus.evaluation.assertions.no_pii
+::: grampus.evaluation.assertions.no_pii
     options:
       show_source: false
 
-::: nexus.evaluation.assertions.no_injection_patterns
+::: grampus.evaluation.assertions.no_injection_patterns
     options:
       show_source: false
 
@@ -135,7 +135,7 @@ All assertion factories return `Assertion` objects (async callables).
 
 ## Prompt version manager
 
-::: nexus.evaluation.prompt_versions.PromptVersionManager
+::: grampus.evaluation.prompt_versions.PromptVersionManager
     options:
       show_source: false
       members: [register, list_versions, diff, set_active, get_active]
@@ -144,7 +144,7 @@ All assertion factories return `Assertion` objects (async callables).
 
 ## Quality baseline
 
-::: nexus.evaluation.baseline.QualityBaseline
+::: grampus.evaluation.baseline.QualityBaseline
     options:
       show_source: false
       members: [pin, compare]
@@ -166,7 +166,7 @@ class BaselineComparison:
 
 ## Reporters
 
-::: nexus.evaluation.reporter.EvalReporter
+::: grampus.evaluation.reporter.EvalReporter
     options:
       show_source: false
       members: [report, render]
@@ -178,7 +178,7 @@ class BaselineComparison:
 ### Types
 
 ```python
-from nexus.evaluation.red_team import (
+from grampus.evaluation.red_team import (
     AttackCategory,   # prompt_injection | jailbreak | reasoning_hijack
                       # memory_poison | tool_misuse | excessive_agency
     AttackVariant,    # direct_injection | indirect_injection | roleplay_jailbreak
@@ -222,28 +222,28 @@ class RedTeamCampaignConfig(BaseModel):
 
 ### AttackerAgent
 
-::: nexus.evaluation.red_team.attacker.AttackerAgent
+::: grampus.evaluation.red_team.attacker.AttackerAgent
     options:
       show_source: false
       members: [generate_payloads, mutate_failed]
 
 ### RedTeamJudge
 
-::: nexus.evaluation.red_team.judge.RedTeamJudge
+::: grampus.evaluation.red_team.judge.RedTeamJudge
     options:
       show_source: false
       members: [evaluate]
 
 ### RedTeamRunner
 
-::: nexus.evaluation.red_team.runner.RedTeamRunner
+::: grampus.evaluation.red_team.runner.RedTeamRunner
     options:
       show_source: false
       members: [run]
 
 ### RedTeamReport
 
-::: nexus.evaluation.red_team.report.RedTeamReport
+::: grampus.evaluation.red_team.report.RedTeamReport
     options:
       show_source: false
       members: [build, to_text, to_json]
@@ -251,8 +251,8 @@ class RedTeamCampaignConfig(BaseModel):
 ### Writing a custom attack strategy
 
 ```python
-from nexus.evaluation.red_team.strategies.base import BaseAttackStrategy
-from nexus.evaluation.red_team.types import (
+from grampus.evaluation.red_team.strategies.base import BaseAttackStrategy
+from grampus.evaluation.red_team.types import (
     AttackCategory, AttackPayload, AttackVariant, RedTeamTargetConfig,
 )
 
@@ -286,8 +286,8 @@ class MyCustomStrategy(BaseAttackStrategy):
 Pass it to `AttackerAgent`:
 
 ```python
-from nexus.evaluation.red_team.attacker import AttackerAgent
-from nexus.evaluation.red_team.strategies import ALL_STRATEGIES
+from grampus.evaluation.red_team.attacker import AttackerAgent
+from grampus.evaluation.red_team.strategies import ALL_STRATEGIES
 
 attacker = AttackerAgent(
     strategies=[S() for S in ALL_STRATEGIES] + [MyCustomStrategy()]
@@ -301,8 +301,8 @@ See the [Red-Teaming guide](../guides/red_teaming.md) for a full walkthrough.
 ## Writing a custom assertion
 
 ```python
-from nexus.evaluation.assertions import AssertionResult
-from nexus.core.types import ExecutionResult
+from grampus.evaluation.assertions import AssertionResult
+from grampus.core.types import ExecutionResult
 
 
 class WordCountAssertion:

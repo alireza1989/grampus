@@ -318,9 +318,15 @@
         <span class="tag t-purple">nexus deploy</span>
         <span class="tag t-purple">nexus dev</span>
         <span class="tag t-purple">nexus cost</span>
+        <span class="tag t-purple">nexus serve</span>
+        <span class="tag t-purple">nexus replay</span>
+        <span class="tag t-purple">nexus memory</span>
+        <span class="tag t-purple">nexus version</span>
+        <span class="tag t-purple">nexus redteam</span>
+        <span class="tag t-purple">nexus doctor</span>
         <span class="tag t-purple">watch mode</span>
       </div>
-      <div class="layer-desc">Scaffold, run, evaluate, and deploy agents in seconds. Agent DSL via YAML or Python decorators. Project templates: simple, crew, RAG.</div>
+      <div class="layer-desc">Scaffold, run, evaluate, and deploy agents in seconds. Agent DSL via YAML or Python decorators. Project templates: simple, crew, RAG. Includes <code>nexus doctor</code> (setup health check), <code>nexus replay</code> (time-travel debugging), <code>nexus serve</code> (REST/OpenAI API server), and <code>nexus redteam</code> (adversarial testing).</div>
     </div>
   </div>
 
@@ -337,8 +343,10 @@
         <span class="tag t-blue">prompt versioning</span>
         <span class="tag t-blue">quality baseline</span>
         <span class="tag t-blue">regression detection</span>
+        <span class="tag t-blue">red-teaming (G41)</span>
+        <span class="tag t-blue">OWASP Agentic Top 10</span>
       </div>
-      <div class="layer-desc">Built-in eval suites with semantic, regex, and schema assertions. Prompt A/B testing, version diffing, and automated quality regression alerts.</div>
+      <div class="layer-desc">Built-in eval suites with semantic, regex, and schema assertions. Prompt A/B testing, version diffing, and automated quality regression alerts. Adversarial red-teaming framework (ADR-020): 6 attack strategies covering OWASP Agentic Top 10, attacker/judge architecture, CLI integration with CI exit codes.</div>
     </div>
   </div>
 
@@ -397,8 +405,10 @@
         <span class="tag t-orange">long-horizon planning</span>
         <span class="tag t-orange">market allocation</span>
         <span class="tag t-orange">artifact-centric</span>
+        <span class="tag t-orange">version router</span>
+        <span class="tag t-orange">causal analysis</span>
       </div>
-      <div class="layer-desc">Checkpointed graph execution with conditional branching. Model routing across fast/balanced/powerful tiers. Budget enforcement. Hierarchical multi-agent crews via Dapr distributed locks. Advanced primitives: multi-agent debate (ADR-012), dual-process uncertainty quantification (ADR-013), long-horizon planning with partial re-planning (ADR-014), market-based task allocation, and MESI-ownership artifact-centric collaboration (ADR-015).</div>
+      <div class="layer-desc">Checkpointed graph execution with conditional branching. Model routing across fast/balanced/powerful tiers. Budget enforcement. Hierarchical multi-agent crews via Dapr distributed locks. Advanced primitives: debate (ADR-012), uncertainty QA (ADR-013), long-horizon planning (ADR-014), market allocation + artifact-centric collaboration (ADR-015). Version router for A/B prompt testing (ADR-025). Two-tier causal analysis: CausalTracer + CausalWorldModel + SimpleCausalInference (ADR-019).</div>
     </div>
   </div>
 
@@ -416,8 +426,13 @@
         <span class="tag t-green">code executor</span>
         <span class="tag t-green">idempotency</span>
         <span class="tag t-green">A2A protocol</span>
+        <span class="tag t-green">LangChain adapter</span>
+        <span class="tag t-green">document tools (PDF/Word/Excel)</span>
+        <span class="tag t-green">code analysis tools (AST)</span>
+        <span class="tag t-green">RAG retrieve tool</span>
+        <span class="tag t-green">plugin lifecycle hooks</span>
       </div>
-      <div class="layer-desc">Decorator-based tool registration with JSON schema generation. MCP-compatible tool discovery. Docker container sandbox with network/filesystem isolation and container pooling for warm starts.</div>
+      <div class="layer-desc">Decorator-based tool registration with JSON schema generation. MCP-compatible tool discovery. Docker container sandbox with network/filesystem isolation and container pooling. Pre-built library: web search, HTTP, file I/O, SQL, document parsing (PDF/Word/Excel via <code>[documents]</code>), code analysis (stdlib AST + ruff/mypy subprocess). LangChain tool adapter unlocks 1,000+ community tools. Plugin lifecycle hooks (ADR-024): pre/post LLM, tool, and memory hooks via entry-point discovery.</div>
     </div>
   </div>
 
@@ -436,8 +451,13 @@
         <span class="tag t-sky">provenance</span>
         <span class="tag t-sky">trust scoring</span>
         <span class="tag t-sky">hybrid retrieval</span>
+        <span class="tag t-sky">reflexion (F1)</span>
+        <span class="tag t-sky">user modeling (F2)</span>
+        <span class="tag t-sky">graph consolidation (F3)</span>
+        <span class="tag t-sky">lifecycle tiers (F3)</span>
+        <span class="tag t-sky">multi-provider embeddings</span>
       </div>
-      <div class="layer-desc">Four-tier memory: in-session working memory with auto-summarization, cross-session episodic records, extracted semantic facts, and learned procedure templates. All writes carry provenance + SHA-256 integrity hash.</div>
+      <div class="layer-desc">Four-tier memory (working, episodic, semantic, procedural) with provenance + SHA-256 integrity on all writes. Post-launch additions: ReflexionEngine + SkillLibrary for agent self-improvement (ADR-016); three-tier user modeling with temporal validity and bidirectional construction (ADR-017); graph-structured memory consolidation with hot/warm/cold lifecycle tiers and adaptive retrieval routing (ADR-018). Multi-provider embeddings: OpenAI, Cohere, Ollama — routable per memory type (ADR-023).</div>
     </div>
   </div>
 
@@ -455,8 +475,10 @@
         <span class="tag t-gray">Pydantic v2 types</span>
         <span class="tag t-gray">ModelClient ABC</span>
         <span class="tag t-gray">Anthropic / OpenAI</span>
+        <span class="tag t-gray">Cohere / Ollama</span>
+        <span class="tag t-gray">agent versioning</span>
       </div>
-      <div class="layer-desc">Foundation layer: config (pydantic-settings, NEXUS_ env prefix), typed error hierarchy, structured JSON logging, all canonical Pydantic types, and async model clients for Anthropic and OpenAI.</div>
+      <div class="layer-desc">Foundation layer: config (pydantic-settings, NEXUS_ env prefix), typed error hierarchy, structured JSON logging, all canonical Pydantic types, and async model clients for Anthropic, OpenAI, Cohere, and Ollama. Agent versioning (ADR-025): content-addressed SHA-256 version IDs, VersionStore, ABTestManager, sticky session routing.</div>
     </div>
   </div>
 
@@ -556,6 +578,41 @@
       <ul>
         <li>CLI — after Phase 7</li>
         <li>Integration + Release — last</li>
+      </ul>
+    </div>
+    <div class="dep-card">
+      <h3>Post-launch A–B (Complete)</h3>
+      <ul>
+        <li>Token streaming, deep research demo</li>
+        <li>Tool library, LangChain adapter</li>
+        <li>REST server, OpenAI-compat API, Jupyter</li>
+      </ul>
+    </div>
+    <div class="dep-card">
+      <h3>Post-launch C–E (Complete)</h3>
+      <ul>
+        <li>HITL UI, time-travel debug (C)</li>
+        <li>Debate, uncertainty QA, planning (E)</li>
+        <li>Market allocation, artifacts (E)</li>
+      </ul>
+    </div>
+    <div class="dep-card">
+      <h3>Post-launch F–H (Complete)</h3>
+      <ul>
+        <li>Reflexion, user modeling (F)</li>
+        <li>Graph memory, lifecycle tiers (F3)</li>
+        <li>Causal analysis (F4), red-teaming (G1)</li>
+        <li>Doc/code tools, multi-embed, plugins, versioning, RAG (H)</li>
+      </ul>
+    </div>
+    <div class="dep-card">
+      <h3>Phase I — Quality &amp; Ops</h3>
+      <ul>
+        <li>nexus doctor, health endpoints</li>
+        <li>Secrets scan, pip-audit, SBOM</li>
+        <li>Graceful shutdown, rate limiting</li>
+        <li>CSP headers, SECURITY.md</li>
+        <li>Benchmarks, mutation testing</li>
       </ul>
     </div>
   </div>

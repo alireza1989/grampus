@@ -1,13 +1,13 @@
 # Error Reference
 
-All Nexus exceptions inherit from `NexusError` and carry a machine-readable `code` string and optional `details` dict.
+All Grampus exceptions inherit from `GrampusError` and carry a machine-readable `code` string and optional `details` dict.
 
 ```python
-from nexus.core.errors import NexusError
+from grampus.core.errors import GrampusError
 
 try:
     result = await runner.run(agent, user_input, session_id="s1")
-except NexusError as e:
+except GrampusError as e:
     print(f"Error: {e}")
     print(f"Code:    {e.code}")
     print(f"Details: {e.details}")
@@ -18,7 +18,7 @@ except NexusError as e:
 ## Hierarchy
 
 ```
-NexusError
+GrampusError
 ├── ConfigError
 ├── MemoryError
 │   └── MemorySecurityError
@@ -42,10 +42,10 @@ NexusError
 
 ---
 
-## NexusError (base)
+## GrampusError (base)
 
 ```python
-NexusError(message: str, *, code: str, details: dict | None = None)
+GrampusError(message: str, *, code: str, details: dict | None = None)
 ```
 
 All exceptions carry:
@@ -65,7 +65,7 @@ All exceptions carry:
 **Raised when:** A required configuration field is missing or has an invalid value.
 
 ```python
-from nexus.core.errors import ConfigError
+from grampus.core.errors import ConfigError
 
 # Example details
 {
@@ -74,7 +74,7 @@ from nexus.core.errors import ConfigError
 }
 ```
 
-**How to handle:** Check environment variables (`NEXUS_MODEL__ANTHROPIC_API_KEY`) and `nexus.yaml`.
+**How to handle:** Check environment variables (`GRAMPUS_MODEL__ANTHROPIC_API_KEY`) and `grampus.yaml`.
 
 ---
 
@@ -85,7 +85,7 @@ from nexus.core.errors import ConfigError
 **Raised when:** A memory read, write, or delete operation fails at the storage layer.
 
 ```python
-from nexus.core.errors import MemoryError
+from grampus.core.errors import MemoryError
 
 # Example details
 {
@@ -107,7 +107,7 @@ from nexus.core.errors import MemoryError
 **Raised when:** A memory write is blocked by the security layer (injection detected, rate limit, size anomaly).
 
 ```python
-from nexus.core.errors import MemorySecurityError
+from grampus.core.errors import MemorySecurityError
 
 # Example details
 {
@@ -241,8 +241,8 @@ from nexus.core.errors import MemorySecurityError
 **Raised when:** An `UncertaintyMonitor` is attached to `AgentRunner` and the propagated confidence falls below the `high_threshold` configured in `UncertaintyPolicy` (default 0.40), triggering an ABORT action.
 
 ```python
-from nexus.core.errors import UncertaintyError
-from nexus.orchestration import AgentRunner, UncertaintyMonitor, UncertaintyPolicy
+from grampus.core.errors import UncertaintyError
+from grampus.orchestration import AgentRunner, UncertaintyMonitor, UncertaintyPolicy
 
 policy = UncertaintyPolicy(high_threshold=0.40)
 monitor = UncertaintyMonitor(policy=policy)
@@ -272,8 +272,8 @@ See the [Uncertainty Quantification guide](../guides/uncertainty.md) for full co
 **Raised when:** The long-horizon planning subsystem encounters an unrecoverable failure: a cycle in the subgoal dependency graph, the maximum replan limit is reached, or the replanner LLM output cannot be parsed after two attempts.
 
 ```python
-from nexus.core.errors import PlanningError
-from nexus.orchestration import PlanningRunner, PlanningConfig
+from grampus.core.errors import PlanningError
+from grampus.orchestration import PlanningRunner, PlanningConfig
 
 planner = PlanningRunner(agent_runner, client, model_id, config=PlanningConfig(max_replans=3))
 
@@ -302,8 +302,8 @@ See the [Long-Horizon Planning guide](../guides/long-horizon-planning.md) for fu
 **Raised when:** Market-based task allocation fails — no capable agents were registered for the required skills, all bids were below the `min_success_threshold` after calibration discounting, or the winning agent is not a member of the crew.
 
 ```python
-from nexus.core.errors import MarketAllocationError
-from nexus.orchestration.market import MarketCrew
+from grampus.core.errors import MarketAllocationError
+from grampus.orchestration.market import MarketCrew
 
 try:
     result = await crew.run_task_with_market(

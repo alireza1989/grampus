@@ -1,6 +1,6 @@
 # Uncertainty Quantification
 
-Uncertainty Quantification (UQ) gives every Nexus agent a real-time confidence signal and a three-tier escalation ladder. Instead of silently returning a low-quality answer when an LLM is unsure, UQ measures how confident the model actually is — step by step, across the entire run — and takes a principled action: proceed, log a warning, pause for human review, or abort.
+Uncertainty Quantification (UQ) gives every Grampus agent a real-time confidence signal and a three-tier escalation ladder. Instead of silently returning a low-quality answer when an LLM is unsure, UQ measures how confident the model actually is — step by step, across the entire run — and takes a principled action: proceed, log a warning, pause for human review, or abort.
 
 ---
 
@@ -14,7 +14,7 @@ Most agentic frameworks ask the model to write `"confidence": 0.9` in its JSON o
 | P(True) self-evaluation | **~0.10** | Single follow-up call; works on any black-box API |
 | Semantic entropy | **best AUROC** | N-sample entropy; most accurate but slower (Farquhar et al., *Nature* 2024) |
 
-Nexus uses all three signals in a dual-process architecture: a fast path that always runs, and a slow path that activates only when the fast path is uncertain.
+Grampus uses all three signals in a dual-process architecture: a fast path that always runs, and a slow path that activates only when the fast path is uncertain.
 
 ---
 
@@ -64,7 +64,7 @@ LLM response
 ## Quick start
 
 ```python
-from nexus.orchestration import AgentRunner, UncertaintyMonitor, UncertaintyPolicy
+from grampus.orchestration import AgentRunner, UncertaintyMonitor, UncertaintyPolicy
 
 policy = UncertaintyPolicy(
     low_threshold=0.80,          # PROCEED below this
@@ -116,7 +116,7 @@ If the agent is about to call `send_email_to_client` and cumulative confidence i
 
 ## Reflection injection
 
-When HIGH uncertainty is detected on an LLM step and `inject_reflection_on_high=True` (the default), Nexus injects a System-2 reflection message before pausing:
+When HIGH uncertainty is detected on an LLM step and `inject_reflection_on_high=True` (the default), Grampus injects a System-2 reflection message before pausing:
 
 ```
 Before you continue, assess your own uncertainty explicitly.
@@ -180,7 +180,7 @@ A confident step 3 cannot erase a highly uncertain step 1 when w = 0.55.
 Insert an explicit uncertainty checkpoint between graph nodes:
 
 ```python
-from nexus.orchestration import uncertainty_guard_node, Graph, human_node
+from grampus.orchestration import uncertainty_guard_node, Graph, human_node
 
 guard = uncertainty_guard_node(
     monitor,
@@ -240,9 +240,9 @@ Three custom spans are emitted per step (when `tracer` is passed to `Uncertainty
 | `uncertainty.escalate` | HIGH or CRITICAL level | `step_id`, `level`, `cumulative_confidence`, `irreversible` |
 
 ```python
-from nexus.observability.tracer import NexusTracer
+from grampus.observability.tracer import GrampusTracer
 
-tracer = NexusTracer(service_name="my-agent", otlp_endpoint="http://localhost:4317")
+tracer = GrampusTracer(service_name="my-agent", otlp_endpoint="http://localhost:4317")
 monitor = UncertaintyMonitor(policy=policy, tracer=tracer)
 ```
 

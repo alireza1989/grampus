@@ -1,4 +1,4 @@
-# Nexus — Production-Grade Agentic AI Framework
+# Grampus — Production-Grade Agentic AI Framework
 
 ## What This Is
 Open-source agentic AI framework built on Dapr's distributed runtime. Provides agent intelligence (memory, orchestration, safety, observability, evaluation) while Dapr handles infrastructure (state, pub/sub, workflows, security, scaling). Goal: as simple as CrewAI to start, as powerful as LangGraph for production.
@@ -17,7 +17,7 @@ uv sync                           # Install deps
 uv run pytest                     # Run tests
 uv run pytest -x --tb=short       # Stop on first failure
 uv run ruff check . && uv run ruff format . && uv run mypy src/  # Full check
-dapr run --app-id nexus --app-port 8000 --resources-path ./dapr/components -- uv run python -m nexus
+dapr run --app-id grampus --app-port 8000 --resources-path ./dapr/components -- uv run python -m grampus
 ```
 
 ## Code Conventions
@@ -27,10 +27,10 @@ dapr run --app-id nexus --app-port 8000 --resources-path ./dapr/components -- uv
 - Google-style docstrings on all public classes/methods
 - structlog with JSON output — never print()
 - Absolute imports only, snake_case files, PascalCase classes
-- Tests mirror source: `src/nexus/memory/store.py` → `tests/memory/test_store.py`
+- Tests mirror source: `src/grampus/memory/store.py` → `tests/memory/test_store.py`
 - Max 50 lines per function. Decompose if longer.
 - No global mutable state. Dependency injection for everything.
-- Custom exceptions inherit from `NexusError` with machine-readable `code` field
+- Custom exceptions inherit from `GrampusError` with machine-readable `code` field
 
 ## Architecture (bottom → top)
 1. **Dapr Runtime** — state, pub/sub, workflows, actors, mTLS, OTEL

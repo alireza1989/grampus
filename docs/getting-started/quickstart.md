@@ -1,6 +1,6 @@
 # Quickstart
 
-Build and run your first Nexus agent in 5 minutes.
+Build and run your first Grampus agent in 5 minutes.
 
 ## What you'll build
 
@@ -11,7 +11,7 @@ A simple conversational agent powered by Claude that answers questions and repor
 ## Step 1 — Scaffold the project
 
 ```bash
-nexus init hello-agent
+grampus init hello-agent
 cd hello-agent
 ```
 
@@ -20,7 +20,7 @@ This creates the following structure:
 ```
 hello-agent/
 ├── agent.py              # Your agent code
-├── nexus.yaml            # Project configuration
+├── grampus.yaml            # Project configuration
 ├── docker-compose.yml    # Local infrastructure
 ├── dapr/
 │   └── components/       # Dapr component YAML files
@@ -31,10 +31,10 @@ hello-agent/
 
 ## Step 2 — Review the configuration
 
-Open `nexus.yaml`:
+Open `grampus.yaml`:
 
 ```yaml
-# nexus.yaml — project configuration
+# grampus.yaml — project configuration
 model:
   default_model: claude-sonnet-4-6       # LLM to use by default
   temperature: 0.0                        # Deterministic output
@@ -68,16 +68,16 @@ Replace the contents of `agent.py` with:
 import asyncio
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def create_runner() -> AgentRunner:
-    """Factory function called by `nexus run`."""
-    client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    """Factory function called by `grampus run`."""
+    client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
     registry = ToolRegistry()
     executor = ToolExecutor(registry)
     config = RunnerConfig(max_iterations=5, enable_memory=False)
@@ -85,7 +85,7 @@ def create_runner() -> AgentRunner:
 
 
 def create_agent_def() -> AgentDefinition:
-    """Agent blueprint called by `nexus run`."""
+    """Agent blueprint called by `grampus run`."""
     return AgentDefinition(
         name="hello",
         model="claude-sonnet-4-6",
@@ -124,13 +124,13 @@ docker compose up -d
 === "Single-shot mode"
 
     ```bash
-    nexus run agent.py --input "What is 2 + 2?"
+    grampus run agent.py --input "What is 2 + 2?"
     ```
 
 === "Interactive REPL"
 
     ```bash
-    nexus run agent.py
+    grampus run agent.py
     # > What is 2 + 2?
     # 2 + 2 equals 4.
     # > What about 3 * 7?
@@ -179,4 +179,4 @@ The `AgentRunner` ran one iteration of the ReAct loop: it sent your input to the
 
 - **[Single-agent guide →](../guides/single-agent.md)** — Add tools, memory, and safety to build a research agent
 - **[Memory guide →](../guides/memory.md)** — Persist knowledge across sessions
-- **[CLI reference →](../reference/cli.md)** — All `nexus` commands and flags
+- **[CLI reference →](../reference/cli.md)** — All `grampus` commands and flags

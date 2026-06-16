@@ -1,11 +1,11 @@
 # {{project_name}}
 
-A minimal Nexus agent using **{{model}}**.
+A minimal Grampus agent using **{{model}}**.
 
 ## Usage
 
 ```bash
-nexus run agent.py "What is the current price of gold?"
+grampus run agent.py "What is the current price of gold?"
 ```
 
 ## Configuration

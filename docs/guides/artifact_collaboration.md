@@ -23,7 +23,7 @@ Use standard `Crew` when:
 ## Quick start: research report
 
 ```python
-from nexus.orchestration.artifact import (
+from grampus.orchestration.artifact import (
     ArtifactCollaborator,
     ArtifactContentType,
     ArtifactCrew,
@@ -154,7 +154,7 @@ Three conflict types can occur during a write. The `resolution` field tells call
 | `DEPENDENCY_VERSION` | Writing before a dependency section is done | `retry` — wait for the dependency |
 
 ```python
-from nexus.core.errors import ArtifactConflictError
+from grampus.core.errors import ArtifactConflictError
 
 try:
     completed = await crew.run(artifact_id, task_description)
@@ -185,9 +185,9 @@ if not result.success:
 `artifact_node()` lets you integrate a single-section artifact write into a `Graph` pipeline:
 
 ```python
-from nexus.orchestration.artifact import ArtifactStore, ArtifactCollaborator
-from nexus.orchestration.nodes import artifact_node, human_node, conditional_node
-from nexus.orchestration.graph import Graph
+from grampus.orchestration.artifact import ArtifactStore, ArtifactCollaborator
+from grampus.orchestration.nodes import artifact_node, human_node, conditional_node
+from grampus.orchestration.graph import Graph
 
 # Each node claims, writes, and releases one section
 background_node = artifact_node(store, collaborator_1, section_id="background")

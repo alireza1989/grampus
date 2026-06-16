@@ -1,6 +1,6 @@
 # Long-Horizon Planning
 
-Long-Horizon Planning (Phase E34) lets a Nexus agent break a complex, multi-step task into a structured DAG of subgoals, execute them — in parallel where possible — and automatically recover from failures without restarting from scratch. Use it when a task requires more than 4–5 tool calls, when subgoal dependencies matter for correctness, or when you need confident progress tracking across long-running work.
+Long-Horizon Planning (Phase E34) lets a Grampus agent break a complex, multi-step task into a structured DAG of subgoals, execute them — in parallel where possible — and automatically recover from failures without restarting from scratch. Use it when a task requires more than 4–5 tool calls, when subgoal dependencies matter for correctness, or when you need confident progress tracking across long-running work.
 
 ---
 
@@ -22,7 +22,7 @@ The runner automatically detects simple tasks and delegates directly to the unde
 ## Prerequisites
 
 ```bash
-pip install "nexus-ai[anthropic]"   # or openai
+pip install "grampus-ai[anthropic]"   # or openai
 ```
 
 No additional dependencies — planning uses only the LLM client you already configure.
@@ -33,10 +33,10 @@ No additional dependencies — planning uses only the LLM client you already con
 
 ```python
 import asyncio
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration import AgentRunner, PlanningRunner, PlanningConfig
-from nexus.tools.executor import ToolExecutor
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration import AgentRunner, PlanningRunner, PlanningConfig
+from grampus.tools.executor import ToolExecutor
 
 async def main():
     client = AnthropicClient(api_key="...")
@@ -216,7 +216,7 @@ If `max_replans` is reached, `PlanningError(code="MAX_REPLANS_EXCEEDED")` is rai
 Wrap `PlanningRunner` as a graph node for composable multi-step pipelines:
 
 ```python
-from nexus.orchestration import Graph, planning_node, human_node
+from grampus.orchestration import Graph, planning_node, human_node
 
 handler = planning_node(
     planning_runner=planner,
@@ -273,7 +273,7 @@ For a 6-subgoal plan with no replanning and lookahead enabled: roughly 14 LLM ca
 Wire in a `CostTracker` to get a full accounting:
 
 ```python
-from nexus.orchestration import CostTracker
+from grampus.orchestration import CostTracker
 
 tracker = CostTracker(agent_id="research-agent", session_id="s1", budget_usd=0.50)
 planner = PlanningRunner(agent_runner, client, model_id, cost_tracker=tracker)

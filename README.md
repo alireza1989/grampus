@@ -1,24 +1,24 @@
-# Nexus — Production-Grade Agentic AI Framework
+# Grampus — Production-Grade Agentic AI Framework
 
 <p align="center">
-  <img src="docs/assets/logo.png" alt="Nexus" width="120"/>
+  <img src="docs/assets/logo.png" alt="Grampus" width="120"/>
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/nexus-ai/"><img src="https://img.shields.io/pypi/v/nexus-ai" alt="PyPI"/></a>
-  <a href="https://pypi.org/project/nexus-ai/"><img src="https://img.shields.io/pypi/pyversions/nexus-ai" alt="Python"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/nexus-ai/nexus-agentic-platform" alt="License"/></a>
-  <a href="https://github.com/nexus-ai/nexus-agentic-platform/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/nexus-ai/nexus-agentic-platform/ci.yml" alt="CI"/></a>
-  <a href="https://codecov.io/gh/nexus-ai/nexus-agentic-platform"><img src="https://img.shields.io/codecov/c/github/nexus-ai/nexus-agentic-platform" alt="Coverage"/></a>
+  <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/v/grampus-ai" alt="PyPI"/></a>
+  <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/pyversions/grampus-ai" alt="Python"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/grampus-ai/grampus-agentic-platform" alt="License"/></a>
+  <a href="https://github.com/grampus-ai/grampus-agentic-platform/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/grampus-ai/grampus-agentic-platform/ci.yml" alt="CI"/></a>
+  <a href="https://codecov.io/gh/grampus-ai/grampus-agentic-platform"><img src="https://img.shields.io/codecov/c/github/grampus-ai/grampus-agentic-platform" alt="Coverage"/></a>
 </p>
 
 > As simple as CrewAI to start. As powerful as LangGraph for production.
 
-Nexus is an open-source agentic AI framework built on [Dapr](https://dapr.io/)'s distributed runtime. It provides everything agents need to be production-ready — persistent memory, orchestration, safety guardrails, and full observability — while Dapr handles the hard infrastructure problems: durable state, pub/sub messaging, distributed locks, mTLS, and workflow checkpointing.
+Grampus is an open-source agentic AI framework built on [Dapr](https://dapr.io/)'s distributed runtime. It provides everything agents need to be production-ready — persistent memory, orchestration, safety guardrails, and full observability — while Dapr handles the hard infrastructure problems: durable state, pub/sub messaging, distributed locks, mTLS, and workflow checkpointing.
 
 ---
 
-## Why Nexus
+## Why Grampus
 
 - **Production memory architecture.** Four complementary memory types (working, episodic, semantic, procedural) with SHA-256 provenance tracking, trust scoring, and injection detection. Memory poisoning attacks are blocked at write time, not detected after the fact.
 - **Built-in safety, not bolted on.** A multi-layer safety pipeline intercepts every LLM call, tool call, and memory write. Prompt injection detection, PII redaction, per-agent action boundaries, and configurable YAML policies ship in the box.
@@ -39,13 +39,13 @@ Nexus is an open-source agentic AI framework built on [Dapr](https://dapr.io/)'s
 | 📡 | **OTEL observability** | Six custom span types with model, token, cost, and duration attributes. Prometheus metrics endpoint. Immutable event log. Anomaly detection |
 | 📦 | **Sandboxed tool execution** | Docker container sandbox with resource limits and network isolation. Subprocess fallback for development. LLM-generated Python executes safely |
 | 🔌 | **MCP protocol support** | JSON-RPC 2.0 MCP client discovers and invokes any MCP-compatible tool server. External tool results tagged with provenance |
-| ⚡ | **CLI developer experience** | `nexus init` scaffolds a runnable project in under 10 seconds. `nexus dev` launches everything with hot-reload, live cost display, and trace streaming |
+| ⚡ | **CLI developer experience** | `grampus init` scaffolds a runnable project in under 10 seconds. `grampus dev` launches everything with hot-reload, live cost display, and trace streaming |
 
 ---
 
 ## Architecture
 
-Nexus is organized in nine layers, each building on the one below it:
+Grampus is organized in nine layers, each building on the one below it:
 
 ```mermaid
 graph TD
@@ -69,11 +69,11 @@ graph TD
 **Prerequisites:** Python 3.12+, Docker, [uv](https://docs.astral.sh/uv/)
 
 ```bash
-# Install Nexus
-pip install nexus-ai[anthropic]
+# Install Grampus
+pip install grampus-ai[anthropic]
 
 # Scaffold a new project
-nexus init hello-agent
+grampus init hello-agent
 cd hello-agent
 
 # Start local infrastructure (Dapr + PostgreSQL + Redis)
@@ -86,15 +86,15 @@ Write your agent in `agent.py`:
 import asyncio
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def create_runner() -> AgentRunner:
-    client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
     registry = ToolRegistry()
 
     # Register a tool with the decorator API
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
 ```bash
 # Run the agent
-nexus run agent.py --input "What's the weather in Tokyo?"
+grampus run agent.py --input "What's the weather in Tokyo?"
 # Output: The current weather in Tokyo is sunny with a temperature of 22°C.
 # Cost:   $0.000021
 ```
@@ -142,22 +142,22 @@ nexus run agent.py --input "What's the weather in Tokyo?"
 
 ```bash
 # Core framework
-pip install nexus-ai
+pip install grampus-ai
 
 # With Anthropic support (Claude)
-pip install nexus-ai[anthropic]
+pip install grampus-ai[anthropic]
 
 # With OpenAI support (GPT-4o, o1)
-pip install nexus-ai[openai]
+pip install grampus-ai[openai]
 
 # Both providers
-pip install nexus-ai[all]
+pip install grampus-ai[all]
 ```
 
 **Using uv (recommended):**
 
 ```bash
-uv add nexus-ai[anthropic]
+uv add grampus-ai[anthropic]
 ```
 
 Requires Python 3.12 or 3.13. Dapr 1.17+ and Docker are required for memory persistence and sandboxed tool execution.
@@ -168,12 +168,12 @@ Requires Python 3.12 or 3.13. Dapr 1.17+ and Docker are required for memory pers
 
 | Command | Description |
 |---|---|
-| `nexus init <name>` | Scaffold a new agent project with infrastructure, config, and example code |
-| `nexus run <agent.py>` | Run an agent in interactive REPL mode or single-shot with `--input` |
-| `nexus eval <suite.py>` | Execute an evaluation suite; exit non-zero if pass rate falls below `--fail-under` |
-| `nexus memory inspect <agent_id>` | Display an agent's current memory state across all four memory types |
-| `nexus cost` | Show token usage and cost summary for recent sessions |
-| `nexus dev` | Start everything in watch mode with hot-reload, live cost tracking, and trace streaming |
+| `grampus init <name>` | Scaffold a new agent project with infrastructure, config, and example code |
+| `grampus run <agent.py>` | Run an agent in interactive REPL mode or single-shot with `--input` |
+| `grampus eval <suite.py>` | Execute an evaluation suite; exit non-zero if pass rate falls below `--fail-under` |
+| `grampus memory inspect <agent_id>` | Display an agent's current memory state across all four memory types |
+| `grampus cost` | Show token usage and cost summary for recent sessions |
+| `grampus dev` | Start everything in watch mode with hot-reload, live cost tracking, and trace streaming |
 
 All commands support `--help`.
 
@@ -181,30 +181,30 @@ All commands support `--help`.
 
 ## Documentation
 
-Full documentation is at **[nexus-ai.dev](https://nexus-ai.dev)**:
+Full documentation is at **[grampus-ai.dev](https://grampus-ai.dev)**:
 
-- [Getting Started](https://nexus-ai.dev/getting-started/quickstart/) — 5-minute quickstart
-- [Single-Agent Guide](https://nexus-ai.dev/guides/single-agent/) — Tools, memory, and safety
-- [Multi-Agent Crews](https://nexus-ai.dev/guides/multi-agent-crew/) — Parallel and hierarchical coordination
-- [Memory Guide](https://nexus-ai.dev/guides/memory/) — Cross-session persistence and retrieval
-- [Safety Guide](https://nexus-ai.dev/guides/safety/) — Injection detection, PII redaction, policies
-- [Evaluation Guide](https://nexus-ai.dev/guides/evaluation/) — Testing agent behavior
-- [Observability Guide](https://nexus-ai.dev/guides/observability/) — OTEL traces, metrics, event log
-- [Deployment Guide](https://nexus-ai.dev/guides/deployment/) — Docker and Kubernetes
+- [Getting Started](https://grampus-ai.dev/getting-started/quickstart/) — 5-minute quickstart
+- [Single-Agent Guide](https://grampus-ai.dev/guides/single-agent/) — Tools, memory, and safety
+- [Multi-Agent Crews](https://grampus-ai.dev/guides/multi-agent-crew/) — Parallel and hierarchical coordination
+- [Memory Guide](https://grampus-ai.dev/guides/memory/) — Cross-session persistence and retrieval
+- [Safety Guide](https://grampus-ai.dev/guides/safety/) — Injection detection, PII redaction, policies
+- [Evaluation Guide](https://grampus-ai.dev/guides/evaluation/) — Testing agent behavior
+- [Observability Guide](https://grampus-ai.dev/guides/observability/) — OTEL traces, metrics, event log
+- [Deployment Guide](https://grampus-ai.dev/guides/deployment/) — Docker and Kubernetes
 
 ---
 
 ## Contributing
 
-We welcome contributions. Nexus is built with strict TDD — every change begins with a failing test.
+We welcome contributions. Grampus is built with strict TDD — every change begins with a failing test.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code conventions, the TDD requirement, conventional commit format, and guides for extending each layer of the framework.
 
 Quick start for contributors:
 
 ```bash
-git clone https://github.com/nexus-ai/nexus-agentic-platform
-cd nexus-agentic-platform
+git clone https://github.com/grampus-ai/grampus-agentic-platform
+cd grampus-agentic-platform
 uv sync
 docker compose up -d
 uv run pytest
@@ -214,16 +214,16 @@ uv run pytest
 
 ## License
 
-Nexus is released under the [MIT License](LICENSE).
+Grampus is released under the [MIT License](LICENSE).
 
 ---
 
 ## Acknowledgements
 
-Nexus stands on the shoulders of:
+Grampus stands on the shoulders of:
 
-- **[Dapr](https://dapr.io/)** — the distributed application runtime that powers Nexus's infrastructure layer
+- **[Dapr](https://dapr.io/)** — the distributed application runtime that powers Grampus's infrastructure layer
 - **[Anthropic](https://www.anthropic.com/)** — for Claude and for advancing research into safe, capable AI systems
-- **[Model Context Protocol](https://modelcontextprotocol.io/)** — the open standard for tool integration that Nexus implements
+- **[Model Context Protocol](https://modelcontextprotocol.io/)** — the open standard for tool integration that Grampus implements
 - **[pgvector](https://github.com/pgvector/pgvector)** — PostgreSQL extension enabling vector similarity search without a separate database
 - **[Pydantic](https://docs.pydantic.dev/)**, **[structlog](https://www.structlog.org/)**, **[OpenTelemetry](https://opentelemetry.io/)** — foundational libraries throughout the framework

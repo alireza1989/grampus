@@ -28,8 +28,8 @@ Eval suites catch all of these.
 ## EvalCase structure
 
 ```python
-from nexus.evaluation.suite import EvalCase
-from nexus.evaluation.assertions import contains, tool_was_called, max_cost
+from grampus.evaluation.suite import EvalCase
+from grampus.evaluation.assertions import contains, tool_was_called, max_cost
 
 case = EvalCase(
     name="research_uses_search",
@@ -57,7 +57,7 @@ case = EvalCase(
 ## EvalSuite
 
 ```python
-from nexus.evaluation.suite import EvalSuite
+from grampus.evaluation.suite import EvalSuite
 
 suite = EvalSuite(
     name="research-agent-suite",
@@ -103,7 +103,7 @@ for case_result in result.case_results:
 **`contains(expected, *, case_sensitive=True)`**
 
 ```python
-from nexus.evaluation.assertions import contains
+from grampus.evaluation.assertions import contains
 
 contains("Brasília")                           # output must contain "Brasília"
 contains("brasília", case_sensitive=False)     # case-insensitive match
@@ -112,7 +112,7 @@ contains("brasília", case_sensitive=False)     # case-insensitive match
 **`not_contains(forbidden, *, case_sensitive=True)`**
 
 ```python
-from nexus.evaluation.assertions import not_contains
+from grampus.evaluation.assertions import not_contains
 
 not_contains("I don't know")     # agent must not say this
 not_contains("Error")
@@ -121,7 +121,7 @@ not_contains("Error")
 **`matches_regex(pattern)`**
 
 ```python
-from nexus.evaluation.assertions import matches_regex
+from grampus.evaluation.assertions import matches_regex
 
 matches_regex(r"\d{4}-\d{2}-\d{2}")     # output contains a date
 matches_regex(r"https?://\S+")           # output contains a URL
@@ -130,7 +130,7 @@ matches_regex(r"https?://\S+")           # output contains a URL
 **`output_length(*, min_chars=None, max_chars=None)`**
 
 ```python
-from nexus.evaluation.assertions import output_length
+from grampus.evaluation.assertions import output_length
 
 output_length(min_chars=100)             # at least 100 chars
 output_length(max_chars=2000)            # at most 2000 chars
@@ -144,7 +144,7 @@ output_length(min_chars=50, max_chars=500)
 **`tool_was_called(tool_name)`**
 
 ```python
-from nexus.evaluation.assertions import tool_was_called
+from grampus.evaluation.assertions import tool_was_called
 
 tool_was_called("web_search")       # web_search must have been called
 ```
@@ -152,7 +152,7 @@ tool_was_called("web_search")       # web_search must have been called
 **`tool_not_called(tool_name)`**
 
 ```python
-from nexus.evaluation.assertions import tool_not_called
+from grampus.evaluation.assertions import tool_not_called
 
 tool_not_called("delete_file")      # delete_file must NOT have been called
 ```
@@ -160,7 +160,7 @@ tool_not_called("delete_file")      # delete_file must NOT have been called
 **`tool_call_count(*, min_calls=None, max_calls=None)`**
 
 ```python
-from nexus.evaluation.assertions import tool_call_count
+from grampus.evaluation.assertions import tool_call_count
 
 tool_call_count(min_calls=1)             # at least one tool call
 tool_call_count(max_calls=5)             # no more than 5 tool calls
@@ -174,7 +174,7 @@ tool_call_count(min_calls=2, max_calls=4)
 **`json_schema_valid(schema)`**
 
 ```python
-from nexus.evaluation.assertions import json_schema_valid
+from grampus.evaluation.assertions import json_schema_valid
 
 json_schema_valid({
     "type": "object",
@@ -189,8 +189,8 @@ json_schema_valid({
 **`status_is(expected_status)`**
 
 ```python
-from nexus.core.types import AgentStatus
-from nexus.evaluation.assertions import status_is
+from grampus.core.types import AgentStatus
+from grampus.evaluation.assertions import status_is
 
 status_is(AgentStatus.COMPLETED)    # agent must not have failed
 ```
@@ -202,7 +202,7 @@ status_is(AgentStatus.COMPLETED)    # agent must not have failed
 **`max_cost(limit_usd)`**
 
 ```python
-from nexus.evaluation.assertions import max_cost
+from grampus.evaluation.assertions import max_cost
 
 max_cost(0.10)      # must cost less than $0.10
 ```
@@ -210,7 +210,7 @@ max_cost(0.10)      # must cost less than $0.10
 **`max_duration(limit_seconds)`**
 
 ```python
-from nexus.evaluation.assertions import max_duration
+from grampus.evaluation.assertions import max_duration
 
 max_duration(30.0)  # must complete in under 30 seconds
 ```
@@ -218,7 +218,7 @@ max_duration(30.0)  # must complete in under 30 seconds
 **`max_steps(limit)`**
 
 ```python
-from nexus.evaluation.assertions import max_steps
+from grampus.evaluation.assertions import max_steps
 
 max_steps(5)        # agent must complete in 5 or fewer iterations
 ```
@@ -232,7 +232,7 @@ max_steps(5)        # agent must complete in 5 or fewer iterations
 Use this when exact string matching is too brittle:
 
 ```python
-from nexus.evaluation.assertions import semantic_similarity
+from grampus.evaluation.assertions import semantic_similarity
 
 semantic_similarity(
     expected="Brasília is the capital of Brazil, founded in 1960.",
@@ -246,7 +246,7 @@ semantic_similarity(
 Ask a second LLM to score the output against free-text criteria:
 
 ```python
-from nexus.evaluation.assertions import llm_judge
+from grampus.evaluation.assertions import llm_judge
 
 llm_judge(
     criteria=(
@@ -265,7 +265,7 @@ llm_judge(
 **`no_pii(pii_types=None)`**
 
 ```python
-from nexus.evaluation.assertions import no_pii
+from grampus.evaluation.assertions import no_pii
 
 no_pii()                              # no PII of any type in output
 no_pii(pii_types=["email", "phone"])  # no email or phone in output
@@ -274,7 +274,7 @@ no_pii(pii_types=["email", "phone"])  # no email or phone in output
 **`no_injection_patterns()`**
 
 ```python
-from nexus.evaluation.assertions import no_injection_patterns
+from grampus.evaluation.assertions import no_injection_patterns
 
 no_injection_patterns()    # output contains no prompt injection patterns
 ```
@@ -284,7 +284,7 @@ no_injection_patterns()    # output contains no prompt injection patterns
 ## Prompt version management
 
 ```python
-from nexus.evaluation.prompt_versions import PromptVersionManager
+from grampus.evaluation.prompt_versions import PromptVersionManager
 
 manager = PromptVersionManager(state_store=state_store)
 
@@ -325,7 +325,7 @@ await manager.set_active(agent_name="research-agent", version="v1")
 Pin a baseline score and detect regressions automatically:
 
 ```python
-from nexus.evaluation.baseline import QualityBaseline
+from grampus.evaluation.baseline import QualityBaseline
 
 baseline = QualityBaseline(state_store=state_store, agent_name="research-agent")
 
@@ -353,7 +353,7 @@ else:
 === "Text (default)"
 
     ```python
-    from nexus.evaluation.reporter import TextReporter
+    from grampus.evaluation.reporter import TextReporter
 
     reporter = TextReporter()
     reporter.report(result)     # prints to stdout
@@ -362,7 +362,7 @@ else:
 === "JSON"
 
     ```python
-    from nexus.evaluation.reporter import JSONReporter
+    from grampus.evaluation.reporter import JSONReporter
 
     reporter = JSONReporter()
     json_output = reporter.render(result)
@@ -373,7 +373,7 @@ else:
 === "JUnit XML (CI)"
 
     ```python
-    from nexus.evaluation.reporter import JUnitReporter
+    from grampus.evaluation.reporter import JUnitReporter
 
     reporter = JUnitReporter()
     xml_output = reporter.render(result)
@@ -390,7 +390,7 @@ Standard eval assertions test a completed `ExecutionResult`. Streaming eval asse
 ```python
 import asyncio
 
-from nexus.evaluation.streaming import (
+from grampus.evaluation.streaming import (
     StreamingEvalCase,
     StreamingEvalSuite,
     chunk_count_between,
@@ -452,7 +452,7 @@ Gate deployments on eval pass rate:
 
 ```bash
 # Fail the pipeline if pass rate drops below 90%
-nexus eval eval_suite.py --format junit --output results.xml --fail-under 0.9
+grampus eval eval_suite.py --format junit --output results.xml --fail-under 0.9
 echo $?   # 0 if passed, 1 if below threshold
 ```
 
@@ -460,7 +460,7 @@ In GitHub Actions:
 
 ```yaml
 - name: Run eval suite
-  run: nexus eval tests/eval_suite.py --format junit --output results.xml --fail-under 0.9
+  run: grampus eval tests/eval_suite.py --format junit --output results.xml --fail-under 0.9
 
 - name: Publish test results
   uses: EnricoMi/publish-unit-test-result-action@v2

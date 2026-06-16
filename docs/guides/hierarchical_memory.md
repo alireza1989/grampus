@@ -70,8 +70,8 @@ When GRAPH retrieval returns an empty result (no graph built yet), the router fa
 ## Quick Start
 
 ```python
-from nexus.memory.graph import GraphBuilder, SemanticConsolidator, GraphRetriever
-from nexus.memory.lifecycle import LifecycleTierManager, AdaptiveRetriever
+from grampus.memory.graph import GraphBuilder, SemanticConsolidator, GraphRetriever
+from grampus.memory.lifecycle import LifecycleTierManager, AdaptiveRetriever
 
 graph_builder = GraphBuilder(embedding_service=embedding_svc)
 consolidator = SemanticConsolidator(

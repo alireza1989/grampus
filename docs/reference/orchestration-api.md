@@ -7,7 +7,7 @@
 End-to-end allocation pipeline: capability filter → bid solicitation → scoring → award.
 
 ```python
-from nexus.orchestration.market import (
+from grampus.orchestration.market import (
     MarketAllocator, CapabilityRegistry, TaskBoard,
     BidScorer, ReputationTracker,
 )
@@ -22,15 +22,15 @@ allocator = MarketAllocator(
     board=board,
     scorer=scorer,
     reputation=reputation,
-    model_client=client,   # any Nexus ModelClient; used for bid solicitation
-    tracer=None,           # optional NexusTracer; emits market.allocate / market.award spans
+    model_client=client,   # any Grampus ModelClient; used for bid solicitation
+    tracer=None,           # optional GrampusTracer; emits market.allocate / market.award spans
 )
 
 result = await allocator.allocate(spec)          # AllocationResult
 await allocator.report_outcome(outcome)          # updates board + reputation
 ```
 
-::: nexus.orchestration.market.allocator.MarketAllocator
+::: grampus.orchestration.market.allocator.MarketAllocator
     options:
       show_source: false
       members: [allocate, report_outcome]
@@ -40,7 +40,7 @@ await allocator.report_outcome(outcome)          # updates board + reputation
 Stores worker capability profiles with capability-first filtering (COALESCE, arXiv 2506.01900).
 
 ```python
-from nexus.orchestration.market import CapabilityRegistry, CapabilityProfile, AgentTier
+from grampus.orchestration.market import CapabilityRegistry, CapabilityProfile, AgentTier
 
 registry = CapabilityRegistry(max_candidates=5)   # default 5
 
@@ -61,7 +61,7 @@ capable = registry.filter_capable(
 )   # → list[CapabilityProfile], ranked by preferred matches, capped at max_candidates
 ```
 
-::: nexus.orchestration.market.registry.CapabilityRegistry
+::: grampus.orchestration.market.registry.CapabilityRegistry
     options:
       show_source: false
       members: [register, deregister, filter_capable, load_all, list_agents]
@@ -71,7 +71,7 @@ capable = registry.filter_capable(
 Durable task and bid store. Backed by Dapr state when a `state_store` is provided.
 
 ```python
-from nexus.orchestration.market import TaskBoard, TaskSpec, AllocationStatus
+from grampus.orchestration.market import TaskBoard, TaskSpec, AllocationStatus
 
 board = TaskBoard(state_store=None)   # in-memory; pass DaprStateStore for persistence
 
@@ -87,7 +87,7 @@ await board.mark_outcome(outcome)    # → COMPLETED or FAILED
 UCB-based per-agent reputation (DRF, arXiv 2509.05764). Persists to Dapr state.
 
 ```python
-from nexus.orchestration.market import ReputationTracker, TaskOutcome
+from grampus.orchestration.market import ReputationTracker, TaskOutcome
 
 tracker = ReputationTracker(state_store=None)
 
@@ -106,7 +106,7 @@ New agents always receive a positive exploration bonus.
 Composite scoring with calibration discount.
 
 ```python
-from nexus.orchestration.market import BidScorer, ReputationTracker
+from grampus.orchestration.market import BidScorer, ReputationTracker
 
 scorer = BidScorer(
     reputation_tracker=ReputationTracker(),
@@ -135,7 +135,7 @@ Bids with `calibrated_success < min_success_threshold` receive `final_score = -1
 `Crew` subclass with opt-in market allocation.
 
 ```python
-from nexus.orchestration.market import MarketCrew
+from grampus.orchestration.market import MarketCrew
 
 crew = MarketCrew(
     members=members,
@@ -157,7 +157,7 @@ result = await crew.run_task_with_market(
 result = await crew.run(initial_input="Summarise the latest AI papers.")
 ```
 
-::: nexus.orchestration.market.crew.MarketCrew
+::: grampus.orchestration.market.crew.MarketCrew
     options:
       show_source: false
       members: [run_task_with_market]
@@ -167,7 +167,7 @@ result = await crew.run(initial_input="Summarise the latest AI papers.")
 Graph node factory that runs market allocation as a graph step.
 
 ```python
-from nexus.orchestration.nodes import market_node
+from grampus.orchestration.nodes import market_node
 
 handler = market_node(
     allocator=allocator,
@@ -252,7 +252,7 @@ handler = market_node(
 #### AllocationStatus
 
 ```python
-from nexus.orchestration.market import AllocationStatus
+from grampus.orchestration.market import AllocationStatus
 
 AllocationStatus.PENDING    # task posted, no bids yet
 AllocationStatus.BIDDING    # bid solicitation in progress
@@ -294,7 +294,7 @@ See the [Market-Based Allocation guide](../guides/market-based-allocation.md) fo
 Top-level orchestrator for structured multi-step task execution.
 
 ```python
-from nexus.orchestration import PlanningRunner, PlanningConfig
+from grampus.orchestration import PlanningRunner, PlanningConfig
 
 planner = PlanningRunner(
     agent_runner=agent_runner,    # AgentRunner instance
@@ -308,12 +308,12 @@ planner = PlanningRunner(
         enable_parallel_subgoals=True,
     ),
     cost_tracker=None,   # optional CostTracker
-    tracer=None,         # optional NexusTracer or any span(name, **attrs) tracer
+    tracer=None,         # optional GrampusTracer or any span(name, **attrs) tracer
 )
 result = await planner.run(task, agent_def, tool_names=["web_search"], memory_context="")
 ```
 
-::: nexus.orchestration.planning.runner.PlanningRunner
+::: grampus.orchestration.planning.runner.PlanningRunner
     options:
       show_source: false
       members: [run]
@@ -336,7 +336,7 @@ result = await planner.run(task, agent_def, tool_names=["web_search"], memory_co
 ### Plan
 
 ```python
-from nexus.orchestration import Plan, SubGoal
+from grampus.orchestration import Plan, SubGoal
 
 plan = Plan(
     task="original task",
@@ -373,7 +373,7 @@ plan = Plan(
 ### SubGoalStatus
 
 ```python
-from nexus.orchestration import SubGoalStatus
+from grampus.orchestration import SubGoalStatus
 
 SubGoalStatus.PENDING     # not yet started
 SubGoalStatus.RUNNING     # currently executing
@@ -387,7 +387,7 @@ SubGoalStatus.SKIPPED     # skipped (e.g. dependency failed)
 Returned by `PostconditionVerifier.verify()` after each subgoal execution:
 
 ```python
-from nexus.orchestration import VerificationResult
+from grampus.orchestration import VerificationResult
 
 VerificationResult.PASS      # criterion clearly met
 VerificationResult.PARTIAL   # progress made; criterion not fully met (retry)
@@ -415,7 +415,7 @@ Returned by `PlanningRunner.run()`:
 Graph node factory wrapping a `PlanningRunner`:
 
 ```python
-from nexus.orchestration import planning_node, Graph, human_node
+from grampus.orchestration import planning_node, Graph, human_node
 
 handler = planning_node(
     planning_runner=planner,
@@ -453,17 +453,17 @@ See the [Long-Horizon Planning guide](../guides/long-horizon-planning.md) for fu
 ### DebateOrchestrator
 
 ```python
-from nexus.orchestration.debate import DebateOrchestrator, DebateConfig, DebaterConfig
+from grampus.orchestration.debate import DebateOrchestrator, DebateConfig, DebaterConfig
 
 orch = DebateOrchestrator(
     config=DebateConfig(...),
     cost_tracker=None,   # optional CostTracker
-    tracer=None,         # optional NexusTracer or any span(name, **attrs) tracer
+    tracer=None,         # optional GrampusTracer or any span(name, **attrs) tracer
 )
 result = await orch.run("question text")
 ```
 
-::: nexus.orchestration.debate.orchestrator.DebateOrchestrator
+::: grampus.orchestration.debate.orchestrator.DebateOrchestrator
     options:
       show_source: false
       members: [run]
@@ -471,7 +471,7 @@ result = await orch.run("question text")
 ### DebateConfig
 
 ```python
-from nexus.orchestration.debate import DebateConfig, AggregationStrategy
+from grampus.orchestration.debate import DebateConfig, AggregationStrategy
 
 cfg = DebateConfig(
     debaters=[...],                        # min 2 DebaterConfig entries
@@ -501,10 +501,10 @@ cfg = DebateConfig(
 ### DebaterConfig
 
 ```python
-from nexus.orchestration.debate import DebaterConfig
+from grampus.orchestration.debate import DebaterConfig
 
 cfg = DebaterConfig(
-    model_client=client,         # any Nexus ModelClient
+    model_client=client,         # any Grampus ModelClient
     model_id="claude-sonnet-4-6",
     temperature=0.7,
     role_hint="You are a skeptical devil's advocate.",   # optional persona
@@ -515,7 +515,7 @@ cfg = DebaterConfig(
 ### AggregationStrategy
 
 ```python
-from nexus.orchestration.debate import AggregationStrategy
+from grampus.orchestration.debate import AggregationStrategy
 
 AggregationStrategy.MAJORITY_VOTE   # largest Jaccard cluster, highest-confidence rep
 AggregationStrategy.WEIGHTED_VOTE   # clusters scored by debater.weight × confidence
@@ -546,7 +546,7 @@ Returned by `DebateOrchestrator.run()`:
 Graph node factory that wraps a `DebateOrchestrator`:
 
 ```python
-from nexus.orchestration import debate_node, Graph, human_node
+from grampus.orchestration import debate_node, Graph, human_node
 
 handler = debate_node(
     orchestrator,
@@ -581,7 +581,7 @@ message.metadata["debate_routing"]     # "debate" | "single_agent"
 Session-level uncertainty tracker implementing Dual-Process AUQ. Attach to `AgentRunner` via `uncertainty_monitor=monitor`.
 
 ```python
-from nexus.orchestration import UncertaintyMonitor, UncertaintyPolicy, UncertaintyEstimator
+from grampus.orchestration import UncertaintyMonitor, UncertaintyPolicy, UncertaintyEstimator
 
 policy = UncertaintyPolicy(
     low_threshold=0.80,
@@ -596,7 +596,7 @@ monitor = UncertaintyMonitor(policy=policy)
 runner = AgentRunner(client, executor, uncertainty_monitor=monitor)
 ```
 
-::: nexus.orchestration.uncertainty.monitor.UncertaintyMonitor
+::: grampus.orchestration.uncertainty.monitor.UncertaintyMonitor
     options:
       show_source: false
       members: [initialize, observe_llm_response, observe_tool_call, get_belief_state, summary_metadata, reset]
@@ -630,7 +630,7 @@ runner = AgentRunner(client, executor, uncertainty_monitor=monitor)
 ### UncertaintyLevel
 
 ```python
-from nexus.orchestration import UncertaintyLevel
+from grampus.orchestration import UncertaintyLevel
 
 UncertaintyLevel.LOW       # ≥ low_threshold
 UncertaintyLevel.MEDIUM    # ≥ medium_threshold
@@ -641,7 +641,7 @@ UncertaintyLevel.CRITICAL  # < high_threshold
 ### UncertaintyAction
 
 ```python
-from nexus.orchestration import UncertaintyAction
+from grampus.orchestration import UncertaintyAction
 
 UncertaintyAction.PROCEED            # run continues
 UncertaintyAction.PROCEED_WITH_LOG   # run continues; warning logged
@@ -671,7 +671,7 @@ Returned by `observe_llm_response()` and `observe_tool_call()`:
 Graph node factory for explicit uncertainty checkpoints:
 
 ```python
-from nexus.orchestration import uncertainty_guard_node, Graph, human_node
+from grampus.orchestration import uncertainty_guard_node, Graph, human_node
 
 handler = uncertainty_guard_node(
     monitor,
@@ -699,7 +699,7 @@ See the [Uncertainty Quantification guide](../guides/uncertainty.md) for full us
 
 The main agent execution loop implementing the ReAct (Reason+Act) pattern.
 
-::: nexus.orchestration.runner.AgentRunner
+::: grampus.orchestration.runner.AgentRunner
     options:
       show_source: false
       members: [run, resume, cost_summary]
@@ -709,7 +709,7 @@ The main agent execution loop implementing the ReAct (Reason+Act) pattern.
 ## RunnerConfig
 
 ```python
-from nexus.orchestration.runner import RunnerConfig
+from grampus.orchestration.runner import RunnerConfig
 
 config = RunnerConfig(
     max_iterations=10,      # max ReAct iterations before OrchestrationError
@@ -732,7 +732,7 @@ config = RunnerConfig(
 
 Multi-agent orchestration with sequential, parallel, and hierarchical patterns.
 
-::: nexus.orchestration.crew.Crew
+::: grampus.orchestration.crew.Crew
     options:
       show_source: false
       members: [run]
@@ -742,7 +742,7 @@ Multi-agent orchestration with sequential, parallel, and hierarchical patterns.
 ## CrewPattern
 
 ```python
-from nexus.orchestration.crew import CrewPattern
+from grampus.orchestration.crew import CrewPattern
 
 CrewPattern.SEQUENTIAL    # agents run one after another; outputs accumulate
 CrewPattern.PARALLEL      # agents run concurrently on the same input
@@ -754,7 +754,7 @@ CrewPattern.HIERARCHICAL  # first member (role="supervisor") delegates to worker
 ## CrewMember
 
 ```python
-from nexus.orchestration.crew import CrewMember
+from grampus.orchestration.crew import CrewMember
 
 member = CrewMember(
     agent_def=AgentDefinition(...),
@@ -782,24 +782,24 @@ class CrewResult:
 
 ## Graph engine
 
-::: nexus.orchestration.graph.Graph
+::: grampus.orchestration.graph.Graph
     options:
       show_source: false
       members: [add_node, add_edge, run]
 
-::: nexus.orchestration.nodes.llm_node
+::: grampus.orchestration.nodes.llm_node
     options:
       show_source: false
 
-::: nexus.orchestration.nodes.tool_node
+::: grampus.orchestration.nodes.tool_node
     options:
       show_source: false
 
-::: nexus.orchestration.nodes.conditional_node
+::: grampus.orchestration.nodes.conditional_node
     options:
       show_source: false
 
-::: nexus.orchestration.nodes.human_node
+::: grampus.orchestration.nodes.human_node
     options:
       show_source: false
 
@@ -807,7 +807,7 @@ class CrewResult:
 
 ## Model router
 
-::: nexus.orchestration.model_router.ModelRouter
+::: grampus.orchestration.model_router.ModelRouter
     options:
       show_source: false
       members: [route, register_model]
@@ -824,7 +824,7 @@ class CrewResult:
 
 ## Cost tracker
 
-::: nexus.orchestration.cost_tracker.CostTracker
+::: grampus.orchestration.cost_tracker.CostTracker
     options:
       show_source: false
       members: [record, summary, check_budget]
@@ -848,7 +848,7 @@ class CostSummary:
 
 Returned by `AgentRunner.run()`:
 
-::: nexus.core.types.ExecutionResult
+::: grampus.core.types.ExecutionResult
     options:
       show_source: false
       members: []
@@ -859,7 +859,7 @@ Returned by `AgentRunner.run()`:
 
 Blueprint passed to `AgentRunner.run()`:
 
-::: nexus.core.types.AgentDefinition
+::: grampus.core.types.AgentDefinition
     options:
       show_source: false
       members: []
@@ -870,7 +870,7 @@ Blueprint passed to `AgentRunner.run()`:
 
 Mutable runtime state maintained by the runner:
 
-::: nexus.core.types.AgentState
+::: grampus.core.types.AgentState
     options:
       show_source: false
       members: []

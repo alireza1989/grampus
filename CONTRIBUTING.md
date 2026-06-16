@@ -1,4 +1,4 @@
-# Contributing to Nexus
+# Contributing to Grampus
 
 Thank you for contributing. This document covers everything you need to go from zero to a merged pull request.
 
@@ -7,8 +7,8 @@ Thank you for contributing. This document covers everything you need to go from 
 ## Development setup
 
 ```bash
-git clone https://github.com/nexus-ai/nexus-agentic-platform
-cd nexus-agentic-platform
+git clone https://github.com/grampus-ai/grampus-agentic-platform
+cd grampus-agentic-platform
 uv sync                  # install all dependencies including dev extras
 docker compose up -d     # start PostgreSQL, Redis, and Dapr placement service
 uv run pytest            # verify your setup — all tests must pass before you start
@@ -40,10 +40,10 @@ These rules are enforced by ruff, mypy, and CI — violations block merge.
 - **Pydantic v2 for all public types** — no raw dicts crossing module boundaries
 - **Async-first** — all I/O is `async`/`await`; synchronous tool functions use `run_in_executor`
 - **structlog for all logging** — never `print()` or the standard `logging` module directly
-- **Absolute imports only** — `from nexus.core.types import Message`, not relative paths
+- **Absolute imports only** — `from grampus.core.types import Message`, not relative paths
 - **Max 50 lines per function** — decompose longer functions; no exceptions
 - **No global mutable state** — inject dependencies, don't reach for globals
-- **Custom exceptions inherit `NexusError`** — with a machine-readable `code` field
+- **Custom exceptions inherit `GrampusError`** — with a machine-readable `code` field
 
 Run the full check before every commit:
 
@@ -62,7 +62,7 @@ uv run ruff check . && uv run ruff format . && uv run mypy src/
 3. Implement the minimum code to make it pass
 4. Refactor; test must still pass
 
-Tests live in `tests/` mirroring the source tree: `src/nexus/memory/store.py` → `tests/memory/test_store.py`. Property-based tests using Hypothesis are encouraged for any function that processes external input.
+Tests live in `tests/` mirroring the source tree: `src/grampus/memory/store.py` → `tests/memory/test_store.py`. Property-based tests using Hypothesis are encouraged for any function that processes external input.
 
 ---
 
@@ -86,7 +86,7 @@ Examples:
 feat(memory): add temporal decay to episodic retrieval scoring
 fix(safety): correct PII regex for international phone formats
 test(orchestration): add hypothesis tests for cost tracker budget enforcement
-docs(cli): document --fail-under flag for nexus eval
+docs(cli): document --fail-under flag for grampus eval
 ```
 
 ---
@@ -105,10 +105,10 @@ docs(cli): document --fail-under flag for nexus eval
 
 ## Adding a new memory type
 
-1. Add the record model to `src/nexus/memory/types.py`
-2. Implement the store class in `src/nexus/memory/<name>.py` — it must use `DaprStateStore` for persistence
-3. Add a retriever in `src/nexus/memory/<name>_retriever.py`
-4. Expose it through `MemoryManager` in `src/nexus/memory/manager.py` — add a method to `remember()`, `recall()`, and `forget()`
+1. Add the record model to `src/grampus/memory/types.py`
+2. Implement the store class in `src/grampus/memory/<name>.py` — it must use `DaprStateStore` for persistence
+3. Add a retriever in `src/grampus/memory/<name>_retriever.py`
+4. Expose it through `MemoryManager` in `src/grampus/memory/manager.py` — add a method to `remember()`, `recall()`, and `forget()`
 5. All writes must go through `MemoryValidator` and `ProvenanceTracker`
 6. Add tests in `tests/memory/test_<name>.py`
 
@@ -117,8 +117,8 @@ docs(cli): document --fail-under flag for nexus eval
 ## Adding a new tool
 
 1. Use the decorator API in your agent code — no framework changes needed for simple tools
-2. For tools that should ship with Nexus, add them to `src/nexus/tools/builtins/`
-3. Register in `src/nexus/tools/registry.py`
+2. For tools that should ship with Grampus, add them to `src/grampus/tools/builtins/`
+3. Register in `src/grampus/tools/registry.py`
 4. If the tool executes code or calls external systems, it must run through `SandboxManager`
 5. Add tests in `tests/tools/test_<name>.py` — include a test that verifies sandbox isolation
 
@@ -126,7 +126,7 @@ docs(cli): document --fail-under flag for nexus eval
 
 ## Adding a new eval assertion
 
-1. Add the assertion class to `src/nexus/evaluation/assertions.py`
+1. Add the assertion class to `src/grampus/evaluation/assertions.py`
 2. Inherit from `Assertion` base class and implement `async evaluate(result) -> AssertionResult`
 3. Add the type to the `AssertionType` enum
 4. Write tests in `tests/evaluation/test_assertions.py` — include both passing and failing cases
@@ -135,8 +135,8 @@ docs(cli): document --fail-under flag for nexus eval
 
 ## Adding a new CLI command
 
-1. Create `src/nexus/cli/commands/<name>.py` with a Click command function
-2. Register the command in `src/nexus/cli/main.py`
+1. Create `src/grampus/cli/commands/<name>.py` with a Click command function
+2. Register the command in `src/grampus/cli/main.py`
 3. Add `--help` text to all options
 4. Write tests in `tests/cli/test_<name>.py` using Click's `CliRunner`
 

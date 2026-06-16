@@ -2,7 +2,7 @@
 
 ## What you'll learn
 
-- Why Nexus has five distinct memory types and when to use each
+- Why Grampus has five distinct memory types and when to use each
 - How to configure working memory, episodic retrieval, and semantic consolidation
 - How to use the `MemoryManager` unified interface
 - How memory security (provenance, trust, injection defense) works
@@ -31,9 +31,9 @@ The first four are scoped to an *agent*. User memory is scoped to a *user* and i
 Working memory holds the active conversation window. When it approaches the token limit, it auto-summarizes older turns.
 
 ```python
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.memory.summarizer import Summarizer
-from nexus.memory.working import WorkingMemory
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.memory.summarizer import Summarizer
+from grampus.memory.working import WorkingMemory
 
 client = AnthropicClient(api_key="...")
 summarizer = Summarizer(model_client=client, strategy="hybrid")
@@ -60,7 +60,7 @@ summarizer = Summarizer(model_client=client, strategy="hybrid", recent_keep=20)
 ### Add and retrieve messages
 
 ```python
-from nexus.core.types import Message, Role
+from grampus.core.types import Message, Role
 
 await working.add_message(Message(role=Role.USER, content="Hello!"))
 await working.add_message(Message(role=Role.ASSISTANT, content="Hi there!"))
@@ -77,9 +77,9 @@ print(f"Token count: {working.current_token_count}")
 Episodic memory persists events across sessions. Each record has a timestamp, embedding, trust score, and importance score.
 
 ```python
-from nexus.memory.embeddings import EmbeddingService
-from nexus.memory.episodic import EpisodicMemory
-from nexus.memory.types import EpisodicRecord
+from grampus.memory.embeddings import EmbeddingService
+from grampus.memory.episodic import EpisodicMemory
+from grampus.memory.types import EpisodicRecord
 
 embedding_service = EmbeddingService(model_client=client)
 episodic = EpisodicMemory(state_store=state_store, embedding_service=embedding_service)
@@ -105,7 +105,7 @@ score = α × recency + β × similarity + γ × importance
 ```
 
 ```python
-from nexus.memory.retriever import EpisodicRetriever
+from grampus.memory.retriever import EpisodicRetriever
 
 retriever = EpisodicRetriever(
     episodic_memory=episodic,
@@ -134,8 +134,8 @@ for r in results:
 Semantic memory stores Subject–Predicate–Object facts extracted from episodic records.
 
 ```python
-from nexus.memory.semantic import SemanticMemory
-from nexus.memory.types import SemanticFact
+from grampus.memory.semantic import SemanticMemory
+from grampus.memory.types import SemanticFact
 
 semantic = SemanticMemory(state_store=state_store, embedding_service=embedding_service)
 
@@ -156,7 +156,7 @@ for f in facts:
 
 ### Conflict resolution
 
-When a new fact conflicts with an existing one (same subject + predicate, different object), Nexus uses confidence-weighted replacement:
+When a new fact conflicts with an existing one (same subject + predicate, different object), Grampus uses confidence-weighted replacement:
 
 ```
 new_fact stored  if  new_confidence > existing_confidence * 0.9
@@ -171,8 +171,8 @@ This prevents noisy tool results from immediately overwriting established facts.
 Procedural memory stores reusable workflow templates.
 
 ```python
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.types import Procedure, ProcedureStep
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.types import Procedure, ProcedureStep
 
 procedural = ProceduralMemory(state_store=state_store)
 
@@ -214,7 +214,7 @@ matches = await procedural.search(
 In practice, you use `MemoryManager` rather than individual memory stores. It handles routing, provenance, and security automatically.
 
 ```python
-from nexus.memory.manager import MemoryManager
+from grampus.memory.manager import MemoryManager
 
 manager = MemoryManager(
     working_memory=working,
@@ -243,7 +243,7 @@ for fact in recalled.semantic:
     print(f"Fact: {fact.subject} {fact.predicate} {fact.object}")
 
 # Add to working memory
-from nexus.core.types import Message, Role
+from grampus.core.types import Message, Role
 await manager.add_message(Message(role=Role.USER, content="Hello"))
 messages = await manager.get_messages()
 
@@ -262,7 +262,7 @@ print(f"Extracted {consolidation_result.facts_created} new facts")
 The consolidation pipeline runs asynchronously in the background, extracting semantic facts from recent episodic records:
 
 ```python
-from nexus.memory.consolidation import ConsolidationPipeline
+from grampus.memory.consolidation import ConsolidationPipeline
 
 pipeline = ConsolidationPipeline(
     episodic_memory=episodic,
@@ -286,8 +286,8 @@ print(f"Facts skipped:  {result.facts_skipped}")
 Every memory write is validated and stamped with provenance. The `MemoryValidator` blocks suspicious writes before they reach the store:
 
 ```python
-from nexus.memory.provenance import ProvenanceTracker
-from nexus.memory.validator import MemoryValidator
+from grampus.memory.provenance import ProvenanceTracker
+from grampus.memory.validator import MemoryValidator
 
 validator = MemoryValidator(
     max_content_size_bytes=10_000,
@@ -316,7 +316,7 @@ When `detect_injection=True`, the validator blocks writes containing patterns li
 
 ## Inspecting memory via the web UI
 
-You can browse all memory entries visually at `/ui/memory/` in the Nexus web interface. The memory inspector provides a filter bar to narrow by agent ID, memory type, search text, and minimum trust score. Each row in the table shows the record's type, content preview, trust score (color-coded: green ≥0.8, yellow 0.5–0.8, red <0.5), provenance source, and creation timestamp. Click any row to open the detail panel with the full content and complete provenance metadata. Start the server with `nexus serve` and open `http://localhost:8000/ui/memory/` to access it.
+You can browse all memory entries visually at `/ui/memory/` in the Grampus web interface. The memory inspector provides a filter bar to narrow by agent ID, memory type, search text, and minimum trust score. Each row in the table shows the record's type, content preview, trust score (color-coded: green ≥0.8, yellow 0.5–0.8, red <0.5), provenance source, and creation timestamp. Click any row to open the detail panel with the full content and complete provenance metadata. Start the server with `grampus serve` and open `http://localhost:8000/ui/memory/` to access it.
 
 To delete individual entries from the UI, click the trash icon in the row's Actions column. You can also delete programmatically using `MemoryManager.forget(record_id)` or the REST API:
 

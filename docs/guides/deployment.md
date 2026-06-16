@@ -2,7 +2,7 @@
 
 ## What you'll learn
 
-- Local development with `nexus dev`
+- Local development with `grampus dev`
 - Single-machine production with Docker Compose
 - Kubernetes deployment with Dapr pod injection
 
@@ -10,26 +10,26 @@
 
 ## Local development
 
-The fastest way to get started is `nexus dev`, which starts everything and watches for file changes:
+The fastest way to get started is `grampus dev`, which starts everything and watches for file changes:
 
 ```bash
 cd my-agent
-nexus dev
+grampus dev
 ```
 
 This command:
 
-1. Validates `nexus.yaml`
+1. Validates `grampus.yaml`
 2. Starts the Dapr sidecar in the background
 3. Starts your agent with auto-reload on file changes
 4. Prints live cost and traces to the terminal
 
 ```
- Nexus dev mode
- Config: nexus.yaml
+ Grampus dev mode
+ Config: grampus.yaml
  Dapr sidecar: http://localhost:3500
  Agent port: 8000
- Watching: agent.py, nexus.yaml
+ Watching: agent.py, grampus.yaml
 
 [12:34:01] Agent started. Ready for input.
 [12:34:05] Run started | session=dev-001 | model=claude-sonnet-4-6
@@ -42,7 +42,7 @@ This command:
 
 ## Docker Compose (single-machine production)
 
-A complete `docker-compose.yml` for running a Nexus agent in production on a single machine:
+A complete `docker-compose.yml` for running a Grampus agent in production on a single machine:
 
 ```yaml
 # docker-compose.yml
@@ -53,14 +53,14 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: nexus
+      POSTGRES_USER: grampus
       POSTGRES_PASSWORD: nexus_secret
-      POSTGRES_DB: nexus
+      POSTGRES_DB: grampus
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      test: ["CMD-SHELL", "pg_isready -U grampus"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -92,22 +92,22 @@ services:
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
 
-  # ── Your Nexus agent ──────────────────────────────────────────────────────
+  # ── Your Grampus agent ──────────────────────────────────────────────────────
   agent:
     build: .
-    command: ["nexus", "run", "agent.py"]
+    command: ["grampus", "run", "agent.py"]
     environment:
-      NEXUS_MODEL__ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
-      NEXUS_DAPR__HOST: localhost
-      NEXUS_DAPR__PORT: "3500"
-      NEXUS_OBSERVABILITY__OTEL_ENDPOINT: "http://jaeger:4317"
+      GRAMPUS_MODEL__ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      GRAMPUS_DAPR__HOST: localhost
+      GRAMPUS_DAPR__PORT: "3500"
+      GRAMPUS_OBSERVABILITY__OTEL_ENDPOINT: "http://jaeger:4317"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nexus", "--version"]
+      test: ["CMD", "grampus", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -117,7 +117,7 @@ services:
     image: daprio/daprd:1.14
     command:
       - "./daprd"
-      - "--app-id=nexus-agent"
+      - "--app-id=grampus-agent"
       - "--app-port=8000"
       - "--dapr-http-port=3500"
       - "--dapr-grpc-port=50001"
@@ -181,37 +181,37 @@ Add Dapr annotations to your Pod spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nexus-agent
+  name: grampus-agent
   namespace: default
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nexus-agent
+      app: grampus-agent
   template:
     metadata:
       labels:
-        app: nexus-agent
+        app: grampus-agent
       annotations:
         dapr.io/enabled: "true"
-        dapr.io/app-id: "nexus-agent"
+        dapr.io/app-id: "grampus-agent"
         dapr.io/app-port: "8000"
-        dapr.io/config: "nexus-dapr-config"
+        dapr.io/config: "grampus-dapr-config"
         dapr.io/resources-path: "/dapr/components"
     spec:
       containers:
         - name: agent
-          image: your-registry/nexus-agent:latest
-          command: ["nexus", "run", "agent.py"]
+          image: your-registry/grampus-agent:latest
+          command: ["grampus", "run", "agent.py"]
           ports:
             - containerPort: 8000
           env:
-            - name: NEXUS_MODEL__ANTHROPIC_API_KEY
+            - name: GRAMPUS_MODEL__ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: nexus-secrets
+                  name: grampus-secrets
                   key: anthropic-api-key
-            - name: NEXUS_OBSERVABILITY__OTEL_ENDPOINT
+            - name: GRAMPUS_OBSERVABILITY__OTEL_ENDPOINT
               value: "http://otel-collector.monitoring:4317"
           readinessProbe:
             httpGet:
@@ -234,17 +234,17 @@ spec:
               cpu: "500m"
 ```
 
-### ConfigMap for nexus.yaml
+### ConfigMap for grampus.yaml
 
 ```yaml
-# nexus-config.yaml
+# grampus-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nexus-config
+  name: grampus-config
   namespace: default
 data:
-  nexus.yaml: |
+  grampus.yaml: |
     model:
       default_model: claude-sonnet-4-6
       temperature: 0.0
@@ -266,7 +266,7 @@ data:
 ### Secret for API keys
 
 ```bash
-kubectl create secret generic nexus-secrets \
+kubectl create secret generic grampus-secrets \
   --from-literal=anthropic-api-key="sk-ant-..." \
   --namespace default
 ```
@@ -274,16 +274,16 @@ kubectl create secret generic nexus-secrets \
 ### Horizontal pod autoscaling
 
 ```yaml
-# nexus-hpa.yaml
+# grampus-hpa.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: nexus-agent-hpa
+  name: grampus-agent-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: nexus-agent
+    name: grampus-agent
   minReplicas: 1
   maxReplicas: 10
   metrics:
@@ -298,13 +298,13 @@ spec:
 ### Deploy
 
 ```bash
-kubectl apply -f nexus-config.yaml
+kubectl apply -f grampus-config.yaml
 kubectl apply -f agent-deployment.yaml
-kubectl apply -f nexus-hpa.yaml
+kubectl apply -f grampus-hpa.yaml
 
 # Check status
-kubectl get pods -l app=nexus-agent
-kubectl logs -l app=nexus-agent -c agent --tail=50
+kubectl get pods -l app=grampus-agent
+kubectl logs -l app=grampus-agent -c agent --tail=50
 ```
 
 ### Dapr component configuration for Kubernetes
@@ -347,14 +347,14 @@ RUN uv sync --no-dev
 # Copy source
 COPY src/ src/
 COPY agent.py .
-COPY nexus.yaml .
+COPY grampus.yaml .
 
-# Install nexus
+# Install grampus-ai
 RUN uv pip install -e .
 
 EXPOSE 8000
 
-CMD ["nexus", "run", "agent.py"]
+CMD ["grampus", "run", "agent.py"]
 ```
 
 ---
@@ -363,4 +363,4 @@ CMD ["nexus", "run", "agent.py"]
 
 - **[Configuration reference →](../reference/config.md)** — All environment variables
 - **[Observability guide →](observability.md)** — Configure OTEL for Kubernetes
-- **[CLI reference →](../reference/cli.md)** — `nexus dev` and all deployment commands
+- **[CLI reference →](../reference/cli.md)** — `grampus dev` and all deployment commands

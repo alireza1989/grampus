@@ -13,7 +13,7 @@ The same ambiguity arises in counterfactual reasoning: "would the agent have suc
 had skipped the database lookup at step 4?" Standard logs cannot answer this. A structural
 causal model (SCM) populated from the agent's own reasoning can.
 
-Nexus provides a two-tier causal analysis layer. Tier 1 diagnoses failures from the event log
+Grampus provides a two-tier causal analysis layer. Tier 1 diagnoses failures from the event log
 with no LLM inference. Tier 2 builds a persistent SCM from LLM-labeled causal claims and
 answers intervention queries in pure Python. Both tiers integrate into `AgentRunner` as
 optional hooks — zero overhead when not configured.
@@ -23,7 +23,7 @@ optional hooks — zero overhead when not configured.
 ## Tier 1 — Root cause diagnosis
 
 `CausalTracer` reconstructs a causal graph from the Phase 9 event log (see `EventLog` in
-`src/nexus/observability/events.py`) and diagnoses root causes using three edge types:
+`src/grampus/observability/events.py`) and diagnoses root causes using three edge types:
 
 **SEQUENTIAL** — event B immediately follows event A in the same session (ordered by
 `step_index`). Every consecutive step pair gets a sequential edge. This captures the basic
@@ -85,7 +85,7 @@ result = await world_model.query_intervention(InterventionQuery(
 ```
 
 The `target_variable` and `outcome_variable` must be variable IDs (slugified descriptions).
-Use `nexus.causal.world_model._slugify("tool database lookup")` to convert a description to
+Use `grampus.causal.world_model._slugify("tool database lookup")` to convert a description to
 its slug form.
 
 ---
@@ -95,13 +95,13 @@ its slug form.
 Minimal working example with full F4 setup:
 
 ```python
-from nexus.causal import (
+from grampus.causal import (
     CausalTracer,
     CausalRelationExtractor,
     CausalWorldModel,
     InterventionQuery,
 )
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
 
 # Build the F4 components
 extractor = CausalRelationExtractor(model_client=model_client)
@@ -133,7 +133,7 @@ if diagnosis.root_causes:
     print(f"Composite score: {top.composite_score:.3f}")
 
 # Intervention query on the accumulated world model
-from nexus.causal.world_model import _slugify
+from grampus.causal.world_model import _slugify
 
 result = await world_model.query_intervention(InterventionQuery(
     natural_language="What if we had skipped the database lookup?",
@@ -173,15 +173,15 @@ For complex causal structures, the optional DoWhy backend provides more robust i
 Install the optional dependency:
 
 ```bash
-pip install nexus-ai[causal]
-# or: uv add "nexus-ai[causal]"
+pip install grampus-ai[causal]
+# or: uv add "grampus-ai[causal]"
 ```
 
 Then wrap `SimpleCausalInference` with a DoWhy-backed implementation:
 
 ```python
 import dowhy
-from nexus.causal.inference import SimpleCausalInference
+from grampus.causal.inference import SimpleCausalInference
 
 class DoWhyInference(SimpleCausalInference):
     def _compute_intervention(self, query):

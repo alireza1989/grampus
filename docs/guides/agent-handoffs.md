@@ -21,21 +21,21 @@ Agent handoffs let one agent explicitly transfer control to another mid-conversa
 import asyncio
 import os
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.handoff import (
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.handoff import (
     AgentRegistry,
     HandoffExecutor,
     HandoffPolicy,
     create_handoff_tool,
 )
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def make_client() -> AnthropicClient:
-    return AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    return AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
 
 
 # ── Build the billing specialist ────────────────────────────────────────────
@@ -106,7 +106,7 @@ asyncio.run(main())
 
 ## AgentCard and A2A discovery
 
-Every registered agent exposes an `AgentCard` — a machine-readable capability manifest compliant with the A2A (Agent-to-Agent) protocol v1.2. External frameworks can discover Nexus agents and invoke them without Nexus-specific code.
+Every registered agent exposes an `AgentCard` — a machine-readable capability manifest compliant with the A2A (Agent-to-Agent) protocol v1.2. External frameworks can discover Grampus agents and invoke them without Grampus-specific code.
 
 **Endpoints:**
 
@@ -130,7 +130,7 @@ Every registered agent exposes an `AgentCard` — a machine-readable capability 
 }
 ```
 
-This enables LangGraph agents, CrewAI agents, or any A2A-compatible framework to invoke your Nexus agent directly. See [ADR-010](../architecture/decisions.md) for the rationale behind A2A support.
+This enables LangGraph agents, CrewAI agents, or any A2A-compatible framework to invoke your Grampus agent directly. See [ADR-010](../architecture/decisions.md) for the rationale behind A2A support.
 
 ---
 
@@ -141,7 +141,7 @@ This enables LangGraph agents, CrewAI agents, or any A2A-compatible framework to
 `HandoffPolicy` controls what is allowed during a handoff:
 
 ```python
-from nexus.orchestration.handoff import HandoffPolicy
+from grampus.orchestration.handoff import HandoffPolicy
 
 policy = HandoffPolicy(
     max_depth=3,                         # stop after 3 hops to prevent loops
@@ -178,7 +178,7 @@ Every handoff produces structured events in the event log for full auditability:
 Query these events via the event log:
 
 ```python
-from nexus.observability.events import EventLog
+from grampus.observability.events import EventLog
 
 event_log = EventLog(state_store=state_store)
 events = await event_log.get_events(

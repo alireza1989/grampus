@@ -1,12 +1,12 @@
 # Concepts
 
-This page explains the mental models behind Nexus. Understanding these concepts will help you design agents that are reliable, safe, and observable.
+This page explains the mental models behind Grampus. Understanding these concepts will help you design agents that are reliable, safe, and observable.
 
 ---
 
 ## The 4 memory types
 
-Agents need to remember things at different timescales. Nexus provides four purpose-built memory stores:
+Agents need to remember things at different timescales. Grampus provides four purpose-built memory stores:
 
 ```mermaid
 graph LR
@@ -156,11 +156,11 @@ Security is built into the handoff layer: context passed to the target agent is 
 
 ## Dapr as infrastructure
 
-Nexus never writes to databases or message brokers directly. All persistence and messaging goes through the Dapr sidecar:
+Grampus never writes to databases or message brokers directly. All persistence and messaging goes through the Dapr sidecar:
 
 ```mermaid
 graph LR
-    Agent["Nexus Agent"] -->|"HTTP :3500"| Dapr["Dapr Sidecar"]
+    Agent["Grampus Agent"] -->|"HTTP :3500"| Dapr["Dapr Sidecar"]
     Dapr -->|"statestore-postgres"| PG["PostgreSQL + pgvector"]
     Dapr -->|"cache"| Redis["Redis"]
     Dapr -->|"pubsub-redis"| Events["Event bus"]

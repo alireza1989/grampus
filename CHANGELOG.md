@@ -47,12 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Core** — `NexusConfig` with pydantic-settings, nested sub-configs (`ModelConfig`,
+- **Core** — `GrampusConfig` with pydantic-settings, nested sub-configs (`ModelConfig`,
   `MemoryConfig`, `SafetyConfig`, `DaprConfig`, `ObservabilityConfig`), env-var loading
-  with `NEXUS_` prefix and YAML override. Error hierarchy with 9 exception types
+  with `GRAMPUS_` prefix and YAML override. Error hierarchy with 9 exception types
   (`ConfigError`, `MemoryError`, `MemorySecurityError`, `ToolError`, `ToolTimeoutError`,
   `OrchestrationError`, `BudgetExceededError`, `SafetyError`, `ModelError`) all rooted
-  at `NexusError` with machine-readable `code` fields. Structured logging via structlog
+  at `GrampusError` with machine-readable `code` fields. Structured logging via structlog
   with JSON (production) and console (development) renderers, ISO 8601 timestamps, and
   correlation ID propagation via contextvars.
 
@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ExecutionResult`. All models round-trip serialize to and from JSON.
 
 - **Model clients** — `ModelClient` ABC with `async complete()` and `async stream()`.
-  `AnthropicClient` maps Nexus types to Anthropic SDK format, extracts `TokenUsage`
+  `AnthropicClient` maps Grampus types to Anthropic SDK format, extracts `TokenUsage`
   from response, and wraps API errors in `ModelError`. `OpenAIClient` does the same
   for the OpenAI SDK. Both clients support streaming tool call assembly.
 
@@ -171,7 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configurable actions (log, redact, block). All safety configuration is loadable
   from YAML policy files.
 
-- **OTEL tracing** — `NexusTracer` produces six custom span types: `agent.run`,
+- **OTEL tracing** — `GrampusTracer` produces six custom span types: `agent.run`,
   `agent.llm_call`, `agent.tool_call`, `agent.memory_read`, `agent.memory_write`,
   `agent.decision`. All spans carry agent ID, session ID, model, token counts, cost,
   and step number. Session-level parent spans group all child spans.
@@ -210,14 +210,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   results, latency, cost, and quality scores. Results can be published to Dapr pub/sub.
 
 - **CLI** — Six subcommands via Click:
-  - `nexus init <name>` — scaffold a project from three templates (simple, crew, rag)
+  - `grampus init <name>` — scaffold a project from three templates (simple, crew, rag)
     with config, example agent, docker-compose, and Dapr components in under 10 seconds
-  - `nexus run <agent.py>` — start an agent with interactive REPL or `--input` for
+  - `grampus run <agent.py>` — start an agent with interactive REPL or `--input` for
     single-shot execution; auto-starts Dapr sidecar in the background
-  - `nexus eval <suite.py>` — run evaluation suite with `--fail-under` for CI gating
-  - `nexus memory inspect/clear <agent_id>` — view or clear an agent's memory
-  - `nexus cost` — show cost summary for recent sessions with per-model breakdown
-  - `nexus dev` — watch mode with hot-reload, live cost display, and trace streaming
+  - `grampus eval <suite.py>` — run evaluation suite with `--fail-under` for CI gating
+  - `grampus memory inspect/clear <agent_id>` — view or clear an agent's memory
+  - `grampus cost` — show cost summary for recent sessions with per-model breakdown
+  - `grampus dev` — watch mode with hot-reload, live cost display, and trace streaming
 
 - **1,226 tests** — 1,070 unit tests and 156 integration/e2e tests covering all nine
   architecture layers. Property-based tests via Hypothesis for edge cases in memory
@@ -227,5 +227,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   topic guides, 9 API reference pages, 10 architecture decision records, and a
   security model overview.
 
-[Unreleased]: https://github.com/nexus-ai/nexus-agentic-platform/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/nexus-ai/nexus-agentic-platform/releases/tag/v0.1.0
+[Unreleased]: https://github.com/grampus-ai/grampus-agentic-platform/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/grampus-ai/grampus-agentic-platform/releases/tag/v0.1.0

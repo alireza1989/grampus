@@ -2,12 +2,12 @@
 
 ## The 9 layers
 
-Nexus is organized into 9 layers, each with a clear boundary and single responsibility:
+Grampus is organized into 9 layers, each with a clear boundary and single responsibility:
 
 ```mermaid
 graph TB
     subgraph "Layer 9 — CLI"
-        CLI["nexus init · run · eval · dev · cost · memory"]
+        CLI["grampus init · run · eval · dev · cost · memory"]
     end
 
     subgraph "Layer 8 — Evaluation"
@@ -15,7 +15,7 @@ graph TB
     end
 
     subgraph "Layer 7 — Observability"
-        Obs["NexusTracer · NexusMetrics · EventLog · BehaviorMonitor"]
+        Obs["GrampusTracer · GrampusMetrics · EventLog · BehaviorMonitor"]
     end
 
     subgraph "Layer 6 — Safety"
@@ -69,7 +69,7 @@ graph TB
 
 ### Layer 0 — Dapr Runtime
 
-Dapr provides the distributed infrastructure that Nexus runs on. It handles:
+Dapr provides the distributed infrastructure that Grampus runs on. It handles:
 
 - **State management** — PostgreSQL (primary) and Redis (cache) via the Dapr State API
 - **Pub/Sub messaging** — Redis Streams for event fanout and behavior monitoring
@@ -78,14 +78,14 @@ Dapr provides the distributed infrastructure that Nexus runs on. It handles:
 - **mTLS** — mutual TLS between services, zero-configuration
 - **OTEL** — Dapr emits infrastructure-level traces automatically
 
-Nexus never talks to PostgreSQL or Redis directly. All I/O goes through the Dapr sidecar at `http://localhost:3500`.
+Grampus never talks to PostgreSQL or Redis directly. All I/O goes through the Dapr sidecar at `http://localhost:3500`.
 
 ### Layer 1 — Core
 
 Foundation types that everything else builds on:
 
-- **Config** — `NexusConfig` via pydantic-settings; loads from env vars and YAML
-- **Errors** — `NexusError` hierarchy with machine-readable `code` strings
+- **Config** — `GrampusConfig` via pydantic-settings; loads from env vars and YAML
+- **Errors** — `GrampusError` hierarchy with machine-readable `code` strings
 - **Types** — Pydantic v2 models: `AgentDefinition`, `AgentState`, `ExecutionResult`, `Message`, `ToolCall`, `ToolResult`, `TokenUsage`
 - **Logging** — structlog with JSON (prod) or console (dev) output, correlation IDs via contextvars
 - **Model clients** — `ModelClient` ABC with Anthropic and OpenAI implementations
@@ -150,8 +150,8 @@ Runtime safety middleware wrapping every agent action:
 
 Three-layer observability:
 
-- **NexusTracer** — OTEL custom spans for every agent action (agent.run, agent.llm_call, agent.tool_call, etc.)
-- **NexusMetrics** — Prometheus endpoint with counters, gauges, and histograms
+- **GrampusTracer** — OTEL custom spans for every agent action (agent.run, agent.llm_call, agent.tool_call, etc.)
+- **GrampusMetrics** — Prometheus endpoint with counters, gauges, and histograms
 - **EventLog** — append-only, replayable audit log stored in Dapr state
 - **BehaviorMonitor** — rolling-window anomaly detection for cost, tool usage, latency
 
@@ -169,12 +169,12 @@ Built-in testing for agent behavior:
 
 Developer experience:
 
-- `nexus init` — scaffold with templates (simple, crew, rag)
-- `nexus run` — REPL or single-shot with Dapr sidecar management
-- `nexus eval` — run eval suites with pass-rate gating for CI
-- `nexus memory` — inspect, clear, and show stats for agent memory
-- `nexus cost` — show cost summary across sessions
-- `nexus dev` — watch mode with auto-reload and live cost output
+- `grampus init` — scaffold with templates (simple, crew, rag)
+- `grampus run` — REPL or single-shot with Dapr sidecar management
+- `grampus eval` — run eval suites with pass-rate gating for CI
+- `grampus memory` — inspect, clear, and show stats for agent memory
+- `grampus cost` — show cost summary across sessions
+- `grampus dev` — watch mode with auto-reload and live cost output
 
 ---
 

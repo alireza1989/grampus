@@ -1,6 +1,6 @@
 # Document Processing
 
-Nexus ships three built-in tools that let agents ingest PDF, Word (.docx), and Excel (.xlsx) files
+Grampus ships three built-in tools that let agents ingest PDF, Word (.docx), and Excel (.xlsx) files
 as structured text chunks, ready to store in `EpisodicMemory` or feed directly into a RAG pipeline.
 
 ---
@@ -10,12 +10,12 @@ as structured text chunks, ready to store in `EpisodicMemory` or feed directly i
 Document processing requires optional extras:
 
 ```bash
-pip install 'nexus-ai[documents]'
+pip install 'grampus-ai[documents]'
 ```
 
 This installs: `pymupdf4llm` (PDF primary), `pypdf` (PDF fallback), `python-docx` (Word), `openpyxl` (Excel).
 
-The core Nexus install **without** `[documents]` is unaffected. Agents that call a document tool
+The core Grampus install **without** `[documents]` is unaffected. Agents that call a document tool
 without the extras get a clear error: `code="MISSING_DEPENDENCY"`.
 
 ---
@@ -23,7 +23,7 @@ without the extras get a clear error: `code="MISSING_DEPENDENCY"`.
 ## Quick Start
 
 ```python
-from nexus.tools.library import LIBRARY_REGISTRY
+from grampus.tools.library import LIBRARY_REGISTRY
 
 registry = LIBRARY_REGISTRY
 
@@ -41,7 +41,7 @@ if result["ok"]:
 Or import the functions directly:
 
 ```python
-from nexus.tools.library.document_tools import read_pdf_tool, read_docx_tool, read_excel_tool
+from grampus.tools.library.document_tools import read_pdf_tool, read_docx_tool, read_excel_tool
 
 result = await read_pdf_tool(path="/data/paper.pdf")
 ```
@@ -113,7 +113,7 @@ for chunk in result["chunks"]:
 ## Integrating with Memory
 
 ```python
-from nexus.tools.library.document_tools import read_pdf_tool
+from grampus.tools.library.document_tools import read_pdf_tool
 
 result = await read_pdf_tool(path="/data/paper.pdf")
 if not result["ok"]:
@@ -146,7 +146,7 @@ The default limit is **50 MB** per file. Files larger than this return:
 
 | Code | Cause |
 |---|---|
-| `MISSING_DEPENDENCY` | Required library not installed — run `pip install 'nexus-ai[documents]'` |
+| `MISSING_DEPENDENCY` | Required library not installed — run `pip install 'grampus-ai[documents]'` |
 | `FILE_NOT_FOUND` | Path does not exist |
 | `UNSUPPORTED_FORMAT` | File extension does not match the tool (e.g. passing `.txt` to `read_pdf`) |
 | `FILE_TOO_LARGE` | File exceeds the 50 MB size limit |

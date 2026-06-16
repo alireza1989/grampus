@@ -1,10 +1,10 @@
 # Observability API Reference
 
-## NexusTracer
+## GrampusTracer
 
 Wraps the OpenTelemetry SDK with agent-specific span types.
 
-::: nexus.observability.tracer.NexusTracer
+::: grampus.observability.tracer.GrampusTracer
     options:
       show_source: false
       members: [span, record_llm_call, record_tool_call, record_memory_read, record_memory_write]
@@ -12,7 +12,7 @@ Wraps the OpenTelemetry SDK with agent-specific span types.
 ### Span context manager
 
 ```python
-tracer = NexusTracer(service_name="my-agent", otel_endpoint="http://localhost:4317")
+tracer = GrampusTracer(service_name="my-agent", otel_endpoint="http://localhost:4317")
 
 with tracer.span("agent.custom_step", attributes={"step.name": "validate"}):
     do_work()
@@ -35,11 +35,11 @@ async with tracer.async_span("agent.llm_call", attributes={"model": "claude-sonn
 
 ---
 
-## NexusMetrics
+## GrampusMetrics
 
 Prometheus-compatible metrics endpoint.
 
-::: nexus.observability.metrics.NexusMetrics
+::: grampus.observability.metrics.GrampusMetrics
     options:
       show_source: false
       members: [start, stop, record_tokens, record_cost, record_tool_call, record_error, record_agent_run]
@@ -58,14 +58,14 @@ Prometheus-compatible metrics endpoint.
 
 | Metric name | Labels | Description |
 |-------------|--------|-------------|
-| `nexus_active_agents` | `agent_name` | Currently running agents |
+| `grampus_active_agents` | `agent_name` | Currently running agents |
 
 ### Histogram metrics
 
 | Metric name | Labels | Description |
 |-------------|--------|-------------|
-| `nexus_llm_latency_seconds` | `model`, `agent_name` | LLM call duration |
-| `nexus_tool_latency_seconds` | `tool_name`, `agent_name` | Tool execution duration |
+| `grampus_llm_latency_seconds` | `model`, `agent_name` | LLM call duration |
+| `grampus_tool_latency_seconds` | `tool_name`, `agent_name` | Tool execution duration |
 | `nexus_agent_run_duration_seconds` | `agent_name` | Total agent run duration |
 
 ---
@@ -74,7 +74,7 @@ Prometheus-compatible metrics endpoint.
 
 Append-only audit log for every agent action.
 
-::: nexus.observability.events.EventLog
+::: grampus.observability.events.EventLog
     options:
       show_source: false
       members: [append, get_events, replay_to_step]
@@ -116,7 +116,7 @@ class AgentEvent:
 
 Tracks agent behavior patterns and detects anomalies.
 
-::: nexus.observability.behavior.BehaviorMonitor
+::: grampus.observability.behavior.BehaviorMonitor
     options:
       show_source: false
       members: [detect_anomalies, update_baseline]

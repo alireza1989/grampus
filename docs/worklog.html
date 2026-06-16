@@ -273,7 +273,7 @@
 
   <div class="doc-header">
     <div class="doc-title">Nexus — Work Item Log</div>
-    <div class="doc-subtitle">All post-launch features · Phases A through H · 52 total items</div>
+    <div class="doc-subtitle">All post-launch features · Phases A through I · 77 total items</div>
     <div class="doc-meta">
       <div class="meta-item"><span class="meta-label">Project</span><span class="meta-val">nexus-ai</span></div>
       <div class="meta-item"><span class="meta-label">Updated</span><span class="meta-val">June 2026</span></div>
@@ -859,6 +859,244 @@
     </table>
   </div>
 
+  <!-- ═══════════════════════════════ PHASE I ═══════════════════════════════ -->
+
+  <div class="phase-section" id="section-I">
+    <div class="phase-heading phase-future">
+      <div class="phase-letter" style="background:#be185d">I</div>
+      <div class="phase-name">Phase I — Quality, Security &amp; Ops</div>
+      <div class="phase-timeline">Do first · &lt;1 hr – half day each</div>
+      <div class="phase-tally" id="tally-I">—</div>
+    </div>
+    <table class="items-table">
+      <tr class="item-row" data-id="I1">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I1"></td>
+        <td class="col-id">I1</td>
+        <td class="col-main">
+          <div class="item-name">nexus doctor CLI command</div>
+          <div class="item-desc">Check: API keys set, Dapr sidecar reachable, PostgreSQL connectable, pgvector extension present, Redis reachable, optional extras installed. Prints ✓/✗ checklist. <code>--json</code> flag for bug report attachment. Single highest-impact DX addition — setup failure is the #1 new-user dropout cause.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I2">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I2"></td>
+        <td class="col-id">I2</td>
+        <td class="col-main">
+          <div class="item-name">Secrets scanning in CI</div>
+          <div class="item-desc"><code>gitleaks</code> or <code>trufflehog</code> GitHub Action on every push and PR. Prevents accidental API key commits. 10-minute setup, zero ongoing maintenance. One of the easiest security wins available.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I3">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I3"></td>
+        <td class="col-id">I3</td>
+        <td class="col-main">
+          <div class="item-name">pip-audit in CI</div>
+          <div class="item-desc">Catches known CVEs in pinned transitive dependencies — <code>httpx</code>, <code>pydantic</code>, <code>dapr</code>, and <code>asyncpg</code> have all had security advisories. Should block merges on high-severity findings. Trivial to add as a CI step.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I4">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I4"></td>
+        <td class="col-id">I4</td>
+        <td class="col-main">
+          <div class="item-name">Health check endpoints</div>
+          <div class="item-desc"><code>/healthz</code> (liveness — always 200) and <code>/readyz</code> (readiness — 503 if Dapr/DB unreachable). Hard requirement for Kubernetes liveness and readiness probes. Without these, Kubernetes cannot safely roll deployments.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I5">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I5"></td>
+        <td class="col-id">I5</td>
+        <td class="col-main">
+          <div class="item-name">GitHub issue + PR templates</div>
+          <div class="item-desc">Three issue templates: Bug Report (steps to reproduce, expected vs actual, versions), Feature Request (problem statement, proposed solution), Question (redirect to Discussions). PR template checklist: description, tests added, docs updated, ruff passes, mypy passes, CHANGELOG entry.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I6">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I6"></td>
+        <td class="col-id">I6</td>
+        <td class="col-main">
+          <div class="item-name">CONTRIBUTING.md</div>
+          <div class="item-desc">Dev setup, how to run tests, how to run Dapr locally, PR process, conventional commit format, how to add a new tool, how to add a new model client. Referenced from the H52 spec but may not yet exist. First stop for any would-be contributor.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I7">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I7"></td>
+        <td class="col-id">I7</td>
+        <td class="col-main">
+          <div class="item-name">CSP headers on web UI</div>
+          <div class="item-desc"><code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code> middleware on FastAPI. Without CSP, the memory inspector UI is XSS-vulnerable if stored memory content contains script tags — a realistic attack vector for a memory poisoning scenario.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I8">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I8"></td>
+        <td class="col-id">I8</td>
+        <td class="col-main">
+          <div class="item-name">SECURITY.md</div>
+          <div class="item-desc">How to report vulnerabilities (email, not public issue), response SLA, disclosure policy. GitHub shows a security advisory banner without this file. Required for enterprise security reviews and any organization with a formal procurement process.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I9">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I9"></td>
+        <td class="col-id">I9</td>
+        <td class="col-main">
+          <div class="item-name">Error catalog in docs</div>
+          <div class="item-desc">Every <code>NexusError</code> code listed with: what it means, what caused it, how to fix it. The <code>hint</code> field (Phase A5) already exists — surface those hints as a searchable docs page. When users Google a Nexus error code, this should be the first result.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I10">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I10"></td>
+        <td class="col-id">I10</td>
+        <td class="col-main">
+          <div class="item-name">PyPI trusted publisher migration</div>
+          <div class="item-desc">Migrate release workflow from API token to OIDC (GitHub Actions). Add <code>actions/attest-build-provenance</code> for artifact attestation. Tokens can be stolen; OIDC is phishing-resistant. Required for supply chain security compliance.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I11">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I11"></td>
+        <td class="col-id">I11</td>
+        <td class="col-main">
+          <div class="item-name">Graceful shutdown</div>
+          <div class="item-desc"><code>nexus serve</code> must handle <code>SIGTERM</code>: stop accepting requests, wait for in-flight agent runs up to a configurable timeout, flush the event log, then exit. Without this, agent runs are killed mid-execution on every Kubernetes rolling deployment.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I12">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I12"></td>
+        <td class="col-id">I12</td>
+        <td class="col-main">
+          <div class="item-name">Rate limiting on REST API</div>
+          <div class="item-desc"><code>slowapi</code> adds per-IP or per-API-key rate limiting to FastAPI in 20 lines. Without it, a misconfigured client looping on retries can exhaust an entire LLM API quota in minutes — a common on-call incident for teams new to production agents.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I13">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I13"></td>
+        <td class="col-id">I13</td>
+        <td class="col-main">
+          <div class="item-name">SBOM generation</div>
+          <div class="item-desc">CycloneDX or SPDX format via <code>syft</code>. Required for US federal procurement (Executive Order 14028) and enterprise security reviews. No agentic AI framework ships an SBOM — instant differentiator for regulated industries.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I14">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I14"></td>
+        <td class="col-id">I14</td>
+        <td class="col-main">
+          <div class="item-name">Request ID / correlation ID propagation</div>
+          <div class="item-desc">When FastAPI receives <code>X-Request-ID</code> or <code>traceparent</code> headers from an upstream service, inject into the structlog context for the agent run. Without this, distributed traces are broken at the Nexus boundary and production debugging becomes painful.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I15">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I15"></td>
+        <td class="col-id">I15</td>
+        <td class="col-main">
+          <div class="item-name">Retry + run timeout configuration</div>
+          <div class="item-desc">Global retry config for LLM calls (<code>max_retries</code>, <code>backoff_factor</code>, <code>retry_on</code> status codes) under <code>NexusConfig.model.retry</code> — currently scattered per client. Global wall-clock agent run timeout via <code>asyncio.wait_for</code> to prevent 6-hour runaway agents.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I16">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I16"></td>
+        <td class="col-id">I16</td>
+        <td class="col-main">
+          <div class="item-name">Cross-Python-version CI matrix</div>
+          <div class="item-desc">CI should test Python 3.12 and 3.13. Many enterprise teams are still on 3.11 — worth confirming compatibility before they hit it in production. Catches type annotation and stdlib changes that break unexpectedly.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I17">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I17"></td>
+        <td class="col-id">I17</td>
+        <td class="col-main">
+          <div class="item-name">Performance benchmark suite</div>
+          <div class="item-desc"><code>pytest-benchmark</code> for hot paths: embedding service, retriever, agent runner loop overhead vs raw API call, RAG hybrid search. Use <code>github-action-benchmark</code> to track regressions over time. Without benchmarks, a slow plugin hook or retrieval change is invisible until someone complains in production.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-m">M</span></td>
+      </tr>
+      <tr class="item-row" data-id="I18">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I18"></td>
+        <td class="col-id">I18</td>
+        <td class="col-main">
+          <div class="item-name">Tool result caching</div>
+          <div class="item-desc">Idempotent tool calls (same name + same arguments) cached within a session or globally. <code>cache_ttl_seconds</code> on <code>ToolParameter</code>. Expensive tools like web scraping and SQL queries should not re-run on identical inputs in the same session.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I19">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I19"></td>
+        <td class="col-id">I19</td>
+        <td class="col-main">
+          <div class="item-name">nexus export / nexus import</div>
+          <div class="item-desc">Export agent memory + event log + config as a portable <code>.nexus</code> bundle. Import on another machine. Needed for: environment migration, sharing reproducible runs for debugging, and backup. The EventLog and Dapr state are already structured for this.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-m">M</span></td>
+      </tr>
+      <tr class="item-row" data-id="I20">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I20"></td>
+        <td class="col-id">I20</td>
+        <td class="col-main">
+          <div class="item-name">WebSocket endpoint</div>
+          <div class="item-desc">REST API has SSE streaming but not WebSocket. Real-time dashboards, mobile apps, and many frontend frameworks prefer WebSocket over SSE. <code>fastapi-websockets</code>, zero new required runtime deps. Complements existing SSE without replacing it.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-m">M</span></td>
+      </tr>
+      <tr class="item-row" data-id="I21">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I21"></td>
+        <td class="col-id">I21</td>
+        <td class="col-main">
+          <div class="item-name">Mutation testing baseline</div>
+          <div class="item-desc"><code>mutmut</code> or <code>cosmic-ray</code>. Standard tests can pass even when a critical condition is inverted — mutation testing finds these gaps. No agent framework ships this. Real differentiator for quality-conscious enterprise adopters.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-m">M</span></td>
+      </tr>
+      <tr class="item-row" data-id="I22">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I22"></td>
+        <td class="col-id">I22</td>
+        <td class="col-main">
+          <div class="item-name">Property-based testing expansion</div>
+          <div class="item-desc">Hypothesis is already in dev deps but only used for working memory. Expand to RRF fusion math, trust scoring formulas, cost calculations, and token counting — all numerical logic that breaks in edge cases property tests find reliably.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+      <tr class="item-row" data-id="I23">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I23"></td>
+        <td class="col-id">I23</td>
+        <td class="col-main">
+          <div class="item-name">Changelog automation (git-cliff)</div>
+          <div class="item-desc"><code>git-cliff</code> generates <code>CHANGELOG.md</code> automatically from conventional commits, which this project already uses. Without automation, CHANGELOG drifts or never gets updated. Enterprise teams evaluate changelogs before deciding to upgrade.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I24">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I24"></td>
+        <td class="col-id">I24</td>
+        <td class="col-main">
+          <div class="item-name">Dependabot / Renovate</div>
+          <div class="item-desc">Automated dependency update PRs. One config file at <code>.github/dependabot.yml</code>. Without this, deps drift silently — CVEs accumulate and teams running old versions hit bugs that were already fixed months ago.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-xs">XS</span></td>
+      </tr>
+      <tr class="item-row" data-id="I25">
+        <td class="col-check"><input type="checkbox" class="check" data-id="I25"></td>
+        <td class="col-id">I25</td>
+        <td class="col-main">
+          <div class="item-name">Architecture diagram (C4 / Mermaid)</div>
+          <div class="item-desc">C4 context + container diagram in the docs site. PLAN.md has ASCII art but no shareable diagram. The most-shared asset during technical evaluations — teams screenshot this for architecture review boards. Mermaid renders in GitHub and MkDocs with no extra tooling.</div>
+        </td>
+        <td class="col-size"><span class="sz sz-s">S</span></td>
+      </tr>
+    </table>
+  </div>
+
   <!-- Summary -->
   <div class="summary-box">
     <div class="summary-title">Progress summary</div>
@@ -895,10 +1133,21 @@ const ALL_IDS = [
   'F1','F2','F3','F4',
   'G1','G2','G3',
   'H1','H2','H3','H4','H5','H6','H7','H8','H9',
+  'I1','I2','I3','I4','I5','I6','I7','I8','I9','I10',
+  'I11','I12','I13','I14','I15','I16','I17','I18','I19','I20',
+  'I21','I22','I23','I24','I25',
 ];
 
-// Phases A and B are done by default
-const DEFAULT_DONE = new Set(['A1','A2','A3','A5','B1','B2','B3','B4','B5','E1','E2','E3','E4','E5']);
+// Phases A, B complete; C1–C2, E–F, G1, H1–H4, H6–H8 complete
+const DEFAULT_DONE = new Set([
+  'A1','A2','A3','A5',
+  'B1','B2','B3','B4','B5',
+  'C1','C2',
+  'E1','E2','E3','E4','E5',
+  'F1','F2','F3','F4',
+  'G1',
+  'H1','H2','H3','H4','H6','H7','H8',
+]);
 const DEFERRED = new Set(['A4']);
 
 function loadState() {
@@ -928,7 +1177,7 @@ function applyState() {
 }
 
 function updateCounters() {
-  const phases = ['A','B','C','D','E','F','G','H'];
+  const phases = ['A','B','C','D','E','F','G','H','I'];
   phases.forEach(p => {
     const ids = ALL_IDS.filter(id => id.startsWith(p) && !DEFERRED.has(id));
     const done = ids.filter(id => state.has(id)).length;
@@ -969,7 +1218,7 @@ function collapseAll() {
 }
 
 function resetAll() {
-  if (!confirm('Reset all checkboxes to default (Phases A+B done)?')) return;
+  if (!confirm('Reset all checkboxes to default (Phases A, B, C1–C2, E–F, G1, H1–H4, H6–H8 done)?')) return;
   state = new Set(DEFAULT_DONE);
   saveState(state);
   document.querySelectorAll('.item-row').forEach(r => r.style.display = '');

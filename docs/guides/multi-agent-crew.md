@@ -14,9 +14,9 @@ The agents run sequentially: each agent's output becomes the next agent's input.
 
 ## Prerequisites
 
-- Nexus installed with Anthropic support: `pip install "nexus-ai[anthropic]"`
+- Grampus installed with Anthropic support: `pip install "grampus-ai[anthropic]"`
 - Dapr and Docker running locally
-- `NEXUS_MODEL__ANTHROPIC_API_KEY` set
+- `GRAMPUS_MODEL__ANTHROPIC_API_KEY` set
 
 ---
 
@@ -28,12 +28,12 @@ import asyncio
 import os
 from typing import Any
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition, ToolParameter
-from nexus.orchestration.crew import Crew, CrewMember, CrewPattern
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition, ToolParameter
+from grampus.orchestration.crew import Crew, CrewMember, CrewPattern
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 # Each agent gets its own registry (tools can overlap)
 researcher_registry = ToolRegistry()
@@ -76,7 +76,7 @@ async def fact_check(claim: str) -> dict[str, Any]:
 # continued from crew_agent.py
 
 def make_client() -> AnthropicClient:
-    return AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    return AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
 
 
 def make_researcher() -> CrewMember:
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 ## Step 4 — Run it
 
 ```bash
-nexus run crew_agent.py --input "The state of open-source agentic AI in 2025"
+grampus run crew_agent.py --input "The state of open-source agentic AI in 2025"
 ```
 
 ---
@@ -268,7 +268,7 @@ And the writer receives all prior outputs concatenated, giving it full context f
 ## Error handling
 
 ```python
-from nexus.core.errors import OrchestrationError
+from grampus.core.errors import OrchestrationError
 
 try:
     result = await crew.run(initial_input=topic)

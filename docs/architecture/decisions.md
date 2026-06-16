@@ -123,7 +123,7 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 
 **Context:** Need distributed tracing, metrics, and logs that work with any backend (Jaeger, Prometheus, Grafana, Datadog, Honeycomb, etc.). Vendor lock-in to a specific observability platform would prevent adoption in organizations with existing tooling.
 
-**Decision:** OpenTelemetry is the observability standard. Dapr provides infrastructure-level OTEL automatically. Nexus adds agent-specific custom spans: `agent.run`, `agent.llm_call`, `agent.tool_call`, `agent.memory_read`, `agent.memory_write`, `agent.decision`.
+**Decision:** OpenTelemetry is the observability standard. Dapr provides infrastructure-level OTEL automatically. Grampus adds agent-specific custom spans: `agent.run`, `agent.llm_call`, `agent.tool_call`, `agent.memory_read`, `agent.memory_write`, `agent.decision`.
 
 **Consequences:**
 - Any OTEL-compatible backend works out of the box — change the exporter endpoint, not the code
@@ -153,14 +153,14 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 
 **Status:** Accepted
 
-**Context:** MCP (Model Context Protocol) is becoming the standard for tool integration (97M monthly SDK downloads as of 2025). A2A (Agent-to-Agent) enables cross-framework agent discovery. Building custom tool protocols creates ecosystem lock-in and prevents Nexus agents from using the growing ecosystem of MCP-compatible tools.
+**Context:** MCP (Model Context Protocol) is becoming the standard for tool integration (97M monthly SDK downloads as of 2025). A2A (Agent-to-Agent) enables cross-framework agent discovery. Building custom tool protocols creates ecosystem lock-in and prevents Grampus agents from using the growing ecosystem of MCP-compatible tools.
 
 **Decision:** Implement MCP client in the tool layer (Phase 6). Implement A2A discovery in the orchestration layer (Phase 7+). Both are standards-compliant implementations, not custom protocols.
 
 **Consequences:**
-- Nexus agents can use any MCP-compatible tool server (filesystem, browser, databases, APIs)
-- Other frameworks' agents can discover and invoke Nexus agents via A2A
-- Avoids ecosystem lock-in — Nexus works alongside LangGraph, CrewAI, and Autogen
+- Grampus agents can use any MCP-compatible tool server (filesystem, browser, databases, APIs)
+- Other frameworks' agents can discover and invoke Grampus agents via A2A
+- Avoids ecosystem lock-in — Grampus works alongside LangGraph, CrewAI, and Autogen
 - Requires tracking protocol evolution as both MCP and A2A mature
 
 ---
@@ -173,15 +173,15 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 
 **Decision:** All web UI phases build into a single consolidated web app served at `/ui/` from the existing FastAPI server. Technology stack: HTMX (loaded from CDN — no npm, no build step) + Jinja2 templates for server-side rendering. The D9 phase builds the shell (base template, sidebar navigation, layout system) and all subsequent UI phases add pages to it. One new optional dependency: `jinja2>=3.0` added to the `server` extras group (already a transitive FastAPI dependency in practice).
 
-**Exception:** The Visual Agent Builder (drag-and-drop graph editor) requires rich interactivity — sortable nodes, canvas pan/zoom, live edge drawing — that HTMX cannot support. That feature uses a minimal React SPA bundled at `src/nexus/server/ui/static/builder/` and served at `/ui/builder/`. It is the only component permitted to introduce a frontend build step.
+**Exception:** The Visual Agent Builder (drag-and-drop graph editor) requires rich interactivity — sortable nodes, canvas pan/zoom, live edge drawing — that HTMX cannot support. That feature uses a minimal React SPA bundled at `src/grampus/server/ui/static/builder/` and served at `/ui/builder/`. It is the only component permitted to introduce a frontend build step.
 
 **Consequences:**
 - No Node.js toolchain required to run or develop the UI — `uv sync` is sufficient
 - Single URL entry point; sidebar navigation shared across all views
 - HTMX partial endpoints (`/ui/<feature>/_<partial>`) enable dynamic updates (live cost tickers, SSE-driven agent status) without full page reloads
 - HTMX has limits on complex client-side interactivity — sufficient for developer dashboards, not for visual graph editors (see exception above)
-- Static assets (CSS, minimal JS helpers) live in `src/nexus/server/ui/static/` and are served by FastAPI's `StaticFiles` mount
-- Jinja2 templates live in `src/nexus/server/ui/templates/` with a `base.html` that all pages extend
+- Static assets (CSS, minimal JS helpers) live in `src/grampus/server/ui/static/` and are served by FastAPI's `StaticFiles` mount
+- Jinja2 templates live in `src/grampus/server/ui/templates/` with a `base.html` that all pages extend
 
 ---
 
@@ -191,7 +191,7 @@ ADRs capture the reasoning behind major design decisions. Each decision is perma
 
 **Context:** High-stakes agent tasks (legal analysis, medical triage, financial decisions) cannot rely on a single LLM call because (a) individual models hallucinate on specialised questions and (b) there is no confidence signal that a single model can reliably self-report. Two prior approaches exist: prompt-level self-consistency (same model, multiple samples) and multi-agent crews (different agents, different roles). Self-consistency degrades on hard questions because sampling diversity is bounded by a single model's knowledge. Crews require pre-defined pipelines and do not provide a convergence signal. Research (Du et al. ICML 2024; M3MAD-Bench ICLR 2025) demonstrates that heterogeneous models arguing toward a shared answer reach substantially higher accuracy than either alternative.
 
-**Decision:** Implement `DebateOrchestrator` as a standalone orchestration primitive in `src/nexus/orchestration/debate/`. It operates on a single question rather than a task pipeline, runs all debaters concurrently per round via `asyncio.gather`, and integrates with the existing `Graph` engine via `debate_node()`. Four specific research findings are baked into the design:
+**Decision:** Implement `DebateOrchestrator` as a standalone orchestration primitive in `src/grampus/orchestration/debate/`. It operates on a single question rather than a task pipeline, runs all debaters concurrently per round via `asyncio.gather`, and integrates with the existing `Graph` engine via `debate_node()`. Four specific research findings are baked into the design:
 
 1. **Heterogeneous panels** — `DebaterConfig.model_id` allows mixing model families, not just temperatures. The aggregator uses `debater.weight` to handle unequal capability.
 2. **Sycophancy resistance** — Round 2+ prompts require debaters to restate their prior answer verbatim before evaluating peers, and to cite specific logical evidence for any position change (ACL 2025 CONSENSAGENT).
@@ -264,7 +264,7 @@ An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate 
 
 **Context:** Multi-agent workflows that pass text strings between agents cannot enforce structure, detect conflicts, or guarantee consistency. Agents working on the same document or codebase independently create silently incompatible outputs. The Specification Gap paper (arXiv 2603.24284, March 2026) showed that implicit shared specifications reduce two-agent integration accuracy by 25–39 percentage points. STORM (arXiv 2605.20563, May 2026) showed that post-hoc conflict resolution is worse than write-time detection by 18.7 points on Commit0-Lite. Existing frameworks have no native artifact primitive — they pass strings or serialize to JSON ad hoc.
 
-**Decision:** Implement `ArtifactStore`, `SectionLockManager`, `ArtifactCollaborator`, and `ArtifactCrew` in `src/nexus/orchestration/artifact/`. Key design choices:
+**Decision:** Implement `ArtifactStore`, `SectionLockManager`, `ArtifactCollaborator`, and `ArtifactCrew` in `src/grampus/orchestration/artifact/`. Key design choices:
 
 1. **Schema-first** (Specification Gap): every artifact section has an explicit `SectionSchema` with description, content_type, and required_fields before any agent is assigned. Implicit specs are rejected at artifact creation time.
 
@@ -294,7 +294,7 @@ An optional FLARE-inspired lookahead (arXiv 2601.22311) generates `n` candidate 
 
 **Context:** Agents repeat mistakes across sessions because each run starts from the same static system prompt with no memory of past failures. Reflexion (NeurIPS 2023) demonstrated that verbal self-reflection stored in persistent memory enables agents to improve without weight updates. The 2025 SAGE framework (arXiv 2512.17102) extended this by showing that extracting validated reusable skills from *successes* produces compounding improvement (+8.9% goal completion, 26% fewer steps). ME-ICPO (arXiv 2603.01335, March 2026) established a theoretical grounding for self-reflection as in-context policy optimization. No competitor framework has shipped both failure reflection and success skill extraction as built-in primitives.
 
-**Decision:** Implement `ReflexionEngine` and `SkillLibrary` in `src/nexus/memory/reflexion/` as optional hooks in `AgentRunner`. Three integration points: (1) post-failure hook generates and stores a verbal reflection, (2) post-success hook attempts skill extraction, (3) pre-LLM-call hook retrieves and injects relevant reflections + skills. The `PromptOptimizer` completes the loop by automatically proposing and evaluating system prompt mutations when an `EvalSuite` is available.
+**Decision:** Implement `ReflexionEngine` and `SkillLibrary` in `src/grampus/memory/reflexion/` as optional hooks in `AgentRunner`. Three integration points: (1) post-failure hook generates and stores a verbal reflection, (2) post-success hook attempts skill extraction, (3) pre-LLM-call hook retrieves and injects relevant reflections + skills. The `PromptOptimizer` completes the loop by automatically proposing and evaluating system prompt mutations when an `EvalSuite` is available.
 
 **Key design choices:**
 1. **Both hooks are opt-in and suppressed** (`reflexion_engine=None` by default; all hooks wrapped in `contextlib.suppress(Exception)`) — self-improvement never crashes the core execution path.
@@ -324,7 +324,7 @@ mechanism to promote actively-relevant facts above infrequently-accessed backgro
 arXiv 2604.01670).
 
 **Decision:** Implement `UserFact`, `UserProfile`, `UserMemoryStore`, `FactExtractor`, and
-`ProfileSynthesizer` in `src/nexus/memory/user/`. The design uses three tiers: Tier 3
+`ProfileSynthesizer` in `src/grampus/memory/user/`. The design uses three tiers: Tier 3
 (UserEpisodes — raw interactions in existing EpisodicMemory), Tier 2 (UserFacts — extracted,
 temporally-grounded facts about the user), and Tier 1 (UserProfile — synthesized persona,
 rebuilt from facts every N new extractions). `UserMemoryAdapter` integrates both hooks into
@@ -369,8 +369,8 @@ tasks. MemOS (arXiv 2505.22101, May 2025) showed that managing memory as a hot/w
 achieves 35.24% token savings in production. FluxMem (arXiv 2602.14038) showed that adaptive routing per
 query type — graph traversal vs. flat vector vs. sequential — outperforms any fixed retrieval strategy.
 
-**Decision:** Implement two new sub-packages: `src/nexus/memory/graph/` (GraphBuilder, SemanticConsolidator,
-GraphRetriever) and `src/nexus/memory/lifecycle/` (LifecycleTierManager, AdaptiveRetriever). Both are
+**Decision:** Implement two new sub-packages: `src/grampus/memory/graph/` (GraphBuilder, SemanticConsolidator,
+GraphRetriever) and `src/grampus/memory/lifecycle/` (LifecycleTierManager, AdaptiveRetriever). Both are
 additive enhancements — the existing four memory layers are unchanged. MemoryManager receives three optional
 params (`graph_consolidator`, `lifecycle_manager`, `adaptive_router`); when all three are None, behavior is
 identical to pre-F3. AgentRunner receives one optional `graph_builder` param.
@@ -418,7 +418,7 @@ latency and high accuracy without any LLM inference at debug time. Causal-aware 
 (IJCAI 2025, arXiv 2505.24710) showed that LLMs as graph-labelers (not causal reasoners)
 combined with code-level do-calculus produces reliable interventional answers.
 
-**Decision:** Implement a two-tier causal analysis layer in `src/nexus/causal/`:
+**Decision:** Implement a two-tier causal analysis layer in `src/grampus/causal/`:
 Tier 1 (`CausalTracer`) reconstructs causal graphs from the existing Phase 9 event log
 and diagnoses root causes post-hoc with no LLM inference. Tier 2 (`CausalWorldModel`)
 builds a persistent SCM the LLM populates during execution; `SimpleCausalInference`
@@ -467,12 +467,12 @@ Two developments in 2026 changed this calculus: (1) OWASP released the first ded
 (ASI01–ASI10:2026), providing a standardised taxonomy for agent-specific attacks distinct from classic
 LLM jailbreaks; (2) automated red-teaming frameworks (AgenticRed arXiv 2601.13518, Dreadnode arXiv
 2605.04019) demonstrated 85–100% attack success rates with sub-hour campaign execution, making manual
-red-teaming insufficient. Nexus has a uniquely rich attack surface: four memory layers (including the
+red-teaming insufficient. Grampus has a uniquely rich attack surface: four memory layers (including the
 F1–F3 reflexion/user/graph additions), sandboxed code execution, multi-agent crews with A2A, and the
 F4 causal world model — all of which are novel attack vectors not covered by classic LLM red-teaming.
 
-**Decision:** Implement `src/nexus/evaluation/red_team/` as a first-class evaluation primitive alongside
-the existing EvalSuite. Architecture: Attacker (generates payloads) → Target (Nexus agent under test) →
+**Decision:** Implement `src/grampus/evaluation/red_team/` as a first-class evaluation primitive alongside
+the existing EvalSuite. Architecture: Attacker (generates payloads) → Target (Grampus agent under test) →
 Judge (evaluates success) with an optional mutation feedback loop for failed attempts. Six attack strategy
 implementations cover the highest-impact OWASP Agentic Top 10 categories. Every finding maps to both
 the OWASP category and one of the four security properties formalized in arXiv 2603.19469 (task
@@ -488,12 +488,12 @@ alignment, action alignment, source authorization, data isolation).
 4. **One mutation retry**: when a payload fails and a model_client is available, AttackerAgent generates
    one adaptive mutation (AgenticRed pattern) before recording the result. This doubles ASR on rule-based
    targets without significant overhead.
-5. **CLI exit code 1 on CRITICAL/HIGH**: `nexus redteam` exits non-zero on high-severity findings,
+5. **CLI exit code 1 on CRITICAL/HIGH**: `grampus redteam` exits non-zero on high-severity findings,
    enabling CI/CD pipeline integration (block merges that introduce vulnerabilities).
 
 **Consequences:**
 - Zero new required dependencies — all stdlib + existing Pydantic, structlog, model_client
-- `nexus redteam agent.py` requires the agent file to expose `get_agent_config()` and
+- `grampus redteam agent.py` requires the agent file to expose `get_agent_config()` and
   `run_conversation(messages)` — a thin adapter contract
 - The RedTeamRunner is intentionally decoupled from AgentRunner to avoid re-initializing
   Dapr and memory infrastructure for each attack payload; the target_fn handles that
@@ -508,11 +508,11 @@ alignment, action alignment, source authorization, data isolation).
 
 **Context:** Agents need to ingest PDF, Word (.docx), and Excel (.xlsx) documents for RAG pipelines
 and episodic memory. The three document libraries (pymupdf4llm, python-docx, openpyxl) add ~50 MB
-to the install. Not every Nexus deployment needs document ingestion — a pure API agent, a CLI tool,
+to the install. Not every Grampus deployment needs document ingestion — a pure API agent, a CLI tool,
 or a code-generation agent has no use for these libraries and should not be penalized with extra
 install weight.
 
-**Decision:** All document libraries live under `pip install nexus-ai[documents]` as optional extras.
+**Decision:** All document libraries live under `pip install grampus-ai[documents]` as optional extras.
 The three tool functions (`read_pdf`, `read_docx`, `read_excel`) check for their respective imports
 at call time and return `ToolError(code="MISSING_DEPENDENCY")` with a clear install hint when the
 extra is absent. The chunking layer (`DocumentChunker`) is pure Python and always available — agents
@@ -528,7 +528,7 @@ retrieval.
 complex layouts better. `pypdf` is the fallback when PyMuPDF is absent.
 
 **Consequences:**
-- Core Nexus install stays lean; document-capable deployments add ~50 MB with `[documents]`.
+- Core Grampus install stays lean; document-capable deployments add ~50 MB with `[documents]`.
 - `[documents]` is the established pattern for all future heavy optional dependency groups.
 - All three tool functions always return `{"ok": bool, ...}` — never raise; callers need no
   try/except.
@@ -550,13 +550,13 @@ surface must answer: "what's in this file?", "where is X defined?", "what are th
 
 **Decision:** Five tools built in two tiers: (1) pure-stdlib AST engine for symbol extraction,
 complexity, import analysis, and symbol search — zero dependencies; (2) subprocess thin wrappers
-around ruff and mypy — both already in the Nexus toolchain — with graceful degradation when
+around ruff and mypy — both already in the Grampus toolchain — with graceful degradation when
 not on PATH. No tree-sitter (binary dep, overkill for Python-first framework). No radon/lizard
 (cyclomatic complexity computed directly from `ast.NodeVisitor` in ~20 lines). No new entries in
 `[project.dependencies]`.
 
 **Consequences:**
-- All five tools work on any Nexus installation — no `[analysis]` extras required
+- All five tools work on any Grampus installation — no `[analysis]` extras required
 - Lint and type-check tools degrade gracefully: return `ok` with `available=False` + install hint
 - Subprocess runners are tested with mocked subprocess — integration against real ruff/mypy is
   handled implicitly by the existing CI which runs ruff and mypy on every push
@@ -606,7 +606,7 @@ without leaking provider-specific concepts into callers that don't need it.
 
 **Status:** Accepted
 
-**Context:** Production deployments of Nexus require observability integrations (Datadog, Splunk),
+**Context:** Production deployments of Grampus require observability integrations (Datadog, Splunk),
 compliance controls (PII redaction, audit logging, HIPAA content filtering), and cross-cutting
 concerns (rate limiting, cost allocation, canary routing) that cannot be baked into the core
 framework without creating vendor coupling. Three prior approaches were considered: (a) subclassing
@@ -616,14 +616,14 @@ callbacks via `asyncio.Queue` — decoupled but no pre-hook mutation capability,
 None of these patterns cover the full lifecycle (start → LLM call → tool call → memory write → end →
 error) with both observational and mutating semantics.
 
-**Decision:** Implement a `src/nexus/plugins/` package providing a two-tier hook system:
+**Decision:** Implement a `src/grampus/plugins/` package providing a two-tier hook system:
 (1) **pre-hooks** (`pre_llm_call`, `pre_tool_call`, `pre_memory_write`) run sequentially in priority
 order, thread their return values as a transformation pipeline, and surface `HookBlockedError` as
 `SafetyError`/`MemorySecurityError` with `code="PLUGIN_BLOCKED"`; (2) **observational hooks**
 (`on_agent_start`, `on_agent_end`, `post_llm_call`, `post_tool_call`, `post_memory_write`,
 `on_error`) run concurrently via `asyncio.gather`, with individual plugin failures logged and
 suppressed — a broken plugin never crashes agent execution. Third-party plugins are discovered
-via `importlib.metadata.entry_points(group="nexus.plugins")`.
+via `importlib.metadata.entry_points(group="grampus.plugins")`.
 
 **Key design choices:**
 1. **`plugin_manager=None` default** — `AgentRunner` and `MemoryManager` with no plugin manager
@@ -639,12 +639,12 @@ via `importlib.metadata.entry_points(group="nexus.plugins")`.
    `if self._plugins:` guards. This eliminates any circular import risk.
 5. **Priority controls sequential order** — lower `priority` integer runs earlier in pre-hooks.
    Observational hooks use insertion order (priority-independence for concurrent dispatch).
-6. **`NexusPlugin` base class with no-op hooks** — subclasses override only the hooks they need;
+6. **`GrampusPlugin` base class with no-op hooks** — subclasses override only the hooks they need;
    all others are silent pass-throughs by default.
 
 **Consequences:**
 - Zero new required dependencies — stdlib `importlib.metadata`, `asyncio`, `dataclasses` only
-- Third-party plugins ship as Python packages with `[project.entry-points."nexus.plugins"]` in
+- Third-party plugins ship as Python packages with `[project.entry-points."grampus.plugins"]` in
   their `pyproject.toml`; `create_manager_from_entry_points()` loads them automatically
 - Pre-hook mutation (messages, tool arguments, memory content) enables compliance plugins to
   redact PII, inject system context, or rewrite arguments without modifying agent code
@@ -670,7 +670,7 @@ operational overhead for a single toggle; (3) user assignment to A/B buckets is 
 the same user sees different agent behaviors on consecutive calls — which contaminates experiment
 results and degrades user experience.
 
-**Decision:** Implement a self-contained versioning layer in `src/nexus/versioning/` with four
+**Decision:** Implement a self-contained versioning layer in `src/grampus/versioning/` with four
 interlocking components:
 
 1. **Content-addressed version IDs** — `compute_version_id(definition)` produces a deterministic
@@ -718,7 +718,7 @@ interlocking components:
 **Status:** Accepted
 
 **Context:** RAG (Retrieval-Augmented Generation) is the highest-demand agent use case in
-production deployments. Every team building with Nexus needs to index documents and answer
+production deployments. Every team building with Grampus needs to index documents and answer
 questions from them. Without a complete, working reference implementation, each team
 reinvents the same pipeline — often making the same mistakes: dense-only retrieval (misses
 keyword queries), IVFFlat indexing (requires training, poor incremental performance),
@@ -726,7 +726,7 @@ context concatenation without position-aware ordering, and no citation grounding
 complete template that avoids these mistakes removes the most common adoption barrier.
 
 **Decision:** Implement `demos/rag/` as a production-ready RAG template using the full
-Nexus stack. Key design choices baked in from 2025-2026 research and benchmarks:
+Grampus stack. Key design choices baked in from 2025-2026 research and benchmarks:
 
 1. **Hybrid BM25 + vector search with RRF** — PostgreSQL `tsvector` provides BM25 at zero
    additional infrastructure cost. RRF constant k=60 is the research-validated default.
@@ -740,7 +740,7 @@ Nexus stack. Key design choices baked in from 2025-2026 research and benchmarks:
    bug into a clear startup error.
 6. **Closure-based tool factory** — `make_retrieve_tool()` binds store and embedding
    service into the tool function without global state, demonstrating the correct pattern
-   for stateful tools in Nexus.
+   for stateful tools in Grampus.
 
 **Consequences:**
 - Template uses `asyncpg` directly for pgvector operations — Dapr state store API does
@@ -748,7 +748,7 @@ Nexus stack. Key design choices baked in from 2025-2026 research and benchmarks:
 - Template works without Dapr sidecar (only PostgreSQL required) to minimize quickstart
   friction. Production deployments add Dapr for embedding caching via Redis.
 - `demos/` is not type-checked by mypy (demo code, not library code). New `RAGError` in
-  `src/nexus/core/errors.py` is the only library addition from this phase.
+  `src/grampus/core/errors.py` is the only library addition from this phase.
 - Evaluation script uses LLM-as-judge (Claude) — requires Anthropic API key. The scoring
   is intentionally simplified (2 metrics) to remain readable as a reference, not to replace
   a full RAGAS setup in production.

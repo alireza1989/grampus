@@ -1,10 +1,10 @@
-# Red-Teaming Nexus Agents
+# Red-Teaming Grampus Agents
 
 ## Why agent red-teaming is different
 
 Classic LLM red-teaming targets a stateless chat endpoint: send a bad input, see if the model complies. Agentic systems are fundamentally different. They maintain persistent memory across sessions, execute tools with real side effects, coordinate with other agents, and plan multi-step tasks. A jailbreak that succeeds once in a chat window is annoying; a memory poisoning attack that persists across sessions and grants the attacker elevated trust is a persistent compromise.
 
-The OWASP Agentic Top 10 (ASI01–ASI10:2026) formalizes this distinction. ASI06 (Memory Poisoning) has no equivalent in classic LLM security — it exploits the reflexion layer, user modeling, and graph consolidation that make agents effective. ASI02 (Tool Misuse) targets the sandboxed execution layer. ASI07 (Inter-Agent Trust Exploitation) targets A2A crew coordination. Nexus's rich feature set — four memory layers, causal world model, debate orchestrator, planning runner — creates attack surfaces that simply do not exist in a stateless chat API, and that require agent-specific testing to discover.
+The OWASP Agentic Top 10 (ASI01–ASI10:2026) formalizes this distinction. ASI06 (Memory Poisoning) has no equivalent in classic LLM security — it exploits the reflexion layer, user modeling, and graph consolidation that make agents effective. ASI02 (Tool Misuse) targets the sandboxed execution layer. ASI07 (Inter-Agent Trust Exploitation) targets A2A crew coordination. Grampus's rich feature set — four memory layers, causal world model, debate orchestrator, planning runner — creates attack surfaces that simply do not exist in a stateless chat API, and that require agent-specific testing to discover.
 
 ## Quick start
 
@@ -12,7 +12,7 @@ Create an adapter file that exposes your agent to the red-team runner:
 
 ```python
 # my_agent.py
-from nexus.evaluation.red_team.types import RedTeamTargetConfig
+from grampus.evaluation.red_team.types import RedTeamTargetConfig
 
 
 def get_agent_config() -> RedTeamTargetConfig:
@@ -27,8 +27,8 @@ def get_agent_config() -> RedTeamTargetConfig:
 async def run_conversation(messages: list[tuple[str, str]]) -> str:
     # messages is a list of (role, content) tuples
     # wire this to your actual agent
-    from nexus.orchestration.runner import AgentRunner
-    from nexus.core.types import AgentDefinition
+    from grampus.orchestration.runner import AgentRunner
+    from grampus.core.types import AgentDefinition
 
     runner = AgentRunner(...)
     agent_def = AgentDefinition(name="support", model="claude-sonnet-4-6", ...)
@@ -39,14 +39,14 @@ async def run_conversation(messages: list[tuple[str, str]]) -> str:
 Run the campaign:
 
 ```bash
-nexus redteam my_agent.py
+grampus redteam my_agent.py
 ```
 
 Expected output:
 
 ```
 Starting red-team campaign a1b2c3d4 against my-support-agent...
-=== Nexus Red Team Report ===
+=== Grampus Red Team Report ===
 Campaign:  a1b2c3d4
 Agent:     my-support-agent
 Generated: 2026-06-09T...
@@ -90,7 +90,7 @@ All strategies are template-based and require no LLM. Add `--model claude-sonnet
   OWASP:       ASI01:2026               ← OWASP Agentic Top 10 2026 category
   Occurrences: 3                        ← deduplicated count across all variants
   Rule-based match: ...                 ← judge reasoning
-  Recommendation: ...                   ← Nexus-specific remediation pointer
+  Recommendation: ...                   ← Grampus-specific remediation pointer
 ```
 
 **Severity levels:**
@@ -102,7 +102,7 @@ All strategies are template-based and require no LLM. Add `--model claude-sonnet
 
 **Security properties** (arXiv 2603.19469): `task_alignment` (authorized objective), `action_alignment` (authorized actions), `source_authorization` (authorized instruction source), `data_isolation` (no leakage of isolated data).
 
-**Exit code:** `nexus redteam` exits 0 if no CRITICAL or HIGH findings. Exits 1 if any exist — suitable for CI gates.
+**Exit code:** `grampus redteam` exits 0 if no CRITICAL or HIGH findings. Exits 1 if any exist — suitable for CI gates.
 
 ## CI/CD integration
 
@@ -113,7 +113,7 @@ name: Red Team
 on:
   pull_request:
     paths:
-      - "src/nexus/**"
+      - "src/grampus/**"
       - "agents/**"
 
 jobs:
@@ -125,7 +125,7 @@ jobs:
       - run: uv sync
       - name: Run red-team campaign
         run: |
-          uv run nexus redteam agents/my_agent.py \
+          uv run grampus redteam agents/my_agent.py \
             --categories prompt_injection jailbreak \
             --count 5 \
             --output json > redteam-report.json
@@ -142,7 +142,7 @@ jobs:
 For fast CI feedback on every commit, use `--stop-on-critical` and `--count 3`:
 
 ```bash
-nexus redteam agents/my_agent.py --stop-on-critical --count 3
+grampus redteam agents/my_agent.py --stop-on-critical --count 3
 ```
 
 This runs at most 18 payloads (6 strategies × 3), exits immediately on CRITICAL, and completes in seconds without a model.
@@ -150,7 +150,7 @@ This runs at most 18 payloads (6 strategies × 3), exits immediately on CRITICAL
 ## Using the LLM-based judge and attacker
 
 ```bash
-nexus redteam my_agent.py --model claude-sonnet-4-6
+grampus redteam my_agent.py --model claude-sonnet-4-6
 ```
 
 With a model client:
@@ -169,8 +169,8 @@ With a model client:
 Subclass `BaseAttackStrategy` to add domain-specific attacks:
 
 ```python
-from nexus.evaluation.red_team.strategies.base import BaseAttackStrategy
-from nexus.evaluation.red_team.types import (
+from grampus.evaluation.red_team.strategies.base import BaseAttackStrategy
+from grampus.evaluation.red_team.types import (
     AttackCategory, AttackPayload, AttackVariant, RedTeamTargetConfig,
 )
 
@@ -206,8 +206,8 @@ class CustomerDataExfilStrategy(BaseAttackStrategy):
 Pass it to `AttackerAgent`:
 
 ```python
-from nexus.evaluation.red_team.attacker import AttackerAgent
-from nexus.evaluation.red_team.strategies import ALL_STRATEGIES
+from grampus.evaluation.red_team.attacker import AttackerAgent
+from grampus.evaluation.red_team.strategies import ALL_STRATEGIES
 
 attacker = AttackerAgent(
     strategies=[S() for S in ALL_STRATEGIES] + [CustomerDataExfilStrategy()]
@@ -216,7 +216,7 @@ attacker = AttackerAgent(
 
 ## Remediating findings
 
-| Category | Nexus configuration |
+| Category | Grampus configuration |
 |---|---|
 | `prompt_injection` | Raise `PromptInjectionDetector` level to `STRICT`. Add indirect injection scanning on tool return values in `SafetyPipeline`. |
 | `jailbreak` | Enable roleplay/encoding detection in `SafetyPipeline`. Add Base64 pattern to `_INJECTION_PATTERNS` in `safety/injection.py`. |

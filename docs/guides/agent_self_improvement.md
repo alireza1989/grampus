@@ -1,6 +1,6 @@
 # Agent Self-Improvement
 
-Nexus agents can learn from their own execution history without any weight updates or retraining. Two mechanisms work in tandem: **ReflexionEngine** stores verbal lessons from failures, and **SkillLibrary** extracts reusable approaches from successes. Together they implement the dual-tier self-improvement system described in ADR-016.
+Grampus agents can learn from their own execution history without any weight updates or retraining. Two mechanisms work in tandem: **ReflexionEngine** stores verbal lessons from failures, and **SkillLibrary** extracts reusable approaches from successes. Together they implement the dual-tier self-improvement system described in ADR-016.
 
 ## Why Static System Prompts Degrade
 
@@ -11,10 +11,10 @@ Dual-tier improvement breaks this pattern. **Tier 1 (Reflexion, NeurIPS 2023)**:
 ## Quick Start
 
 ```python
-from nexus.memory.reflexion import ReflexionEngine, SkillLibrary
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.embeddings import EmbeddingService
-from nexus.orchestration.runner import AgentRunner
+from grampus.memory.reflexion import ReflexionEngine, SkillLibrary
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.embeddings import EmbeddingService
+from grampus.orchestration.runner import AgentRunner
 
 dapr_store = ...       # your DaprStateStore
 embedding_svc = EmbeddingService(state_store=dapr_store)
@@ -117,9 +117,9 @@ Skills extracted from task 1 are immediately available (though unvalidated) for 
 `PromptOptimizer` closes the loop: given an `EvalSuite`, it proposes three candidate system prompt mutations, evaluates each, and registers the best as a new `PromptVersion` if it beats the baseline by `improvement_threshold` (default 0.05).
 
 ```python
-from nexus.memory.reflexion import PromptOptimizer
-from nexus.evaluation.suite import EvalSuite
-from nexus.evaluation.prompt_versions import PromptVersionManager
+from grampus.memory.reflexion import PromptOptimizer
+from grampus.evaluation.suite import EvalSuite
+from grampus.evaluation.prompt_versions import PromptVersionManager
 
 prompt_mgr = PromptVersionManager(agent_id="my-agent")
 prompt_mgr.register("1.0.0", agent_def.system_prompt or "")
@@ -158,7 +158,7 @@ Three mutation strategies are tried in parallel:
 Query ProceduralMemory directly to inspect what has been learned:
 
 ```python
-from nexus.memory.types import ProcedureType
+from grampus.memory.types import ProcedureType
 
 # All reflections (including low-quality ones)
 reflections = await procedural_mem.query_by_type(ProcedureType.REFLECTION)

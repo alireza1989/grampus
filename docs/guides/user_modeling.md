@@ -7,7 +7,7 @@ senior backend engineer who prefers concise, technical answers, or that you are 
 through a Kubernetes migration. This gap forces users to re-introduce themselves every session and
 prevents agents from adapting their reasoning depth or vocabulary to the individual.
 
-Nexus F2 introduces a three-tier user memory hierarchy backed by peer-reviewed research. Two key
+Grampus F2 introduces a three-tier user memory hierarchy backed by peer-reviewed research. Two key
 findings shaped the design: **Bi-Mem** (arXiv 2601.06490) showed that extracting facts bottom-up
 from conversations and then synthesizing a persona top-down — rather than doing either alone —
 prevents hallucination amplification that occurs when flat profiles are clustered. **HMO** (arXiv
@@ -25,7 +25,7 @@ model of each individual user.
 ## Quick Start
 
 ```python
-from nexus.memory.user import (
+from grampus.memory.user import (
     UserMemoryStore, FactExtractor, ProfileSynthesizer, UserMemoryAdapter
 )
 

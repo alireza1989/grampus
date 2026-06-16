@@ -15,8 +15,8 @@
 ### Register with the decorator
 
 ```python
-from nexus.core.types import ToolParameter
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolParameter
+from grampus.tools.registry import ToolRegistry
 
 registry = ToolRegistry()
 
@@ -43,7 +43,7 @@ async def calculate(expression: str) -> dict[str, float]:
 ### Register programmatically
 
 ```python
-from nexus.core.types import ToolParameter
+from grampus.core.types import ToolParameter
 
 async def fetch_weather(city: str, units: str = "celsius") -> dict[str, str]:
     return {"city": city, "temp": "22°C", "condition": "sunny"}
@@ -98,7 +98,7 @@ tool = registry.get_or_raise("calculate")
 `ToolExecutor` adds timeout, retry, idempotency, and execution records on top of the registry.
 
 ```python
-from nexus.tools.executor import ToolExecutor
+from grampus.tools.executor import ToolExecutor
 
 executor = ToolExecutor(
     registry,
@@ -111,7 +111,7 @@ executor = ToolExecutor(
 ### Execute a tool call
 
 ```python
-from nexus.core.types import ToolCall
+from grampus.core.types import ToolCall
 
 tool_call = ToolCall(
     id="call_abc123",
@@ -155,7 +155,7 @@ print(f"Total tool calls this session: {len(all_records)}")
 The MCP (Model Context Protocol) client lets you connect to any MCP-compatible tool server — filesystem tools, browser automation, databases, and more.
 
 ```python
-from nexus.tools.mcp_client import MCPClient
+from grampus.tools.mcp_client import MCPClient
 
 # Connect to an MCP server
 mcp_client = MCPClient(server_url="http://localhost:3100")
@@ -180,13 +180,13 @@ print(f"File contents: {result.output}")
 
 ## Sandbox execution
 
-The sandbox runs tool code in an isolated Docker container. Nexus uses sandbox isolation by default for LLM-generated code.
+The sandbox runs tool code in an isolated Docker container. Grampus uses sandbox isolation by default for LLM-generated code.
 
 ### Code executor (LLM-generated Python)
 
 ```python
-from nexus.tools.sandbox.code_executor import CodeExecutor
-from nexus.tools.sandbox.manager import SandboxManager
+from grampus.tools.sandbox.code_executor import CodeExecutor
+from grampus.tools.sandbox.manager import SandboxManager
 
 sandbox_manager = SandboxManager(
     network_access=False,        # no outbound network
@@ -238,7 +238,7 @@ sandbox_manager = SandboxManager(
 `ActionGuard` enforces per-agent boundaries: which tools are allowed, how often they can be called, and cost limits.
 
 ```python
-from nexus.safety.action_guard import ActionGuard, AgentPolicy
+from grampus.safety.action_guard import ActionGuard, AgentPolicy
 
 policy = AgentPolicy(
     allowed_tools=["web_search", "calculate"],   # explicit allowlist
@@ -251,7 +251,7 @@ policy = AgentPolicy(
 guard = ActionGuard(policy=policy)
 
 # Check before executing
-from nexus.core.types import ToolCall
+from grampus.core.types import ToolCall
 tool_call = ToolCall(id="x", name="web_search", arguments={"query": "test"})
 checked_call, violations = await guard.check(
     tool_call,
@@ -267,9 +267,9 @@ checked_call, violations = await guard.check(
 
 ```python
 import asyncio
-from nexus.core.types import ToolCall, ToolParameter
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolCall, ToolParameter
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 registry = ToolRegistry()
 

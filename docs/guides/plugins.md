@@ -1,6 +1,6 @@
 # Plugin System
 
-Nexus exposes a lifecycle hook system that lets you intercept every significant event in the agent
+Grampus exposes a lifecycle hook system that lets you intercept every significant event in the agent
 execution loop — without modifying core framework code. Plugins can observe, mutate, or block
 operations at 9 named hook points across `AgentRunner` and `MemoryManager`.
 
@@ -27,10 +27,10 @@ an observational hook is logged and ignored — it never crashes the agent.
 ## Quick start
 
 ```python
-from nexus.plugins import NexusPlugin, PluginManager
-from nexus.plugins.types import LLMCallContext
+from grampus.plugins import GrampusPlugin, PluginManager
+from grampus.plugins.types import LLMCallContext
 
-class LoggingPlugin(NexusPlugin):
+class LoggingPlugin(GrampusPlugin):
     async def post_llm_call(self, ctx: LLMCallContext, content, usage) -> None:
         print(f"[{ctx.step}] model={ctx.model} tokens={usage.total_tokens}")
 
@@ -159,13 +159,13 @@ Pre-hooks thread their return values through a pipeline. Each plugin receives th
 returned by the previous plugin:
 
 ```python
-class SystemPromptPlugin(NexusPlugin):
+class SystemPromptPlugin(GrampusPlugin):
     async def pre_llm_call(self, ctx, messages, tools):
-        from nexus.core.types import Message, Role
+        from grampus.core.types import Message, Role
         system = Message(role=Role.SYSTEM, content="Always respond in JSON.")
         return [system] + list(messages)
 
-class PIIRedactPlugin(NexusPlugin):
+class PIIRedactPlugin(GrampusPlugin):
     async def pre_memory_write(self, ctx, content):
         import re
         return re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "[SSN]", content)
@@ -180,9 +180,9 @@ Return `None` (or omit the return) to pass the current value unchanged to the ne
 Raise `HookBlockedError` in any pre-hook to cancel the operation:
 
 ```python
-from nexus.plugins import HookBlockedError, NexusPlugin
+from grampus.plugins import HookBlockedError, GrampusPlugin
 
-class CompliancePlugin(NexusPlugin):
+class CompliancePlugin(GrampusPlugin):
     BLOCKED_TOOLS = {"delete_file", "send_email"}
 
     async def pre_tool_call(self, ctx, arguments):
@@ -201,13 +201,13 @@ class CompliancePlugin(NexusPlugin):
 Set `priority` (default `50`) to control pre-hook order. Lower numbers run first:
 
 ```python
-class EarlyPlugin(NexusPlugin):
+class EarlyPlugin(GrampusPlugin):
     priority = 10   # runs before StandardPlugin
 
-class StandardPlugin(NexusPlugin):
+class StandardPlugin(GrampusPlugin):
     priority = 50   # default
 
-class LatePlugin(NexusPlugin):
+class LatePlugin(GrampusPlugin):
     priority = 90   # runs last
 ```
 
@@ -227,21 +227,21 @@ Third-party plugins are auto-discovered via Python entry points. In your package
 `pyproject.toml`:
 
 ```toml
-[project.entry-points."nexus.plugins"]
+[project.entry-points."grampus.plugins"]
 my_plugin = "my_package.plugin:MyPlugin"
 ```
 
 Then load all registered plugins at runtime:
 
 ```python
-from nexus.plugins import create_manager_from_entry_points
+from grampus.plugins import create_manager_from_entry_points
 
 pm = create_manager_from_entry_points()
 runner = AgentRunner(model_client, tool_executor, plugin_manager=pm)
 ```
 
 `create_manager_from_entry_points()` skips any entry points that fail to load or are not
-`NexusPlugin` subclasses — a broken third-party package never crashes your agent.
+`GrampusPlugin` subclasses — a broken third-party package never crashes your agent.
 
 ---
 
@@ -250,13 +250,13 @@ runner = AgentRunner(model_client, tool_executor, plugin_manager=pm)
 ```python
 import json
 import time
-from nexus.plugins import NexusPlugin
-from nexus.plugins.types import (
+from grampus.plugins import GrampusPlugin
+from grampus.plugins.types import (
     AgentStartContext, AgentEndContext, LLMCallContext,
     ToolCallContext, ToolResultContext, ErrorContext,
 )
 
-class AuditPlugin(NexusPlugin):
+class AuditPlugin(GrampusPlugin):
     """Append-only audit log for SOC2 compliance."""
 
     name = "soc2-audit"
@@ -306,6 +306,6 @@ class AuditPlugin(NexusPlugin):
 Register it:
 
 ```python
-pm = PluginManager(plugins=[AuditPlugin(name="soc2-audit", audit_log_path="/var/log/nexus/audit.jsonl")])
+pm = PluginManager(plugins=[AuditPlugin(name="soc2-audit", audit_log_path="/var/log/grampus/audit.jsonl")])
 runner = AgentRunner(model_client, tool_executor, plugin_manager=pm)
 ```

@@ -8,7 +8,7 @@ Customer support agent using **{{model}}** with RAG over `{{knowledge_base_path}
 2. Run the agent:
 
 ```bash
-nexus run agent.py "How do I reset my password?"
+grampus run agent.py "How do I reset my password?"
 ```
 
 ## Features

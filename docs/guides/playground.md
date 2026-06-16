@@ -1,17 +1,17 @@
 # Prompt Playground
 
-`nexus playground` is an interactive CLI for testing prompts, comparing model responses, and iterating on system prompts before wiring an agent into production. Think of it as a REPL for prompt engineering — with cost tracking, session history, and direct export to eval cases.
+`grampus playground` is an interactive CLI for testing prompts, comparing model responses, and iterating on system prompts before wiring an agent into production. Think of it as a REPL for prompt engineering — with cost tracking, session history, and direct export to eval cases.
 
 ---
 
 ## Quick start
 
 ```bash
-$ nexus playground start --model claude-haiku-4-5
+$ grampus playground start --model claude-haiku-4-5
 ```
 
 ```
-Nexus Prompt Playground
+Grampus Prompt Playground
 Model: claude-haiku-4-5  |  Cost: $0.0000
 Type /help for commands. Ctrl+C to exit.
 
@@ -39,7 +39,7 @@ Responses stream in real time. Each response shows input/output token count, cos
 | `/compare <model2> [model3]` | Run the last user message against additional models concurrently |
 | `/cost` | Show accumulated cost for this session |
 | `/reset` | Clear conversation history (system prompt preserved) |
-| `/save [name]` | Save the current session to `~/.nexus/playground/` |
+| `/save [name]` | Save the current session to `~/.grampus/playground/` |
 | `/load <name>` | Load a previously saved session |
 | `/sessions` | List all saved sessions |
 | `/export [path]` | Export the last turn as an `EvalCase` JSON file |
@@ -55,7 +55,7 @@ Responses stream in real time. Each response shows input/output token count, cos
 Run a single prompt and exit — useful in scripts:
 
 ```bash
-$ nexus playground run "What is the capital of France?" --model gpt-4o-mini
+$ grampus playground run "What is the capital of France?" --model gpt-4o-mini
 Paris is the capital of France.
 ↑52 ↓5 tokens · $0.00003 · 0.3s
 ```
@@ -75,7 +75,7 @@ Options:
 Test the same prompt across multiple models simultaneously to compare quality and cost:
 
 ```bash
-$ nexus playground compare "Explain async/await in Python in one paragraph" \
+$ grampus playground compare "Explain async/await in Python in one paragraph" \
     --models claude-haiku-4-5,gpt-4o-mini,llama3.2
 ```
 
@@ -114,16 +114,16 @@ Sessions save everything: conversation history, system prompt, model choice, and
 Session saved: python-tutor
 
 # List saved sessions
-$ nexus playground sessions
+$ grampus playground sessions
 NAME             MODEL              TURNS  COST      SAVED
 python-tutor     claude-haiku-4-5   8      $0.0012   2026-06-01 14:22
 billing-tests    gpt-4o-mini        3      $0.0003   2026-05-30 09:15
 
 # Resume a session
-$ nexus playground start --load python-tutor
+$ grampus playground start --load python-tutor
 ```
 
-Sessions are stored as JSON files in `~/.nexus/playground/`. They are portable — you can commit them to your repository as regression fixtures.
+Sessions are stored as JSON files in `~/.grampus/playground/`. They are portable — you can commit them to your repository as regression fixtures.
 
 ---
 
@@ -158,7 +158,7 @@ Load it in your eval suite:
 
 ```python
 import json
-from nexus.evaluation.suite import EvalCase, EvalSuite
+from grampus.evaluation.suite import EvalCase, EvalSuite
 
 with open("cases/capital_brazil.json") as f:
     data = json.load(f)

@@ -1,6 +1,6 @@
 # Embedding Providers
 
-Nexus ships three embedding providers — OpenAI, Cohere, and Ollama — that can be mixed and matched
+Grampus ships three embedding providers — OpenAI, Cohere, and Ollama — that can be mixed and matched
 per memory type via `EmbeddingRouter`. All providers share the same `EmbeddingService` interface,
 so existing code needs no changes to use a different backend.
 
@@ -13,12 +13,12 @@ so existing code needs no changes to use a different backend.
 
 ## OpenAI
 
-Best for production workloads where quality matters most. Requires `pip install nexus-ai[openai]`.
+Best for production workloads where quality matters most. Requires `pip install grampus-ai[openai]`.
 
 ```python
 from openai import AsyncOpenAI
-from nexus.memory.embedding_providers import OpenAIEmbeddingProvider
-from nexus.memory.embeddings import EmbeddingService
+from grampus.memory.embedding_providers import OpenAIEmbeddingProvider
+from grampus.memory.embeddings import EmbeddingService
 
 client = AsyncOpenAI(api_key="sk-...")
 provider = OpenAIEmbeddingProvider(client=client, model="text-embedding-3-small")
@@ -36,12 +36,12 @@ service = EmbeddingService(provider=provider, cache_store=dapr_cache)
 ## Cohere
 
 Best for multilingual content and when domain-tuned quality outweighs cost. Requires
-`pip install nexus-ai[cohere]`.
+`pip install grampus-ai[cohere]`.
 
 ```python
 import cohere
-from nexus.memory.embedding_providers import CohereEmbeddingProvider
-from nexus.memory.embeddings import EmbeddingService
+from grampus.memory.embedding_providers import CohereEmbeddingProvider
+from grampus.memory.embeddings import EmbeddingService
 
 client = cohere.AsyncClientV2(api_key="co-...")
 provider = CohereEmbeddingProvider(client=client, model="embed-english-v3.0")
@@ -75,8 +75,8 @@ Best for local/offline deployments and cost-sensitive working memory. Uses httpx
 core dep) — no extra install required. Run `ollama serve` before use.
 
 ```python
-from nexus.memory.embedding_providers import OllamaEmbeddingProvider
-from nexus.memory.embeddings import EmbeddingService
+from grampus.memory.embedding_providers import OllamaEmbeddingProvider
+from grampus.memory.embeddings import EmbeddingService
 
 provider = OllamaEmbeddingProvider(model="nomic-embed-text", base_url="http://localhost:11434")
 service = EmbeddingService(provider=provider, cache_store=dapr_cache)
@@ -100,12 +100,12 @@ Use `EmbeddingRouter` to direct different memory types to the most cost-effectiv
 `.embed_batch()`, and `.dimensions`, so it can replace a service anywhere in your code.
 
 ```python
-from nexus.memory.embedding_providers import (
+from grampus.memory.embedding_providers import (
     EmbeddingRouter,
     OllamaEmbeddingProvider,
     OpenAIEmbeddingProvider,
 )
-from nexus.memory.embeddings import EmbeddingService
+from grampus.memory.embeddings import EmbeddingService
 
 router = EmbeddingRouter({
     # Default for any unregistered purpose
@@ -159,7 +159,7 @@ dimension and pgvector rejects them without raising a Python-level error.
 service = EmbeddingService(openai_client=client, cache_store=cache, model="text-embedding-3-small")
 
 # New
-from nexus.memory.embedding_providers import OpenAIEmbeddingProvider
+from grampus.memory.embedding_providers import OpenAIEmbeddingProvider
 provider = OpenAIEmbeddingProvider(client=client, model="text-embedding-3-small")
 service = EmbeddingService(provider=provider, cache_store=cache)
 ```

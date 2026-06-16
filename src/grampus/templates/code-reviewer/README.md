@@ -6,10 +6,10 @@ Automated code review using **{{model}}** on `{{repo_path}}`.
 
 ```bash
 # Review the entire repo
-nexus run agent.py
+grampus run agent.py
 
 # Review a specific concern
-nexus run agent.py "Focus on security vulnerabilities in the auth module"
+grampus run agent.py "Focus on security vulnerabilities in the auth module"
 ```
 
 ## Features

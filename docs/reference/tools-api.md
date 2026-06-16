@@ -4,7 +4,7 @@
 
 Central registry for all tools available to an agent.
 
-::: nexus.tools.registry.ToolRegistry
+::: grampus.tools.registry.ToolRegistry
     options:
       show_source: false
       members: [register, tool, get, get_or_raise, list_all, to_definitions]
@@ -15,7 +15,7 @@ Central registry for all tools available to an agent.
 
 Executes tool calls with validation, timeout, retry, and idempotency.
 
-::: nexus.tools.executor.ToolExecutor
+::: grampus.tools.executor.ToolExecutor
     options:
       show_source: false
       members: [execute, get_record, all_records]
@@ -24,7 +24,7 @@ Executes tool calls with validation, timeout, retry, and idempotency.
 
 ## MCP client
 
-::: nexus.tools.mcp_client.MCPClient
+::: grampus.tools.mcp_client.MCPClient
     options:
       show_source: false
       members: [list_tools, invoke_tool, close]
@@ -33,12 +33,12 @@ Executes tool calls with validation, timeout, retry, and idempotency.
 
 ## Sandbox
 
-::: nexus.tools.sandbox.manager.SandboxManager
+::: grampus.tools.sandbox.manager.SandboxManager
     options:
       show_source: false
       members: [create_sandbox, run, destroy]
 
-::: nexus.tools.sandbox.code_executor.CodeExecutor
+::: grampus.tools.sandbox.code_executor.CodeExecutor
     options:
       show_source: false
       members: [execute]
@@ -47,7 +47,7 @@ Executes tool calls with validation, timeout, retry, and idempotency.
 
 ## Action guard
 
-::: nexus.tools.boundaries.ActionGuard
+::: grampus.tools.boundaries.ActionGuard
     options:
       show_source: false
       members: [check]
@@ -69,28 +69,28 @@ class RegisteredTool:
 
 ### ToolDefinition
 
-::: nexus.core.types.ToolDefinition
+::: grampus.core.types.ToolDefinition
     options:
       show_source: false
       members: [to_function_schema]
 
 ### ToolParameter
 
-::: nexus.core.types.ToolParameter
+::: grampus.core.types.ToolParameter
     options:
       show_source: false
       members: []
 
 ### ToolCall
 
-::: nexus.core.types.ToolCall
+::: grampus.core.types.ToolCall
     options:
       show_source: false
       members: []
 
 ### ToolResult
 
-::: nexus.core.types.ToolResult
+::: grampus.core.types.ToolResult
     options:
       show_source: false
       members: []
@@ -115,7 +115,7 @@ class ToolExecutionRecord:
 `ToolDefinition.to_function_schema()` returns an OpenAI/Anthropic-compatible JSON schema:
 
 ```python
-from nexus.core.types import ToolDefinition, ToolParameter
+from grampus.core.types import ToolDefinition, ToolParameter
 
 defn = ToolDefinition(
     name="get_weather",

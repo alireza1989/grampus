@@ -14,9 +14,9 @@ A research agent that:
 
 ## Prerequisites
 
-- Nexus installed: `pip install "nexus-ai[anthropic]"`
+- Grampus installed: `pip install "grampus-ai[anthropic]"`
 - Dapr and Docker running locally
-- `NEXUS_MODEL__ANTHROPIC_API_KEY` set in your environment
+- `GRAMPUS_MODEL__ANTHROPIC_API_KEY` set in your environment
 
 ---
 
@@ -28,11 +28,11 @@ import asyncio
 import os
 from typing import Any
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition, ToolParameter
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition, ToolParameter
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 # ── Tool Registry ─────────────────────────────────────────────────────────────
 
@@ -76,18 +76,18 @@ async def web_search(query: str, num_results: int = 5) -> dict[str, Any]:
 ```python
 # continued from research_agent.py
 
-from nexus.dapr.client import DaprClient
-from nexus.dapr.state import DaprStateStore
-from nexus.memory.embeddings import EmbeddingService
-from nexus.memory.episodic import EpisodicMemory
-from nexus.memory.manager import MemoryManager
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.retriever import EpisodicRetriever
-from nexus.memory.semantic import SemanticMemory
-from nexus.memory.semantic_retriever import SemanticRetriever
-from nexus.memory.summarizer import Summarizer
-from nexus.memory.working import WorkingMemory
-from nexus.memory.consolidation import ConsolidationPipeline
+from grampus.dapr.client import DaprClient
+from grampus.dapr.state import DaprStateStore
+from grampus.memory.embeddings import EmbeddingService
+from grampus.memory.episodic import EpisodicMemory
+from grampus.memory.manager import MemoryManager
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.retriever import EpisodicRetriever
+from grampus.memory.semantic import SemanticMemory
+from grampus.memory.semantic_retriever import SemanticRetriever
+from grampus.memory.summarizer import Summarizer
+from grampus.memory.working import WorkingMemory
+from grampus.memory.consolidation import ConsolidationPipeline
 
 
 def build_memory_manager(agent_id: str, model_client: AnthropicClient) -> MemoryManager:
@@ -135,10 +135,10 @@ def build_memory_manager(agent_id: str, model_client: AnthropicClient) -> Memory
 ```python
 # continued from research_agent.py
 
-from nexus.safety.action_guard import ActionGuard, AgentPolicy
-from nexus.safety.injection import PromptInjectionDetector
-from nexus.safety.pii import PIIDetector
-from nexus.safety.pipeline import SafetyPipeline, SafetyPipelineConfig
+from grampus.safety.action_guard import ActionGuard, AgentPolicy
+from grampus.safety.injection import PromptInjectionDetector
+from grampus.safety.pii import PIIDetector
+from grampus.safety.pipeline import SafetyPipeline, SafetyPipelineConfig
 
 
 def build_safety_pipeline() -> SafetyPipeline:
@@ -180,7 +180,7 @@ AGENT_ID = "research-agent-v1"
 
 
 def create_runner() -> AgentRunner:
-    client = AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    client = AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
     executor = ToolExecutor(registry, timeout_seconds=30.0, max_retries=2)
     memory = build_memory_manager(AGENT_ID, client)
     config = RunnerConfig(max_iterations=10, memory_top_k=5, enable_memory=True)
@@ -226,7 +226,7 @@ async def main() -> None:
     print(f"Total cost:      ${result.token_usage.cost_usd:.4f}")
 
     # Second run in same session — agent recalls previous research
-    followup = "How does Nexus compare to what you found?"
+    followup = "How does Grampus compare to what you found?"
     result2 = await runner.run(agent, followup, session_id="research-session-1", user_id="alice")
     print(f"\nFollowup answer:\n{result2.output}")
 
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 ## Step 5 — Run it
 
 ```bash
-nexus run research_agent.py --input "What are the latest developments in agentic AI?"
+grampus run research_agent.py --input "What are the latest developments in agentic AI?"
 ```
 
 ---

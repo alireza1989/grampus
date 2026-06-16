@@ -213,25 +213,25 @@
       <h1>Nexus — Remaining Work</h1>
       <span class="tag">ROADMAP</span>
     </div>
-    <div class="header-sub">Phases C – H &nbsp;·&nbsp; Post-launch differentiation &amp; ecosystem</div>
+    <div class="header-sub">Phases C – I &nbsp;·&nbsp; Post-launch differentiation, ecosystem &amp; quality</div>
   </div>
   <div style="font-size:12px;color:var(--muted);text-align:right;padding-top:6px">
     June 2026<br>
-    <span style="color:var(--green)">●</span> Phases A–B, E complete
+    <span style="color:var(--green)">●</span> Phases A–B, E–H (most) complete
   </div>
 </div>
 
 <!-- Progress -->
 <div class="progress-section">
   <div class="progress-stats">
-    <div class="stat"><span class="stat-num done">31</span><span class="stat-label">Done</span></div>
-    <div class="stat"><span class="stat-num remaining">37</span><span class="stat-label">Remaining</span></div>
-    <div class="stat"><span class="stat-num">68</span><span class="stat-label">Total</span></div>
+    <div class="stat"><span class="stat-num done">49</span><span class="stat-label">Done</span></div>
+    <div class="stat"><span class="stat-num remaining">44</span><span class="stat-label">Remaining</span></div>
+    <div class="stat"><span class="stat-num">93</span><span class="stat-label">Total</span></div>
   </div>
   <div class="progress-bar-outer">
     <div class="progress-bar-inner" id="progressBar"></div>
   </div>
-  <div class="progress-label">46% complete &nbsp;·&nbsp; click any item to expand details</div>
+  <div class="progress-label">53% complete &nbsp;·&nbsp; click any item to expand details</div>
 </div>
 
 <!-- Charts -->
@@ -337,6 +337,36 @@ const PHASES = [
       { id: 'H9', text: 'Real-LLM integration tests',      size: 'S', notes: 'Optional CI job against real Claude/GPT-4, gated by env var.' },
     ]
   },
+  {
+    id: 'I', label: 'Quality, Security & Ops', color: '#ec4899', timeline: 'Do first',
+    items: [
+      { id: 'I1',  text: 'nexus doctor CLI command',             size: 'XS', notes: 'Check: API keys set, Dapr sidecar reachable, PostgreSQL connectable, pgvector extension present, Redis reachable. Prints ✓/✗ checklist. --json flag for bug report attachment. Single highest-impact DX addition — setup failure is #1 new-user dropout.' },
+      { id: 'I2',  text: 'Secrets scanning in CI',              size: 'XS', notes: 'gitleaks GitHub Action on every push/PR. Prevents accidental API key commits. 10-minute setup, zero maintenance.' },
+      { id: 'I3',  text: 'pip-audit in CI',                     size: 'XS', notes: 'Catch known CVEs in pinned transitive deps (httpx, pydantic, dapr, asyncpg all have had advisories). Blocks merges on high-severity findings.' },
+      { id: 'I4',  text: 'Health check endpoints',              size: 'XS', notes: '/healthz (liveness, always 200) and /readyz (readiness, 503 if Dapr/DB unreachable). Hard requirement for Kubernetes liveness/readiness probes.' },
+      { id: 'I5',  text: 'GitHub issue + PR templates',         size: 'XS', notes: 'Bug Report, Feature Request, Question templates. Without templates, 80% of issues are missing critical info. PR template: checklist for tests/docs/ruff/mypy.' },
+      { id: 'I6',  text: 'CONTRIBUTING.md',                     size: 'XS', notes: 'Dev setup, how to run tests, how to run Dapr locally, PR process, conventional commit format, how to add a tool, how to add a model client.' },
+      { id: 'I7',  text: 'CSP headers on web UI',               size: 'XS', notes: 'Content-Security-Policy, X-Frame-Options, X-Content-Type-Options middleware on FastAPI. Without CSP, the memory inspector UI is XSS-vulnerable if stored memory content contains script tags.' },
+      { id: 'I8',  text: 'SECURITY.md',                         size: 'XS', notes: 'How to report vulnerabilities (private email, not public issue), response SLA, disclosure policy. Required for enterprise security reviews. GitHub shows advisory banner without this.' },
+      { id: 'I9',  text: 'Error catalog in docs',               size: 'S',  notes: 'Every NexusError code listed: what it means, what caused it, how to fix it. The hint field (Phase A5) already exists — surface those hints in a docs page. When users Google a Nexus error code, this should be the first result.' },
+      { id: 'I10', text: 'PyPI trusted publisher migration',    size: 'S',  notes: 'Migrate release workflow from API token to OIDC (GitHub Actions). Add actions/attest-build-provenance for artifact attestation. Tokens can be stolen; OIDC cannot.' },
+      { id: 'I11', text: 'Graceful shutdown',                   size: 'S',  notes: 'nexus serve must handle SIGTERM: stop accepting requests, wait for in-flight runs (configurable timeout), flush event log, then exit. Without this, agent runs are killed mid-execution on every Kubernetes deployment.' },
+      { id: 'I12', text: 'Rate limiting on REST API',           size: 'S',  notes: 'slowapi adds per-IP or per-API-key rate limiting to FastAPI in 20 lines. Without it, a misconfigured client in a loop can exhaust an entire LLM API quota in minutes.' },
+      { id: 'I13', text: 'SBOM generation',                     size: 'S',  notes: 'CycloneDX or SPDX format via syft. Required for US federal procurement (EO 14028) and enterprise security reviews. No agent framework ships one — instant differentiator for regulated industries.' },
+      { id: 'I14', text: 'Request ID / correlation ID propagation', size: 'S', notes: 'When FastAPI receives X-Request-ID or traceparent header, inject into structlog context. Without this, distributed traces are broken at the Nexus boundary and production debugging is painful.' },
+      { id: 'I15', text: 'Retry + run timeout configuration',   size: 'S',  notes: 'Global retry config for LLM calls (max_retries, backoff_factor, retry_on) under NexusConfig.model.retry. Global wall-clock timeout for full agent execution via asyncio.wait_for.' },
+      { id: 'I16', text: 'Cross-Python-version CI matrix',      size: 'S',  notes: 'CI should test Python 3.12 and 3.13. Many enterprise teams still on 3.11 — worth confirming compatibility.' },
+      { id: 'I17', text: 'Performance benchmark suite',         size: 'M',  notes: 'pytest-benchmark for hot paths: embedding service, retriever, agent runner loop overhead vs raw API call, RAG hybrid search. github-action-benchmark to track regressions over time.' },
+      { id: 'I18', text: 'Tool result caching',                 size: 'S',  notes: 'Idempotent tool calls (same name + same args) cached within a session or globally. cache_ttl_seconds on ToolParameter. Expensive tools (web scraping, SQL) should not re-run on identical inputs.' },
+      { id: 'I19', text: 'nexus export / nexus import',         size: 'M',  notes: 'Export agent memory + event log + config as a portable .nexus bundle. Import on another machine. Needed for: environment migration, sharing reproducible debug runs, backup.' },
+      { id: 'I20', text: 'WebSocket endpoint',                  size: 'M',  notes: 'REST API has SSE but not WebSocket. Real-time dashboards, mobile apps, and many frontend frameworks prefer WebSocket over SSE. fastapi-websockets, zero new required deps.' },
+      { id: 'I21', text: 'Mutation testing baseline',           size: 'M',  notes: 'mutmut or cosmic-ray. Standard tests can pass even when a critical condition is inverted. No agent framework ships this — real differentiator for quality signal.' },
+      { id: 'I22', text: 'Property-based testing expansion',    size: 'S',  notes: 'Hypothesis for RRF fusion math, trust scoring formulas, cost calculations, token counting. Hypothesis is in dev deps but only used for working memory — expand to all numerical logic.' },
+      { id: 'I23', text: 'Changelog automation',                size: 'XS', notes: 'git-cliff generates CHANGELOG.md automatically from conventional commits (which the project already uses). Without automation, CHANGELOG drifts or never gets updated.' },
+      { id: 'I24', text: 'Dependabot / Renovate',               size: 'XS', notes: 'Automated dependency update PRs. One config file in .github/dependabot.yml. Without this, deps drift silently and CVEs accumulate unnoticed.' },
+      { id: 'I25', text: 'Architecture diagram (C4 / Mermaid)', size: 'S',  notes: 'C4 context + container diagram in docs. PLAN.md has ASCII art but no proper shareable diagram. Most-shared asset in technical evaluations — teams screenshot this for architecture reviews.' },
+    ]
+  },
 ];
 
 const SIZE_CFG = {
@@ -349,7 +379,7 @@ const SIZE_CFG = {
 
 // Animate progress bar
 window.addEventListener('load', () => {
-  setTimeout(() => { document.getElementById('progressBar').style.width = '46%'; }, 200);
+  setTimeout(() => { document.getElementById('progressBar').style.width = '53%'; }, 200);
 });
 
 // Phase bar chart
@@ -396,7 +426,7 @@ function buildDonut() {
   ctx.fillStyle = '#e2e8f0';
   ctx.font = 'bold 18px Inter, system-ui, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('37', cx, cy - 6);
+  ctx.fillText('44', cx, cy - 6);
   ctx.fillStyle = '#8892a4';
   ctx.font = '10px Inter, system-ui, sans-serif';
   ctx.fillText('items', cx, cy + 9);
@@ -424,6 +454,7 @@ function buildTimeline() {
     { label:'F',  sub:'Memory & Learning',     dur:'2–3 mo', color:'#22c55e', flex:2.5 },
     { label:'G',  sub:'Safety',                dur:'1–2 mo', color:'#ef4444', flex:1.5 },
     { label:'H',  sub:'Platform',              dur:'3+ mo',  color:'#f97316', flex:3   },
+    { label:'I',  sub:'Quality & Ops',         dur:'do first', color:'#ec4899', flex:2  },
   ];
   config.forEach(c => {
     const col = document.createElement('div');

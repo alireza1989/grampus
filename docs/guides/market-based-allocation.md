@@ -19,9 +19,9 @@ A `MarketCrew` where a supervisor posts tasks to a shared board and worker agent
 
 ## Prerequisites
 
-- Nexus installed with Anthropic support: `pip install "nexus-ai[anthropic]"`
+- Grampus installed with Anthropic support: `pip install "grampus-ai[anthropic]"`
 - Dapr and Docker running locally
-- `NEXUS_MODEL__ANTHROPIC_API_KEY` set
+- `GRAMPUS_MODEL__ANTHROPIC_API_KEY` set
 
 ---
 
@@ -35,10 +35,10 @@ import asyncio
 import os
 from typing import Any
 
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.orchestration.crew import CrewMember
-from nexus.orchestration.market import (
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.orchestration.crew import CrewMember
+from grampus.orchestration.market import (
     CapabilityProfile,
     CapabilityRegistry,
     MarketAllocator,
@@ -47,13 +47,13 @@ from nexus.orchestration.market import (
     TaskBoard,
     BidScorer,
 )
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 
 def make_client() -> AnthropicClient:
-    return AnthropicClient(api_key=os.environ["NEXUS_MODEL__ANTHROPIC_API_KEY"])
+    return AnthropicClient(api_key=os.environ["GRAMPUS_MODEL__ANTHROPIC_API_KEY"])
 
 
 # Worker 1: web researcher
@@ -263,7 +263,7 @@ The highest `final_score` wins, provided `calibrated_success ≥ min_success_thr
 After each task completes, call `allocator.report_outcome()` (done automatically by `MarketCrew.run_task_with_market()`):
 
 ```python
-from nexus.orchestration.market import TaskOutcome
+from grampus.orchestration.market import TaskOutcome
 
 outcome = TaskOutcome(
     task_id=result.task_id,
@@ -291,7 +291,7 @@ The tracker updates:
 Override the default weights when your priorities differ:
 
 ```python
-from nexus.orchestration.market import BidScorer, ReputationTracker
+from grampus.orchestration.market import BidScorer, ReputationTracker
 
 scorer = BidScorer(
     ReputationTracker(),
@@ -326,8 +326,8 @@ When the threshold is not met, `MarketAllocationError(code="MARKET_ALLOCATION_RE
 The market allocator integrates with the graph engine as a node:
 
 ```python
-from nexus.orchestration.nodes import market_node, human_node
-from nexus.orchestration.graph import Graph
+from grampus.orchestration.nodes import market_node, human_node
+from grampus.orchestration.graph import Graph
 
 handler = market_node(
     allocator=allocator,
@@ -372,7 +372,7 @@ result = await crew.run(initial_input="do something")
 ## Error handling
 
 ```python
-from nexus.core.errors import MarketAllocationError
+from grampus.core.errors import MarketAllocationError
 
 try:
     result = await crew.run_task_with_market(

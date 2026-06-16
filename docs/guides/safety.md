@@ -31,7 +31,7 @@ graph TD
 
 **MemoryGraft** is a variant where an attacker directly tampers with the memory store, bypassing input-level defenses.
 
-Nexus defends at all three layers.
+Grampus defends at all three layers.
 
 ---
 
@@ -40,7 +40,7 @@ Nexus defends at all three layers.
 The `PromptInjectionDetector` runs on user input and tool results.
 
 ```python
-from nexus.safety.injection import PromptInjectionDetector
+from grampus.safety.injection import PromptInjectionDetector
 
 detector = PromptInjectionDetector(level="balanced")
 
@@ -92,7 +92,7 @@ The detector checks for:
 The `PIIDetector` finds and handles personally identifiable information.
 
 ```python
-from nexus.safety.pii import PIIDetector
+from grampus.safety.pii import PIIDetector
 
 detector = PIIDetector(
     action="redact",              # log | redact | block
@@ -134,7 +134,7 @@ print(f"Redacted:    {result.redacted_text}") # "Contact John at [EMAIL] or call
 `ActionGuard` enforces what tools an agent is allowed to use and how often.
 
 ```python
-from nexus.safety.action_guard import ActionGuard, AgentPolicy
+from grampus.safety.action_guard import ActionGuard, AgentPolicy
 
 policy = AgentPolicy(
     allowed_tools=["web_search", "calculate", "get_weather"],
@@ -160,7 +160,7 @@ The guard blocks calls that:
 `SafetyPipeline` composes all checks in the correct order.
 
 ```python
-from nexus.safety.pipeline import SafetyPipeline, SafetyPipelineConfig
+from grampus.safety.pipeline import SafetyPipeline, SafetyPipelineConfig
 
 pipeline = SafetyPipeline(
     injection_detector=PromptInjectionDetector(level="balanced"),
@@ -259,7 +259,7 @@ pipeline:
 Load it:
 
 ```python
-from nexus.safety.policies import load_safety_config
+from grampus.safety.policies import load_safety_config
 
 safety_config = load_safety_config("safety_policy.yaml")
 pipeline = SafetyPipeline.from_config(safety_config)
@@ -272,8 +272,8 @@ pipeline = SafetyPipeline.from_config(safety_config)
 Write eval cases that verify your safety configuration blocks known attack patterns:
 
 ```python
-from nexus.evaluation.assertions import no_injection_patterns, no_pii, contains
-from nexus.evaluation.suite import EvalCase, EvalSuite
+from grampus.evaluation.assertions import no_injection_patterns, no_pii, contains
+from grampus.evaluation.suite import EvalCase, EvalSuite
 
 injection_cases = [
     EvalCase(
