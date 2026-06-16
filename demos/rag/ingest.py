@@ -11,15 +11,15 @@ import click
 
 from demos.rag.config import EmbeddingProviderName, RAGConfig
 from demos.rag.rag_store import ChunkRecord, RAGStore, make_document_id
-from nexus.core.logging import get_logger
-from nexus.memory.embedding_providers import (
+from grampus.core.logging import get_logger
+from grampus.memory.embedding_providers import (
     CohereEmbeddingProvider,
     OllamaEmbeddingProvider,
     OpenAIEmbeddingProvider,
 )
-from nexus.memory.embeddings import EmbeddingService
-from nexus.tools.library.document_chunker import DocumentChunker
-from nexus.tools.library.document_types import ChunkStrategy, DocumentMetadata
+from grampus.memory.embeddings import EmbeddingService
+from grampus.tools.library.document_chunker import DocumentChunker
+from grampus.tools.library.document_types import ChunkStrategy, DocumentMetadata
 
 _log = get_logger(__name__)
 
@@ -85,7 +85,7 @@ async def _process_file(
         doc_chunks = [c.model_dump() for c in chunks]
 
     elif file_path.suffix == ".pdf":
-        from nexus.tools.library.document_tools import read_pdf_tool
+        from grampus.tools.library.document_tools import read_pdf_tool
 
         result = await read_pdf_tool(
             path=str(file_path),
@@ -98,7 +98,7 @@ async def _process_file(
         doc_chunks = result["chunks"]
 
     elif file_path.suffix == ".docx":
-        from nexus.tools.library.document_tools import read_docx_tool
+        from grampus.tools.library.document_tools import read_docx_tool
 
         result = await read_docx_tool(
             path=str(file_path),
@@ -111,7 +111,7 @@ async def _process_file(
         doc_chunks = result["chunks"]
 
     elif file_path.suffix == ".xlsx":
-        from nexus.tools.library.document_tools import read_excel_tool
+        from grampus.tools.library.document_tools import read_excel_tool
 
         result = await read_excel_tool(
             path=str(file_path),

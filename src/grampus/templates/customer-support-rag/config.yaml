@@ -1,0 +1,14 @@
+memory:
+  enabled: true
+  episodic: true
+  working_memory_limit: 8000
+
+safety:
+  pipeline: strict
+  pii_detection: true
+  pii_action: redact
+
+model:
+  name: "{{model}}"
+  temperature: 0.1
+  max_tokens: 2048

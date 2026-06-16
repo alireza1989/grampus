@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from nexus.core.errors import ConcurrencyError
+from grampus.core.errors import ConcurrencyError
 
 
 class FakeStateStore:

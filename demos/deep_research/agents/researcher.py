@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.core.types import AgentDefinition
+from grampus.core.types import AgentDefinition
 
 RESEARCHER_SYSTEM_PROMPT = """You are a research specialist. Your job is to gather comprehensive, \
 accurate information on assigned research questions.

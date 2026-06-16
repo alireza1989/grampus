@@ -10,7 +10,7 @@ from __future__ import annotations
 from demos.deep_research.agent import create_agent_def, create_runner
 from demos.deep_research.eval.baseline import get_baseline
 from demos.deep_research.eval.cases import EVAL_CASES
-from nexus.evaluation.suite import EvalSuite
+from grampus.evaluation.suite import EvalSuite
 
 
 def create_suite() -> EvalSuite:

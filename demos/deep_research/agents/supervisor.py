@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.core.types import AgentDefinition
+from grampus.core.types import AgentDefinition
 
 SUPERVISOR_SYSTEM_PROMPT = """You are a research orchestration supervisor. Your role is to decompose \
 research topics, coordinate a team of specialist agents, and ensure the final report meets quality standards.

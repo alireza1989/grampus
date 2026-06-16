@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Memory Inspector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Memory Inspector</h1>
+</div>
+
+<div class="filter-bar">
+  <input
+    type="text"
+    name="agent_id"
+    placeholder="Agent ID"
+    hx-get="/ui/memory/_rows"
+    hx-trigger="input changed delay:300ms, change"
+    hx-target="#memory-tbody"
+    hx-include=".filter-input"
+    class="filter-input"
+  >
+  <select
+    name="memory_type"
+    hx-get="/ui/memory/_rows"
+    hx-trigger="change"
+    hx-target="#memory-tbody"
+    hx-include=".filter-input"
+    class="filter-input"
+  >
+    <option value="">All Types</option>
+    <option value="episodic">Episodic</option>
+    <option value="semantic">Semantic</option>
+    <option value="working">Working</option>
+    <option value="procedural">Procedural</option>
+  </select>
+  <input
+    type="text"
+    name="q"
+    placeholder="Search content…"
+    hx-get="/ui/memory/_rows"
+    hx-trigger="input changed delay:300ms, change"
+    hx-target="#memory-tbody"
+    hx-include=".filter-input"
+    class="filter-input"
+  >
+  <input
+    type="number"
+    name="min_trust"
+    placeholder="Min trust (0–1)"
+    min="0"
+    max="1"
+    step="0.1"
+    hx-get="/ui/memory/_rows"
+    hx-trigger="input changed delay:300ms, change"
+    hx-target="#memory-tbody"
+    hx-include=".filter-input"
+    class="filter-input"
+  >
+  <button
+    class="btn btn-secondary"
+    onclick="document.querySelectorAll('.filter-input').forEach(el => { el.value = ''; }); htmx.trigger('#memory-tbody', 'load');"
+  >
+    Clear filters
+  </button>
+</div>
+
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Agent</th>
+        <th>Type</th>
+        <th>Content Preview</th>
+        <th>Trust</th>
+        <th>Created</th>
+        <th>Last Accessed</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="memory-tbody"
+           hx-get="/ui/memory/_rows"
+           hx-trigger="load"
+           hx-swap="innerHTML">
+    </tbody>
+  </table>
+</div>
+
+<aside id="detail-panel" class="detail-panel hidden"></aside>
+{% endblock %}

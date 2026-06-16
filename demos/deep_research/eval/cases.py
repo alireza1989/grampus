@@ -6,7 +6,7 @@ verification, safety scenarios, cost constraints, and edge cases.
 
 from __future__ import annotations
 
-from nexus.evaluation.assertions import (
+from grampus.evaluation.assertions import (
     contains,
     matches_regex,
     max_cost,
@@ -19,7 +19,7 @@ from nexus.evaluation.assertions import (
     tool_not_called,
     tool_was_called,
 )
-from nexus.evaluation.suite import EvalCase
+from grampus.evaluation.suite import EvalCase
 
 EVAL_CASES: list[EvalCase] = [
     EvalCase(

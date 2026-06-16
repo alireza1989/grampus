@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.evaluation.baseline import QualityBaseline
+from grampus.evaluation.baseline import QualityBaseline
 
 _baseline = QualityBaseline(suite_name="deep-research-eval", regression_threshold=0.10)
 

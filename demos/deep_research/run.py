@@ -72,7 +72,7 @@ async def main(topic: str) -> None:
 async def main_stream(topic: str) -> None:
     """Run a single supervisor AgentRunner in streaming mode."""
     from demos.deep_research.agent import AGENT_ID, create_agent_def, create_runner
-    from nexus.core.types import StreamEventType
+    from grampus.core.types import StreamEventType
 
     print(f"\n{'=' * 60}")
     print("  Nexus Deep Research Demo  (streaming)")

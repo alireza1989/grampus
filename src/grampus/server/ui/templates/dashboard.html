@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+</div>
+
+<div id="stats-bar"
+     hx-get="/ui/_stats"
+     hx-trigger="load, every 10s"
+     hx-swap="innerHTML">
+  Loading…
+</div>
+
+<section class="section">
+  <h2 class="section-title">Recent Alerts</h2>
+  {% if recent_alerts %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Severity</th>
+        <th>Rule</th>
+        <th>Agent</th>
+        <th>Actual $</th>
+        <th>Limit $</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in recent_alerts %}
+      <tr>
+        <td>{{ alert.triggered_at.strftime('%Y-%m-%d %H:%M') if alert.triggered_at else '—' }}</td>
+        <td><span class="badge badge-{{ alert.severity | lower if alert.severity else 'gray' }}">{{ alert.severity or '—' }}</span></td>
+        <td>{{ alert.rule_name or '—' }}</td>
+        <td>{{ alert.agent_id or '—' }}</td>
+        <td>{{ '%.4f' | format(alert.actual_value) if alert.actual_value is not none else '—' }}</td>
+        <td>{{ '%.4f' | format(alert.threshold) if alert.threshold is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No recent alerts.</p>
+  {% endif %}
+</section>
+{% endblock %}

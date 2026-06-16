@@ -1,0 +1,29 @@
+name: code-reviewer
+version: "1.0.0"
+description: "Automated code review agent with safety checks"
+long_description: |
+  An agent that performs automated code review on a given repository.
+  Reads source files, identifies bugs, security issues, and style violations,
+  and produces a structured review report. Safety pipeline prevents the agent
+  from making unintended modifications.
+tags: [code, safety, review, coding]
+category: coding
+author: grampus-team
+min_grampus_version: "0.1.0"
+required_tools: [file_read]
+required_models: [powerful]
+entry_point: agent.py
+parameters:
+  - name: project_name
+    description: "Python-safe project name (lowercase, underscores)"
+    default: code_reviewer
+  - name: model
+    description: "Model to use (powerful recommended for code review)"
+    default: claude-sonnet-4-6
+  - name: repo_path
+    description: "Path to the repository to review"
+    default: "."
+files:
+  - agent.py
+  - config.yaml
+  - README.md

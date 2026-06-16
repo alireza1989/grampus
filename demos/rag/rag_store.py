@@ -9,8 +9,8 @@ from typing import Any
 import asyncpg
 from pydantic import BaseModel
 
-from nexus.core.errors import RAGError
-from nexus.core.logging import get_logger
+from grampus.core.errors import RAGError
+from grampus.core.logging import get_logger
 
 _log = get_logger(__name__)
 

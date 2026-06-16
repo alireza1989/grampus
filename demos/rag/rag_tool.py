@@ -6,10 +6,10 @@ from typing import Any
 
 from demos.rag.config import RAGConfig
 from demos.rag.rag_store import RAGStore, RetrievedChunk
-from nexus.core.logging import get_logger
-from nexus.core.types import ToolParameter
-from nexus.memory.embeddings import EmbeddingService
-from nexus.tools.registry import ToolRegistry
+from grampus.core.logging import get_logger
+from grampus.core.types import ToolParameter
+from grampus.memory.embeddings import EmbeddingService
+from grampus.tools.registry import ToolRegistry
 
 _log = get_logger(__name__)
 

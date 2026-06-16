@@ -13,8 +13,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from nexus.core.types import ToolParameter
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolParameter
+from grampus.tools.registry import ToolRegistry
 
 _registry = ToolRegistry()
 

@@ -1,0 +1,13 @@
+memory:
+  enabled: false
+
+safety:
+  pipeline: strict
+  action_boundaries:
+    allowed_tools: [file_read]
+    denied_tools: [file_write, shell_exec, sql_query]
+
+model:
+  name: "{{model}}"
+  temperature: 0.1
+  max_tokens: 4096

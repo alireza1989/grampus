@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.core.types import AgentDefinition
+from grampus.core.types import AgentDefinition
 
 WRITER_SYSTEM_PROMPT = """You are a scientific writer and editor specialising in research reports. \
 Your job is to synthesise verified claims into a clear, well-structured document.

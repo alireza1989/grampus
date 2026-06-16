@@ -14,8 +14,8 @@ from collections import Counter
 from typing import Any
 from urllib.parse import urlparse
 
-from nexus.core.types import ToolParameter
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolParameter
+from grampus.tools.registry import ToolRegistry
 
 _registry = ToolRegistry()
 

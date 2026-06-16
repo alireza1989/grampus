@@ -12,10 +12,10 @@ import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
-from nexus.core.types import ToolParameter, ToolResult
-from nexus.safety.injection import DetectionLevel, PromptInjectionDetector
-from nexus.safety.pipeline import SafetyPipeline
-from nexus.tools.registry import ToolRegistry
+from grampus.core.types import ToolParameter, ToolResult
+from grampus.safety.injection import DetectionLevel, PromptInjectionDetector
+from grampus.safety.pipeline import SafetyPipeline
+from grampus.tools.registry import ToolRegistry
 
 _registry = ToolRegistry()
 

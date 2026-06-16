@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from nexus.core.types import AgentDefinition
+from grampus.core.types import AgentDefinition
 
 FACT_CHECKER_SYSTEM_PROMPT = """You are a rigorous fact-checker and source validator. Your job is to \
 verify factual claims using independent evidence and assign confidence scores.

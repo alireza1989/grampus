@@ -13,8 +13,8 @@ from demos.rag.config import RAGConfig
 from demos.rag.ingest import _build_embedding_service
 from demos.rag.rag_store import RAGStore
 from demos.rag.rag_tool import make_retrieve_tool
-from nexus.core.logging import get_logger
-from nexus.core.types import AgentDefinition
+from grampus.core.logging import get_logger
+from grampus.core.types import AgentDefinition
 
 _log = get_logger(__name__)
 
@@ -33,9 +33,9 @@ The user is asking about documents that have been indexed in this knowledge base
 
 async def run_agent(question: str, config: RAGConfig, *, stream: bool = True) -> str:
     """Run one question through the RAG pipeline and return the answer."""
-    from nexus.core.models.anthropic import AnthropicClient
-    from nexus.orchestration.runner import AgentRunner
-    from nexus.tools.executor import ToolExecutor
+    from grampus.core.models.anthropic import AnthropicClient
+    from grampus.orchestration.runner import AgentRunner
+    from grampus.tools.executor import ToolExecutor
 
     embedding_service = _build_embedding_service(config)
     store = await RAGStore.create(config.db_url, dimensions=embedding_service.dimensions)

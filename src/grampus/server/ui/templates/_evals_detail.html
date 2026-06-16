@@ -1,0 +1,67 @@
+<div class="detail-header">
+  <h3>Run Detail — {{ record.suite_name }}</h3>
+  <button
+    class="btn btn-secondary btn-sm"
+    onclick="document.getElementById('evals-detail').classList.add('hidden')"
+  >Close</button>
+</div>
+
+<table class="detail-table">
+  <tr><th>Run ID</th><td><code>{{ record.run_id }}</code></td></tr>
+  <tr><th>Suite</th><td>{{ record.suite_name }}</td></tr>
+  <tr><th>Run At</th><td>{{ record.run_at.isoformat() if record.run_at else '—' }}</td></tr>
+  <tr><th>Pass Rate</th><td>{{ '%.1f' | format(record.pass_rate * 100) }}%</td></tr>
+  <tr><th>Passed / Total</th><td>{{ record.passed }} / {{ record.total_cases }}</td></tr>
+  <tr><th>Failed</th><td>{{ record.failed }}</td></tr>
+  <tr><th>Errors</th><td>{{ record.errors }}</td></tr>
+  <tr><th>Total Cost</th><td>${{ '%.4f' | format(record.total_cost_usd) }}</td></tr>
+  <tr><th>Avg Duration</th><td>{{ '%.2f' | format(record.avg_duration_seconds) }}s</td></tr>
+</table>
+
+<div class="detail-section">
+  <h4>Case Results</h4>
+  {% if record.case_results %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Case Name</th>
+        <th>Duration</th>
+        <th>Assertions</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cr in record.case_results %}
+      <tr>
+        <td>
+          {% if cr.passed %}
+          <span class="badge badge-green">✓ pass</span>
+          {% else %}
+          <span class="badge badge-red">✗ fail</span>
+          {% endif %}
+        </td>
+        <td>{{ cr.case_name }}</td>
+        <td>{{ '%.2f' | format(cr.duration_seconds) }}s</td>
+        <td>
+          {% for ar in cr.assertion_results %}
+          <span class="badge badge-{{ 'green' if ar.passed else 'red' }}">{{ ar.assertion_type }}</span>
+          {% else %}
+          —
+          {% endfor %}
+        </td>
+        <td>{{ cr.error or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No case results stored.</p>
+  {% endif %}
+</div>
+
+<div class="detail-actions">
+  <a class="btn btn-secondary" href="/evals/runs/{{ record.run_id }}/export" download>
+    Download JSON
+  </a>
+</div>

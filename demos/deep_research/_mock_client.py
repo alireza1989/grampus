@@ -16,8 +16,8 @@ import asyncio
 import re
 from typing import Any
 
-from nexus.core.models.base import ModelResponse
-from nexus.core.types import Message, Role, StreamChunk, TokenUsage, ToolCall
+from grampus.core.models.base import ModelResponse
+from grampus.core.types import Message, Role, StreamChunk, TokenUsage, ToolCall
 
 _MOCK_MODEL = "mock-research-agent"
 

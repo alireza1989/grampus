@@ -74,7 +74,7 @@ class RAGEvaluator:
 
     async def evaluate_pair(self, question: str, answer: str, context: str) -> dict[str, float]:
         """Score one Q&A pair. Returns faithfulness and relevancy scores (1-5)."""
-        from nexus.core.types import Message, Role
+        from grampus.core.types import Message, Role
 
         faith_prompt = _build_faithfulness_prompt(context, answer)
         rel_prompt = _build_relevancy_prompt(question, answer)
@@ -168,7 +168,7 @@ class RAGEvaluator:
 def evaluate(config_path: str | None, output: str | None, qa_file: str | None) -> None:
     """Evaluate the RAG pipeline with faithfulness and relevancy scoring."""
     from demos.rag.config import RAGConfig
-    from nexus.core.models.anthropic import AnthropicClient
+    from grampus.core.models.anthropic import AnthropicClient
 
     config = RAGConfig.from_file(config_path) if config_path else RAGConfig.from_env()
     api_key = config.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")

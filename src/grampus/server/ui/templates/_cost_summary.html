@@ -1,0 +1,83 @@
+{% if summary %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">${{ '%.4f' | format(summary.total_cost_usd) }}</div>
+    <div class="stat-label">Total Cost</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ summary.total_tokens }}</div>
+    <div class="stat-label">Total Tokens</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ summary.total_llm_calls }}</div>
+    <div class="stat-label">LLM Calls</div>
+  </div>
+</div>
+
+{% if summary.by_model %}
+<section class="section">
+  <h2 class="section-title">By Model</h2>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Cost</th>
+          <th>Tokens</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary.by_model %}
+        <tr>
+          <td>{{ row.model }}</td>
+          <td>${{ '%.6f' | format(row.cost_usd) }}</td>
+          <td>{{ row.tokens }}</td>
+          <td>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar" style="width: {{ [row.pct | round | int, 100] | min }}%"></div>
+              <span class="mini-bar-label">{{ '%.1f' | format(row.pct) }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if summary.by_agent %}
+<section class="section">
+  <h2 class="section-title">By Agent</h2>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Cost</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary.by_agent %}
+        <tr>
+          <td>{{ row.agent_id }}</td>
+          <td>${{ '%.6f' | format(row.cost_usd) }}</td>
+          <td>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar" style="width: {{ [row.pct | round | int, 100] | min }}%"></div>
+              <span class="mini-bar-label">{{ '%.1f' | format(row.pct) }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<p class="empty-state">No metrics configured. Pass <code>nexus_metrics</code> to <code>create_app()</code>.</p>
+{% endif %}

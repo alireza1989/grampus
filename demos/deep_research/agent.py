@@ -27,28 +27,28 @@ from demos.deep_research.agents.writer import create_writer_def
 from demos.deep_research.tools import analysis as _analysis_mod
 from demos.deep_research.tools import output as _output_mod
 from demos.deep_research.tools import search as _search_mod
-from nexus.core.models.anthropic import AnthropicClient
-from nexus.core.types import AgentDefinition
-from nexus.memory.consolidation import ConsolidationPipeline
-from nexus.memory.embeddings import EmbeddingService
-from nexus.memory.episodic import EpisodicMemory
-from nexus.memory.manager import MemoryManager
-from nexus.memory.procedural import ProceduralMemory
-from nexus.memory.retriever import EpisodicRetriever
-from nexus.memory.semantic import SemanticMemory
-from nexus.memory.semantic_retriever import SemanticRetriever
-from nexus.memory.summarizer import SummarizationStrategy, Summarizer
-from nexus.memory.token_counter import TokenCounter
-from nexus.memory.working import WorkingMemory
-from nexus.observability.events import EventLog
-from nexus.observability.metrics import NexusMetrics
-from nexus.observability.tracer import NexusTracer
-from nexus.orchestration.cost_tracker import CostTracker
-from nexus.orchestration.crew import Crew, CrewMember, CrewPattern
-from nexus.orchestration.runner import AgentRunner, RunnerConfig
-from nexus.safety.policies import PolicyLoader
-from nexus.tools.executor import ToolExecutor
-from nexus.tools.registry import ToolRegistry
+from grampus.core.models.anthropic import AnthropicClient
+from grampus.core.types import AgentDefinition
+from grampus.memory.consolidation import ConsolidationPipeline
+from grampus.memory.embeddings import EmbeddingService
+from grampus.memory.episodic import EpisodicMemory
+from grampus.memory.manager import MemoryManager
+from grampus.memory.procedural import ProceduralMemory
+from grampus.memory.retriever import EpisodicRetriever
+from grampus.memory.semantic import SemanticMemory
+from grampus.memory.semantic_retriever import SemanticRetriever
+from grampus.memory.summarizer import SummarizationStrategy, Summarizer
+from grampus.memory.token_counter import TokenCounter
+from grampus.memory.working import WorkingMemory
+from grampus.observability.events import EventLog
+from grampus.observability.metrics import GrampusMetrics
+from grampus.observability.tracer import GrampusTracer
+from grampus.orchestration.cost_tracker import CostTracker
+from grampus.orchestration.crew import Crew, CrewMember, CrewPattern
+from grampus.orchestration.runner import AgentRunner, RunnerConfig
+from grampus.safety.policies import PolicyLoader
+from grampus.tools.executor import ToolExecutor
+from grampus.tools.registry import ToolRegistry
 
 SESSION_ID = "deep-research-demo"
 AGENT_ID = "deep-research-supervisor"
@@ -195,8 +195,8 @@ def create_runner() -> AgentRunner:
     executor = ToolExecutor(registry=registry, timeout_seconds=30)
     store = FakeStateStore()
 
-    _tracer = NexusTracer(service_name="deep-research-demo", agent_id=AGENT_ID)
-    _metrics = NexusMetrics(agent_id=AGENT_ID)
+    _tracer = GrampusTracer(service_name="deep-research-demo", agent_id=AGENT_ID)
+    _metrics = GrampusMetrics(agent_id=AGENT_ID)
     _event_log = EventLog(agent_id=AGENT_ID, session_id=SESSION_ID)
 
     # Suppress unused-variable warnings — tracer/metrics/event_log are wired

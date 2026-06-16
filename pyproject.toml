@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "nexus-ai"
+name = "grampus-ai"
 version = "0.1.0"
 description = "Production-grade agentic AI framework built on Dapr"
 readme = "README.md"
@@ -37,11 +37,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://nexus-ai.dev"
-Documentation = "https://nexus-ai.dev"
-Repository = "https://github.com/nexus-ai/nexus-agentic-platform"
-"Bug Tracker" = "https://github.com/nexus-ai/nexus-agentic-platform/issues"
-Changelog = "https://github.com/nexus-ai/nexus-agentic-platform/blob/main/CHANGELOG.md"
+Homepage = "https://grampus-ai.dev"
+Documentation = "https://grampus-ai.dev"
+Repository = "https://github.com/grampus-ai/nexus-agentic-platform"
+"Bug Tracker" = "https://github.com/grampus-ai/nexus-agentic-platform/issues"
+Changelog = "https://github.com/grampus-ai/nexus-agentic-platform/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.97"]
@@ -99,7 +99,7 @@ rag = [
 ]
 
 [project.scripts]
-nexus = "nexus.cli.main:cli"
+grampus = "grampus.cli.main:cli"
 
 [dependency-groups]
 dev = [
@@ -124,8 +124,8 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/nexus"]
-include = ["src/nexus/templates/**"]
+packages = ["src/grampus"]
+include = ["src/grampus/templates/**"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter
@@ -153,7 +153,7 @@ strict = true
 ignore_missing_imports = true
 mypy_path = "src"
 explicit_package_bases = true
-exclude = ["src/nexus/templates/"]
+exclude = ["src/grampus/templates/"]
 
 # ---------------------------------------------------------------------------
 # Pytest
@@ -175,7 +175,7 @@ markers = [
 # Coverage
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
-source = ["src/nexus"]
+source = ["src/grampus"]
 branch = true
 omit = ["*/tests/*", "*/__init__.py"]
 

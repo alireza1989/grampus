@@ -9,7 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from nexus.core.errors import RAGError
+from grampus.core.errors import RAGError
 
 
 class EmbeddingProviderName(StrEnum):
