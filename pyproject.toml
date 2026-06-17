@@ -37,11 +37,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://grampus-ai.dev"
-Documentation = "https://grampus-ai.dev"
-Repository = "https://github.com/grampus-ai/nexus-agentic-platform"
-"Bug Tracker" = "https://github.com/grampus-ai/nexus-agentic-platform/issues"
-Changelog = "https://github.com/grampus-ai/nexus-agentic-platform/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/alireza1989/grampus"
+Documentation = "https://alireza1989.github.io/grampus"
+Repository = "https://github.com/alireza1989/grampus"
+"Bug Tracker" = "https://github.com/alireza1989/grampus/issues"
+Changelog = "https://github.com/alireza1989/grampus/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.97"]

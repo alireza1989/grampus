@@ -7,9 +7,9 @@
 <p align="center">
   <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/v/grampus-ai" alt="PyPI"/></a>
   <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/pyversions/grampus-ai" alt="Python"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/grampus-ai/grampus-agentic-platform" alt="License"/></a>
-  <a href="https://github.com/grampus-ai/grampus-agentic-platform/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/grampus-ai/grampus-agentic-platform/ci.yml" alt="CI"/></a>
-  <a href="https://codecov.io/gh/grampus-ai/grampus-agentic-platform"><img src="https://img.shields.io/codecov/c/github/grampus-ai/grampus-agentic-platform" alt="Coverage"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/alireza1989/grampus" alt="License"/></a>
+  <a href="https://github.com/alireza1989/grampus/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/alireza1989/grampus/ci.yml" alt="CI"/></a>
+  <a href="https://codecov.io/gh/alireza1989/grampus"><img src="https://img.shields.io/codecov/c/github/alireza1989/grampus" alt="Coverage"/></a>
 </p>
 
 > As simple as CrewAI to start. As powerful as LangGraph for production.
@@ -181,16 +181,16 @@ All commands support `--help`.
 
 ## Documentation
 
-Full documentation is at **[grampus-ai.dev](https://grampus-ai.dev)**:
+Full documentation is at **[alireza1989.github.io/grampus](https://alireza1989.github.io/grampus)**:
 
-- [Getting Started](https://grampus-ai.dev/getting-started/quickstart/) — 5-minute quickstart
-- [Single-Agent Guide](https://grampus-ai.dev/guides/single-agent/) — Tools, memory, and safety
-- [Multi-Agent Crews](https://grampus-ai.dev/guides/multi-agent-crew/) — Parallel and hierarchical coordination
-- [Memory Guide](https://grampus-ai.dev/guides/memory/) — Cross-session persistence and retrieval
-- [Safety Guide](https://grampus-ai.dev/guides/safety/) — Injection detection, PII redaction, policies
-- [Evaluation Guide](https://grampus-ai.dev/guides/evaluation/) — Testing agent behavior
-- [Observability Guide](https://grampus-ai.dev/guides/observability/) — OTEL traces, metrics, event log
-- [Deployment Guide](https://grampus-ai.dev/guides/deployment/) — Docker and Kubernetes
+- [Getting Started](https://alireza1989.github.io/grampus/getting-started/quickstart/) — 5-minute quickstart
+- [Single-Agent Guide](https://alireza1989.github.io/grampus/guides/single-agent/) — Tools, memory, and safety
+- [Multi-Agent Crews](https://alireza1989.github.io/grampus/guides/multi-agent-crew/) — Parallel and hierarchical coordination
+- [Memory Guide](https://alireza1989.github.io/grampus/guides/memory/) — Cross-session persistence and retrieval
+- [Safety Guide](https://alireza1989.github.io/grampus/guides/safety/) — Injection detection, PII redaction, policies
+- [Evaluation Guide](https://alireza1989.github.io/grampus/guides/evaluation/) — Testing agent behavior
+- [Observability Guide](https://alireza1989.github.io/grampus/guides/observability/) — OTEL traces, metrics, event log
+- [Deployment Guide](https://alireza1989.github.io/grampus/guides/deployment/) — Docker and Kubernetes
 
 ---
 
@@ -203,7 +203,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code conventions,
 Quick start for contributors:
 
 ```bash
-git clone https://github.com/grampus-ai/grampus-agentic-platform
+git clone https://github.com/alireza1989/grampus
 cd grampus-agentic-platform
 uv sync
 docker compose up -d
