@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 try:
     from a2a.server.context import ServerCallContext
@@ -12,19 +12,16 @@ try:
     _HAS_A2A = True
 except ImportError:  # pragma: no cover
     _HAS_A2A = False
-    TaskStore = object  # type: ignore[misc,assignment]
-    ServerCallContext = object  # type: ignore[misc,assignment]
+    TaskStore = object
+    ServerCallContext = object
 
 from grampus.core.logging import get_logger
-
-if TYPE_CHECKING:
-    pass
 
 _log = get_logger(__name__)
 _DAPR_KEY_PREFIX = "a2a:task:"
 
 
-class GrampusTaskStore(TaskStore):
+class GrampusTaskStore(TaskStore):  # type: ignore[misc]
     """TaskStore persisting to Dapr state with an in-memory fallback.
 
     When ``state_store`` is None (or when a Dapr write fails), all task data
