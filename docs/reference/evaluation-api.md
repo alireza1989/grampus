@@ -169,7 +169,7 @@ class BaselineComparison:
 ::: grampus.evaluation.reporter.EvalReporter
     options:
       show_source: false
-      members: [report, render]
+      members: [render, print, publish]
 
 ---
 

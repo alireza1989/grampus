@@ -7,7 +7,7 @@ Wraps the OpenTelemetry SDK with agent-specific span types.
 ::: grampus.observability.tracer.GrampusTracer
     options:
       show_source: false
-      members: [span, record_llm_call, record_tool_call, record_memory_read, record_memory_write]
+      members: [llm_call, tool_call, memory_read, memory_write, record_llm_call]
 
 ### Span context manager
 
@@ -42,17 +42,17 @@ Prometheus-compatible metrics endpoint.
 ::: grampus.observability.metrics.GrampusMetrics
     options:
       show_source: false
-      members: [start, stop, record_tokens, record_cost, record_tool_call, record_error, record_agent_run]
+      members: [record_llm_call, record_tool_call, record_error, set_active_agents, to_prometheus_text, snapshot]
 
 ### Counter metrics
 
 | Metric name | Labels | Description |
 |-------------|--------|-------------|
-| `nexus_tokens_total` | `model`, `agent_name`, `token_type` | Tokens consumed |
-| `nexus_cost_usd_total` | `model`, `agent_name` | USD spent |
-| `nexus_tool_calls_total` | `tool_name`, `agent_name`, `status` | Tool executions |
-| `nexus_errors_total` | `error_code`, `agent_name` | Errors by type |
-| `nexus_agent_runs_total` | `agent_name`, `status` | Agent run completions |
+| `grampus_total_tokens` | `model`, `agent_name` | Tokens consumed |
+| `grampus_total_cost_usd` | `model`, `agent_name` | USD spent |
+| `grampus_total_tool_calls` | `tool_name`, `agent_name` | Tool executions |
+| `grampus_total_errors` | `error_code`, `agent_name` | Errors by type |
+| `grampus_llm_call_count` | `model`, `agent_name` | Total LLM calls made |
 
 ### Gauge metrics
 
@@ -64,9 +64,8 @@ Prometheus-compatible metrics endpoint.
 
 | Metric name | Labels | Description |
 |-------------|--------|-------------|
-| `grampus_llm_latency_seconds` | `model`, `agent_name` | LLM call duration |
-| `grampus_tool_latency_seconds` | `tool_name`, `agent_name` | Tool execution duration |
-| `nexus_agent_run_duration_seconds` | `agent_name` | Total agent run duration |
+| `grampus_llm_latency_ms` | `model`, `agent_name` | LLM call latency in milliseconds |
+| `grampus_tool_latency_ms` | `tool_name`, `agent_name` | Tool execution latency in milliseconds |
 
 ---
 
@@ -77,7 +76,7 @@ Append-only audit log for every agent action.
 ::: grampus.observability.events.EventLog
     options:
       show_source: false
-      members: [append, get_events, replay_to_step]
+      members: [append, replay, replay_since, event_count]
 
 ### AgentEvent
 
@@ -119,7 +118,7 @@ Tracks agent behavior patterns and detects anomalies.
 ::: grampus.observability.behavior.BehaviorMonitor
     options:
       show_source: false
-      members: [detect_anomalies, update_baseline]
+      members: [record_turn, anomalies, profile]
 
 ### BehaviorAnomaly
 

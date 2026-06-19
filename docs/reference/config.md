@@ -5,7 +5,7 @@ Grampus is configured via a `grampus.yaml` file and/or environment variables. En
 ## Loading priority
 
 1. **Environment variables** (highest priority) — `GRAMPUS_MODEL__ANTHROPIC_API_KEY=...`
-2. **YAML file** — default: `grampus.yaml` or `nexus.yml` in the working directory; override with `GRAMPUS_CONFIG_FILE=/path/to/config.yaml`
+2. **YAML file** — default: `grampus.yaml` in the working directory; override with `GRAMPUS_CONFIG_FILE=/path/to/config.yaml`
 3. **Defaults** (lowest priority)
 
 ---

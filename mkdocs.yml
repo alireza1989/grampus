@@ -86,6 +86,20 @@ nav:
     - State Snapshots: guides/state-snapshots.md
     - Web UI: guides/web-ui.md
     - Prompt Playground: guides/playground.md
+    - Long-Horizon Planning: guides/long-horizon-planning.md
+    - Multi-Agent Debate: guides/multi-agent-debate.md
+    - Uncertainty Quantification: guides/uncertainty.md
+    - Artifact Collaboration: guides/artifact_collaboration.md
+    - Market-Based Allocation: guides/market-based-allocation.md
+    - Agent Self-Improvement: guides/agent_self_improvement.md
+    - User Modeling: guides/user_modeling.md
+    - Hierarchical Memory: guides/hierarchical_memory.md
+    - Causal Analysis: guides/causal_analysis.md
+    - Document Processing: guides/document_processing.md
+    - Code Analysis: guides/code_analysis.md
+    - Embedding Providers: guides/embedding_providers.md
+    - Red-Teaming: guides/red_teaming.md
+    - Plugins: guides/plugins.md
   - Reference:
     - Configuration: reference/config.md
     - CLI: reference/cli.md

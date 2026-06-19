@@ -128,7 +128,10 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/grampus"]
-include = ["src/grampus/templates/**"]
+include = [
+    "src/grampus/templates/**",
+    "src/grampus/py.typed",
+]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter
