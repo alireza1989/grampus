@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
     chunk_index INTEGER NOT NULL,
     content     TEXT NOT NULL,
     context_header TEXT NOT NULL DEFAULT '',
-    metadata    JSONB NOT NULL DEFAULT '{}',
+    metadata    JSONB NOT NULL DEFAULT '{{}}',
     embedding   vector({dimensions}),
     ts_vector   tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS rag_chunks (
 """
 
 _CHECK_DIMENSIONS = """
-SELECT a.atttypmod - 4 AS dim
+SELECT a.atttypmod AS dim
 FROM pg_attribute a
 JOIN pg_class c ON a.attrelid = c.oid
 WHERE c.relname = 'rag_chunks' AND a.attname = 'embedding'
@@ -237,7 +237,7 @@ class RAGStore:
                 context_header=row["context_header"],
                 source_path=row["source_path"],
                 chunk_index=row["chunk_index"],
-                metadata=dict(row["metadata"]) if row["metadata"] else {},
+                metadata=json.loads(row["metadata"]) if row["metadata"] else {},
                 rrf_score=float(row["rrf_score"]),
             )
             for row in rows
