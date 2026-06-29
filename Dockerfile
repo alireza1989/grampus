@@ -21,7 +21,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/
 
 # Install the built wheel with both provider extras
 COPY --from=builder /app/dist/*.whl /tmp/
-RUN pip install --no-cache-dir "/tmp/$(ls /tmp/*.whl)[anthropic,openai]" && rm /tmp/*.whl
+RUN WHEEL=$(ls /tmp/*.whl) && pip install --no-cache-dir "${WHEEL}[anthropic,openai]" && rm "$WHEEL"
 
 # Dapr sidecar communicates via localhost — no special networking required
 ENV DAPR_HTTP_PORT=3500
