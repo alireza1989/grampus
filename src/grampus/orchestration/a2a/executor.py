@@ -19,9 +19,9 @@ try:
     _HAS_A2A = True
 except ImportError:  # pragma: no cover
     _HAS_A2A = False
-    AgentExecutor = object
-    RequestContext = object
-    EventQueue = object
+    AgentExecutor = object  # type: ignore[assignment, misc]
+    RequestContext = object  # type: ignore[assignment, misc]
+    EventQueue = object  # type: ignore[assignment, misc]
 
 from grampus.core.logging import get_logger
 from grampus.core.types import AgentDefinition
@@ -60,7 +60,7 @@ def _build_status_event(
     return event
 
 
-class GrampusA2AExecutor(AgentExecutor):  # type: ignore[misc]
+class GrampusA2AExecutor(AgentExecutor):
     """Bridges the A2A AgentExecutor protocol into a Nexus AgentRunner.
 
     Args:

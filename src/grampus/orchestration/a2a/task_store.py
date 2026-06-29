@@ -12,8 +12,8 @@ try:
     _HAS_A2A = True
 except ImportError:  # pragma: no cover
     _HAS_A2A = False
-    TaskStore = object
-    ServerCallContext = object
+    TaskStore = object  # type: ignore[assignment, misc]
+    ServerCallContext = object  # type: ignore[assignment, misc]
 
 from grampus.core.logging import get_logger
 
@@ -21,7 +21,7 @@ _log = get_logger(__name__)
 _DAPR_KEY_PREFIX = "a2a:task:"
 
 
-class GrampusTaskStore(TaskStore):  # type: ignore[misc]
+class GrampusTaskStore(TaskStore):
     """TaskStore persisting to Dapr state with an in-memory fallback.
 
     When ``state_store`` is None (or when a Dapr write fails), all task data
