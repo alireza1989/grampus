@@ -1,19 +1,23 @@
 # Stage 1: builder — install deps and build wheel
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src/ src/
 
 RUN uv sync --frozen --no-dev && uv build --wheel
 
-# Stage 2: runtime — minimal image with installed wheel
-FROM python:3.12-slim AS runtime
+# Stage 2: runtime — Alpine for minimal CVE surface
+FROM python:3.12-alpine AS runtime
 
 WORKDIR /app
+
+RUN apk upgrade --no-cache
 
 # Install the built wheel with both provider extras
 COPY --from=builder /app/dist/*.whl /tmp/
@@ -25,7 +29,7 @@ ENV DAPR_GRPC_PORT=50001
 ENV GRAMPUS_ENV=production
 
 # Non-root user for security
-RUN useradd --create-home --shell /bin/bash grampus
+RUN adduser -D grampus
 USER grampus
 
 # Agent code is volume-mounted at runtime, not baked into the image
