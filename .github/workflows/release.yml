@@ -30,7 +30,7 @@ jobs:
         run: uv run mypy src/
 
       - name: Unit tests
-        run: uv run pytest --ignore=tests/dapr/test_integration.py -m "not dapr" -q
+        run: uv run pytest -m "not integration" -q
 
   build:
     name: Build
