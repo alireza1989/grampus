@@ -12,12 +12,12 @@ COPY src/ src/
 
 RUN uv sync --frozen --no-dev && uv build --wheel
 
-# Stage 2: runtime — Alpine for minimal CVE surface
-FROM python:3.12-alpine AS runtime
+# Stage 2: runtime — slim-bookworm; apt-get upgrade patches known CVEs
+FROM python:3.12-slim-bookworm AS runtime
 
 WORKDIR /app
 
-RUN apk upgrade --no-cache
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Install the built wheel with both provider extras
 COPY --from=builder /app/dist/*.whl /tmp/
@@ -29,7 +29,7 @@ ENV DAPR_GRPC_PORT=50001
 ENV GRAMPUS_ENV=production
 
 # Non-root user for security
-RUN adduser -D grampus
+RUN useradd --create-home --shell /bin/bash grampus
 USER grampus
 
 # Agent code is volume-mounted at runtime, not baked into the image
