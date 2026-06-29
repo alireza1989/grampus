@@ -933,6 +933,7 @@ weaviate = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "a2a-sdk" },
     { name = "anthropic" },
     { name = "asyncpg" },
     { name = "fastapi" },
@@ -1031,6 +1032,7 @@ provides-extras = ["anthropic", "openai", "gemini", "ollama", "cohere", "phoenix
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "a2a-sdk", specifier = ">=0.3.0" },
     { name = "anthropic", specifier = ">=0.97" },
     { name = "asyncpg", specifier = ">=0.30" },
     { name = "fastapi", specifier = ">=0.115" },
