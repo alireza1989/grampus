@@ -1,10 +1,6 @@
 # Grampus — Production-Grade Agentic AI Framework
 
 <p align="center">
-  <img src="docs/assets/logo.png" alt="Grampus" width="120"/>
-</p>
-
-<p align="center">
   <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/v/grampus-ai" alt="PyPI"/></a>
   <a href="https://pypi.org/project/grampus-ai/"><img src="https://img.shields.io/pypi/pyversions/grampus-ai" alt="Python"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/alireza1989/grampus" alt="License"/></a>
