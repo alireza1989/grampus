@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Unreleased — v0.2.0]
+
 ### Added
 
 - **Long-Horizon Planning (Phase E34)** — `PlanningRunner` orchestrates complex multi-step
