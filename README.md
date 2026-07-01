@@ -6,6 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/alireza1989/grampus" alt="License"/></a>
   <a href="https://github.com/alireza1989/grampus/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/alireza1989/grampus/ci.yml" alt="CI"/></a>
   <a href="https://codecov.io/gh/alireza1989/grampus"><img src="https://img.shields.io/codecov/c/github/alireza1989/grampus" alt="Coverage"/></a>
+  <a href="https://pepy.tech/projects/grampus-ai"><img src="https://static.pepy.tech/personalized-badge/grampus-ai?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads" alt="Downloads"/></a>
 </p>
 
 > As simple as CrewAI to start. As powerful as LangGraph for production.
